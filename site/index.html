@@ -104,11 +104,13 @@ body.drop::after{content:"Drop the photo to create your avatar";position:fixed;i
   .ai-out{max-height:46vh;overflow:auto;padding-bottom:4px;border-bottom:1px solid var(--line)}
   .ai-more{display:inline}
   .ai-out:not(.open) .ai-details{display:none}
-  .ai-msg{font-size:.84rem}
-  .ai-out .ai-thumb{display:block;width:96px;height:96px;grid-row:1 / span 2}
-  .ai-out .ai-thumb svg{width:100%;height:100%;display:block}
-  .ai-out .ai-body{grid-column:2}
-  .ai-out .ai-thumb{width:84px;height:84px}
+  .ai-msg{font-size:.84rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .ai-out.open .ai-msg{display:block}
+  .ai-out .ai-thumb{display:none}
+  .ai-out .ai-body{grid-column:1 / -1}
+  .ai-out:not(.open){max-height:none;overflow:visible}
+  .ai-ex{display:none}
+  .ai-dock:focus-within .ai-ex{display:flex}
   #aiGo{padding-inline:12px}
   .dec{max-height:none}
 }
@@ -627,7 +629,7 @@ document.addEventListener('click', e => {
   if (b.id === 'saveNewBtn'){ saveCurrent(true); return; }
   if (b.id === 'undoBtn'){ undo(); return; }
   if (b.id === 'aiClose'){ $('aiOut').hidden = true; return; }
-  if (b.id === 'aiMore'){ const open = $('aiOut').classList.toggle('open'); b.setAttribute('aria-expanded', open); b.textContent = open ? 'Hide details' : 'Show details'; return; }
+  if (b.id === 'aiMore'){ clearTimeout(aiHideTimer); const open = $('aiOut').classList.toggle('open'); b.setAttribute('aria-expanded', open); b.textContent = open ? 'Hide details' : 'Show details'; return; }
   if (b.id === 'redoBtn'){ redo(); return; }
   if (b.dataset.bgshape){ bgCfg.shape = b.dataset.bgshape; applyBg(); redraw({presets:true}); drawLibrary(); return; }
   if (b.dataset.style){ style = b.dataset.style; redraw({presets:true}); drawLibrary(); return; }
@@ -673,6 +675,16 @@ function aiPanel(body, thumb){
   $('aiOut').innerHTML = `${thumb ? `<div class="ai-thumb">${svg(t, variant)}</div>` : ''}<div class="ai-body">${body}</div><button class="x" type="button" id="aiClose" aria-label="Close">✕</button>`;
   $('aiOut').hidden = false;
 }
+const isPhone = () => matchMedia('(max-width:900px)').matches;
+let aiHideTimer = 0;
+// Phones: close the keyboard, show the change on the big avatar, and let the short result line fade away.
+function afterAiOnPhone(){
+  if (!isPhone()) return;
+  document.activeElement?.blur?.();
+  $('big').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
+  clearTimeout(aiHideTimer);
+  aiHideTimer = setTimeout(() => { if (!$('aiOut').classList.contains('open') && !$('aiOut').contains(document.activeElement)) $('aiOut').hidden = true; }, 6000);
+}
 function aiError(m){ aiPanel(`<div class="ai-msg err">${m}</div>`, false); }
 async function callAi(path, body){
   const r = await fetch(path, { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify(body) });
@@ -691,16 +703,17 @@ $('aiForm').addEventListener('submit', async e => {
   e.preventDefault();
   const text = $('aiText').value.trim(); if (!text) { $('aiText').focus(); return; }
   $('aiGo').setAttribute('aria-busy','true'); $('aiGo').textContent = 'Thinking…';
-  try { const res = await callAi('/api/edit', { text, traits: t }); applyAi(res); showAi(res, 'edit'); $('aiText').value = ''; }
+  let ok = false;
+  try { const res = await callAi('/api/edit', { text, traits: t }); applyAi(res); showAi(res, 'edit'); $('aiText').value = ''; ok = true; }
   catch(err){ aiError(err.message); }
-  finally { $('aiGo').removeAttribute('aria-busy'); $('aiGo').textContent = 'Apply'; $('aiText').focus({preventScroll:true}); }
+  finally { $('aiGo').removeAttribute('aria-busy'); $('aiGo').textContent = 'Apply'; if (ok && isPhone()) afterAiOnPhone(); else $('aiText').focus({preventScroll:true}); }
 });
 // "Describe your character" in the start row: always a new character.
 $('startAi').addEventListener('submit', async e => {
   e.preventDefault();
   const text = $('startAiText').value.trim(); if (!text) { $('startAiText').focus(); return; }
   $('startAiGo').setAttribute('aria-busy','true'); $('startAiGo').textContent = 'Creating…';
-  try { const res = await callAi('/api/edit', { text, traits: t, mode: 'new' }); applyAi(res); showAi(res, 'edit'); $('startAiText').value = ''; $('startAi').hidden = true; }
+  try { const res = await callAi('/api/edit', { text, traits: t, mode: 'new' }); applyAi(res); showAi(res, 'edit'); $('startAiText').value = ''; $('startAi').hidden = true; afterAiOnPhone(); }
   catch(err){ aiError(err.message); }
   finally { $('startAiGo').removeAttribute('aria-busy'); $('startAiGo').textContent = 'Create'; }
 });
@@ -723,7 +736,7 @@ async function handlePhoto(file){
   photoBusy = true;
   const lbl = $('aiFileLbl'); lbl.setAttribute('aria-busy','true');
   aiPanel('<div class="ai-msg">Analysing your photo with Clef omni…</div>', false);
-  try { let image = await shrink(file); const res = await callAi('/api/photo', { image, traits: t }); image = null; applyAi(res); showAi(res, 'photo'); }
+  try { let image = await shrink(file); const res = await callAi('/api/photo', { image, traits: t }); image = null; applyAi(res); showAi(res, 'photo'); afterAiOnPhone(); }
   catch(err){ aiError(err.message); }
   finally { photoBusy = false; lbl.removeAttribute('aria-busy'); }
 }
