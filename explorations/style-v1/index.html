@@ -630,7 +630,7 @@ function drawEye(S,t,F,ex,side,color,skin,ink,eyeMode){
     return `<g transform="translate(${n1(p.x)},${n1(p.y)}) scale(${n1(k*100)/100})"><path d="${d}" fill="${fill}" stroke="${ink}" stroke-width="${n1((S.sw ? S.sw*.55 : 1.2)/k)}" stroke-linejoin="round"/><circle cx="-2.6" cy="-2.2" r="1.3" fill="#fff" opacity=".85"/></g>`;
   }
   if (ex.closed || ex.winkSide === side){
-    const cd = ex.closed==='sleep' ? `M${-base.W},0.5 Q0,4.2 ${base.W},0.5` : ex.closed==='sad' ? `M${-base.W-0.5},-0.5 Q0,3 ${base.W+0.5},2.5` : `M${-base.W-0.5},2 Q0,-8.5 ${base.W+0.5},2`;
+    const cd = ex.closed==='squeeze' ? `M${n1(base.W*.85)},-4.2 L${n1(-base.W*.55)},0 L${n1(base.W*.85)},4.2` : ex.closed==='sleep' ? `M${-base.W},0.5 Q0,4.2 ${base.W},0.5` : ex.closed==='sad' ? `M${-base.W-0.5},-0.5 Q0,3 ${base.W+0.5},2.5` : `M${-base.W-0.5},2 Q0,-8.5 ${base.W+0.5},2`;
     return `<g transform="${tr}"><path d="${cd}" fill="none" stroke="${ink}" stroke-width="${n1(lw*1.25)}" stroke-linecap="round"/></g>`;
   }
   const wide = (ex.wide||1) * (S.anime ? 1.16 : 1), W=base.W;
@@ -801,21 +801,31 @@ function drawNose(S,t,F,skin){
   return s + `</g>`;
 }
 
+// Half widths of the crying mouths: about a third of the face width, as in chibi/anime crying faces.
+const CRYW = { cryPill: w => Math.max(w*1.9, 15), cryOval: w => Math.max(w*1.5, 12), cryOpen: w => Math.max(w*1.75, 14) };
 function drawMouth(S,t,F,ex,skin,ink,zombie){
   const base = {small:6.5, medium:8.5, wide:11}[t.mouth.width] * F.sx;
   let sc = (1 + tv(t,'mouth.size')) * (S.mouthScale||1);
+  // Crying mouths are big in every style (they carry the expression): no per-style mouth shrink.
+  if (/^cry/.test(ex.mouth)) sc = Math.max(1, 1 + tv(t,'mouth.size'));
   const w = base;
-  let y = mouthCenterY(S,t,F);
+  let y = mouthCenterY(S,t,F), syK = 1;
   // Fit the mouth between nose and chin using its real extent (open mouths are tall): move it up first,
   // then shrink it if it still doesn't fit. Wide mouths keep extra distance where the chin curves away.
   {
-    const EXT = { wail2:[2,7.5], wail3:[4.5,13], wail4:[1,4], wail5:[2,11.5], wail6:[1,7],
+    const cw = CRYW.cryPill(w), ow = CRYW.cryOval(w), pw = CRYW.cryOpen(w);
+    const EXT = { cryPill:[cw*.4, cw*.36], cryOval:[ow*.53, ow*.53], cryOpen:[pw*.6, pw*.6], wail2:[2,7.5], wail3:[4.5,13], wail4:[1,4], wail5:[2,11.5], wail6:[1,7],
       neutral:[1,2.5], smile:[3,6], soft:[1,3.5], frown:[4,3.5], o:[4,6.5], laugh:[2.5,13.5], grit:[2.5,6.5], zombie:[2,10], wail:[5.5,17], kiss:[4,4.5], sleep:[2,5], meh:[2,2] }[ex.mouth] || [2,6];
-    const half = (/^wail[35]?$/.test(ex.mouth) ? Math.max(w,7.5)*1.2 : w + 2) * sc;
+    const half = (/^wail[35]?$/.test(ex.mouth) ? Math.max(w,7.5)*1.2 : /^cry/.test(ex.mouth) ? CRYW[ex.mouth](w) : w + 2) * sc;
     const bottomMax = F.chinY - 3 - Math.max(0, half - F.chinW) * 0.32;
-    const topMin = noseBottomY(S,t,F) + 2;
+    const topMin = noseBottomY(S,t,F) + (/^cry/.test(ex.mouth) ? -1 : 2);
     if (y + EXT[1]*sc > bottomMax) y = bottomMax - EXT[1]*sc;
-    if (y - EXT[0]*sc < topMin){
+    if (y - EXT[0]*sc < topMin && /^cry/.test(ex.mouth)){
+      // Crying mouths keep their width and get flatter instead (the references are wide mouths).
+      const room = bottomMax - topMin;
+      syK = Math.max(.55, Math.min(1, room / ((EXT[0] + EXT[1]) * sc)));
+      y = topMin + EXT[0]*sc*syK;
+    } else if (y - EXT[0]*sc < topMin){
       const room = bottomMax - topMin;
       sc = Math.max(.55, Math.min(sc, room / (EXT[0] + EXT[1])));
       y = Math.min(topMin + EXT[0]*sc, bottomMax - EXT[1]*sc);
@@ -829,7 +839,7 @@ function drawMouth(S,t,F,ex,skin,ink,zombie){
     if (t.mouth.lips==='medium') return `<path d="M-3,${y0+4.4} Q0,${y0+5.6} 3,${y0+4.4}" fill="none" stroke="${darken(skin,.25)}" stroke-width="1.3" stroke-linecap="round" opacity=".7"/>`;
     return '';
   };
-  let s = `<g transform="translate(100,${n1(y)}) scale(${n1(sc*100)/100})">`;
+  let s = `<g transform="translate(100,${n1(y)}) scale(${n1(sc*100)/100},${n1(sc*syK*100)/100})">`;
   const outl = S.sw ? ` stroke="${ink}" stroke-width="${lw}" stroke-linejoin="round"` : '';
   switch(ex.mouth){
     case 'neutral': s += lip(.7) + line(`M${n1(-w)},0 Q0,1.4 ${n1(w)},0`); break;
@@ -852,6 +862,19 @@ function drawMouth(S,t,F,ex,skin,ink,zombie){
       s += `<clipPath id="${id}"><path d="${d}"/></clipPath><path d="${d}" fill="#3e1219"/><g clip-path="url(#${id})"><path d="${teeth} L${n1(W)},-1.5 L${n1(W)},-4 L${n1(-W)},-4Z" fill="#fbfaf7"/><ellipse cx="0" cy="11" rx="${n1(W*.5)}" ry="4" fill="#d9707c"/></g><path d="${d}" fill="none" stroke="${S.sw?ink:mc}" stroke-width="${S.sw?lw:1.4}" stroke-linejoin="round"/>`; break; }
     case 'wail6':     // pout: frown with a pushed-out lower lip
       s += `<path d="M${n1(-w*.75)},3.2 Q0,-2.4 ${n1(w*.75)},3.2 Q0,7.2 ${n1(-w*.75)},3.2Z" fill="${lc}"${outl || ` stroke="${mc}" stroke-width="1.2"`}/>` + line(`M${n1(-w*.75)},3.2 Q0,-2.4 ${n1(w*.75)},3.2`); break;
+    // Crying mouths modelled on the references: big, light pink inside, one outline, wobbly edges.
+    case 'cryPill': {  // ref 1: wide pill, wobbly top and bottom, white upper teeth
+      const W = CRYW.cryPill(w), H = W*.62, id = uid('m');
+      const d = `M${n1(-W)},${n1(-H*.15)} Q${n1(-W*.8)},${n1(-H*.62)} ${n1(-W*.45)},${n1(-H*.45)} Q${n1(-W*.15)},${n1(-H*.3)} 0,${n1(-H*.55)} Q${n1(W*.22)},${n1(-H*.75)} ${n1(W*.5)},${n1(-H*.5)} Q${n1(W*.85)},${n1(-H*.6)} ${n1(W)},${n1(-H*.1)} Q${n1(W*1.08)},${n1(H*.45)} ${n1(W*.62)},${n1(H*.48)} Q${n1(W*.3)},${n1(H*.3)} 0,${n1(H*.48)} Q${n1(-W*.32)},${n1(H*.62)} ${n1(-W*.66)},${n1(H*.45)} Q${n1(-W*1.08)},${n1(H*.4)} ${n1(-W)},${n1(-H*.15)}Z`;
+      s += `<clipPath id="${id}"><path d="${d}"/></clipPath><path d="${d}" fill="#f2909a"/><g clip-path="url(#${id})"><path d="M${n1(-W)},${n1(-H*.32)} Q0,${n1(-H*.2)} ${n1(W)},${n1(-H*.32)} L${n1(W)},${n1(-H)} L${n1(-W)},${n1(-H)}Z" fill="#fbfaf7"/><ellipse cx="0" cy="${n1(H*.42)}" rx="${n1(W*.55)}" ry="${n1(H*.22)}" fill="#e46f7c"/></g><path d="${d}" fill="none" stroke="${S.sw?ink:mc}" stroke-width="${S.sw?lw:1.5}" stroke-linejoin="round"/>`; break; }
+    case 'cryOval': {  // ref 3: big rounded open mouth
+      const W = CRYW.cryOval(w), H = W*1.05, id = uid('m');
+      const d = `M0,${n1(-H*.5)} C${n1(W*1.05)},${n1(-H*.52)} ${n1(W*.95)},${n1(H*.5)} 0,${n1(H*.5)} C${n1(-W*.95)},${n1(H*.5)} ${n1(-W*1.05)},${n1(-H*.52)} 0,${n1(-H*.5)}Z`;
+      s += `<clipPath id="${id}"><path d="${d}"/></clipPath><path d="${d}" fill="#e97d88"/><g clip-path="url(#${id})"><ellipse cx="0" cy="${n1(H*.42)}" rx="${n1(W*.62)}" ry="${n1(H*.25)}" fill="#d9606f"/></g><path d="${d}" fill="none" stroke="${S.sw?ink:mc}" stroke-width="${S.sw?lw:1.5}"/>`; break; }
+    case 'cryOpen': {  // ref 2: big open mouth with a wobbly outline, wider at the bottom
+      const W = CRYW.cryOpen(w), H = W*.95, id = uid('m');
+      const d = `M${n1(-W*.8)},${n1(-H*.42)} Q${n1(-W*.45)},${n1(-H*.62)} ${n1(-W*.1)},${n1(-H*.44)} Q${n1(W*.25)},${n1(-H*.62)} ${n1(W*.75)},${n1(-H*.45)} Q${n1(W*1.1)},${n1(-H*.05)} ${n1(W*.95)},${n1(H*.25)} Q${n1(W*.75)},${n1(H*.55)} ${n1(W*.3)},${n1(H*.48)} Q0,${n1(H*.62)} ${n1(-W*.35)},${n1(H*.5)} Q${n1(-W*.85)},${n1(H*.55)} ${n1(-W*1)},${n1(H*.15)} Q${n1(-W*1.1)},${n1(-H*.15)} ${n1(-W*.8)},${n1(-H*.42)}Z`;
+      s += `<clipPath id="${id}"><path d="${d}"/></clipPath><path d="${d}" fill="#d96474"/><g clip-path="url(#${id})"><ellipse cx="0" cy="${n1(H*.45)}" rx="${n1(W*.6)}" ry="${n1(H*.26)}" fill="#ef95a0"/></g><path d="${d}" fill="none" stroke="${S.sw?ink:mc}" stroke-width="${S.sw?lw:1.5}" stroke-linejoin="round"/>`; break; }
     case 'meh':     s += line(`M${n1(-w*.9)},1.2 Q${n1(-w*.2)},1.6 ${n1(w*.9)},-1.8`); break;
     case 'smile':   s += lip(2.8) + line(`M${n1(-w-1.5)},-2.5 Q0,8 ${n1(w+1.5)},-2.5`); break;
     case 'soft':    s += lip(1.3) + line(`M${n1(-w*.85)},-0.5 Q0,3.2 ${n1(w*.85)},-0.5`); break;
@@ -1079,6 +1102,7 @@ function render(traits, variant={}, styleKey='chibi', opts={}){
   let ex = EXPR[zombie ? 'zombie' : (festive ? 'laughing' : (variant.expression||'neutral'))];
   const cfg = {...ANYTARS_CONFIG, ...opts};
   if (cfg.cryMouth && ex.mouth === 'wail') ex = { ...ex, mouth: cfg.cryMouth };
+  if (cfg.cryEyes && ex.mouth && /^(wail|cry)/.test(ex.mouth) && ex.closed) ex = { ...ex, closed: cfg.cryEyes };
   const bgNone = cfg.background === 'none';
   const bgShape = BG_SHAPES.includes(cfg.backgroundShape) && cfg.backgroundShape!=='style' ? cfg.backgroundShape : S.bgShape;
   let skin=t.skin, hair=t.hair.color, shirt=t.shirt, bg=(/^#[0-9a-f]{6}$/i.test(cfg.background||'') ? cfg.background : t.bg), hwColor=t.headwear?.color||'#888888';
