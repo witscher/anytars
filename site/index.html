@@ -325,6 +325,7 @@ function drawPanel(){
         h += field('Frame colour', swatches('glasses.frame', PAL.frame));
         h += field('Lens colour', swatches('glasses.lens', PAL.lens));
         const a = Math.round((g.lensAlpha ?? .12)*100);
+        h += field('Position', sliders('Glasses'));
         h += field('Lens tint', `<label class="srow" for="tint"><span>Clear to dark</span><input type="range" id="tint" min="0" max="95" step="5" value="${a}" data-tint="1"><output id="tint-o">${a}%</output></label>`);
       }
       break; }

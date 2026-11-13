@@ -519,6 +519,8 @@ const TUNE = [
   {group:'Nose',  key:'nose.size',    label:'Size',    min:-3, max:3, unit:0.1},
   {group:'Mouth', key:'mouth.y',      label:'Height',  min:-3, max:3, unit:1.5},
   {group:'Mouth', key:'mouth.size',   label:'Size',    min:-3, max:3, unit:0.09},
+  // 'late' sliders were added after v1 codes existed; they are stored at the end of the code.
+  {group:'Glasses', key:'glasses.y',  label:'Height',  min:-4, max:4, unit:1.5, late:true},
 ];
 const getK = (o,k) => k.split('.').reduce((a,p)=>a==null?a:a[p], o);
 const setK = (o,k,v) => { const ps=k.split('.'); let a=o; ps.slice(0,-1).forEach(p=>{a[p]=a[p]||{}; a=a[p];}); a[ps.at(-1)]=v; };
@@ -725,7 +727,9 @@ function drawMouth(S,t,F,ex,skin,ink,zombie){
 function drawGlasses(S,t,F,zombie){
   const g = t.glasses; if (!g || g.type==='none') return '';
   const gs = S.eye>1 ? 1+(S.eye-1)*0.55 : 1;
+  const gy = tv(t,'glasses.y');
   const P = eyePos(S,F,t,1), PL = eyePos(S,F,t,-1);
+  P.y += gy; PL.y += gy;
   const frame = g.frame, fw = S.sw ? Math.max(2.4, S.sw*0.85) : 2.6;
   const LENS = {
     round:  {d:circ(0,0,11.5), inX:-11.5, outX:11.5, by:-2, ty:-3},
@@ -1008,11 +1012,12 @@ function encode(t){
     e('brows',t.brows.type), e('nose',t.nose.type), e('mouthWidth',t.mouth.width), e('lips',t.mouth.lips), e('facialHair',t.facialHair||'none'),
     e('glasses',g.type), e('headwear',t.headwear?.type||'none'),
     DETAILS.reduce((m,d,i)=>m|((t.details||[]).includes(d)?1<<i:0),0),
-    ...TUNE.map(x => (getK(t,x.key)||0) & 0xff),
+    ...TUNE.filter(x=>!x.late).map(x => (getK(t,x.key)||0) & 0xff),
     Math.round((g.lensAlpha??0)*255)];
   [t.skin,t.hair.color,t.eyes.left,t.eyes.right,g.frame||'#000000',g.lens||'#000000',t.headwear?.color||'#000000',t.shirt,t.bg,
    t.brows.color||t.hair.color, t.facialHairColor||t.hair.color].forEach(c=>bytes.push(...hx(c)));
   bytes.push(Math.max(0, EYE_RENDER.indexOf(t.eyes.render||'auto')));
+  TUNE.filter(x=>x.late).forEach(x => bytes.push((getK(t,x.key)||0) & 0xff));
   return 'v1.' + b64u(bytes);
 }
 function decode(code){
@@ -1022,7 +1027,7 @@ function decode(code){
     brows:{type:E('brows')}, nose:{type:E('nose')}, mouth:{width:E('mouthWidth'), lips:E('lips')}, facialHair:E('facialHair')};
   const gl = E('glasses'), hw = E('headwear'), dm = b[i++];
   t.details = DETAILS.filter((d,k)=>dm&(1<<k));
-  TUNE.forEach(x => { const v = (b[i++]<<24)>>24; if (v) setK(t,x.key,v); });
+  TUNE.filter(x=>!x.late).forEach(x => { const v = (b[i++]<<24)>>24; if (v) setK(t,x.key,v); });
   const la = b[i++]/255;
   const C = () => toHex([b[i++],b[i++],b[i++]]);
   t.skin=C(); t.hair.color=C(); t.eyes.left=C(); t.eyes.right=C();
@@ -1031,6 +1036,7 @@ function decode(code){
   if (i < b.length){ const er = EYE_RENDER[b[i++]]; if (er && er!=='auto') t.eyes.render = er; }
   t.glasses = {type:gl, frame:fr, lens:le, lensAlpha:Math.round(la*100)/100};
   t.headwear = {type:hw, color:hc};
+  TUNE.filter(x=>x.late).forEach(x => { if (i < b.length){ const v = (b[i++]<<24)>>24; if (v) setK(t,x.key,v); } });
   return t;
 }
 
