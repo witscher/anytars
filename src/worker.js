@@ -64,7 +64,7 @@ const TRAITS = [
   ['nose', 'nose', V.NOSE, (t, v) => { t.nose.type = v; }],
   ['mouthWidth', 'mouth width', V.MOUTH_WIDTH, (t, v) => { t.mouth.width = v; }],
   ['lips', 'lips', V.LIPS, (t, v) => { t.mouth.lips = v; }],
-  ['facialHair', 'facial hair', V.FACIAL_HAIR, (t, v) => { t.facialHair = v; }],
+  ['facialHair', 'facial hair', V.FACIAL_HAIR, (t, v) => { if (v === 'any') { if (t.facialHair && t.facialHair !== 'none') return; v = 'full'; } t.facialHair = v; }],
   ['beardColor', 'beard colour', V.HAIR_COLOR, (t, v) => { t.facialHairColor = V.HAIR_COLOR[v][0]; }],
   ['glasses', 'glasses', V.GLASSES, (t, v) => {
     if (v === 'any') { if (t.glasses?.type && t.glasses.type !== 'none') return; v = ['rect', 'round', 'softSquare', 'panto'][Math.floor(Math.random() * 4)]; }
@@ -72,7 +72,9 @@ const TRAITS = [
   ['lens', 'glasses lenses', V.LENS, (t, v) => {
     if (!t.glasses?.type || t.glasses.type === 'none') { if (v === 'clear') return; t.glasses = { type: 'wayfarer', frame: '#16161a' }; }   // "sunglasses" on a bare face
     t.glasses.lens = V.LENS[v][0]; t.glasses.lensAlpha = V.LENS[v][1]; }],
-  ['frameColor', 'glasses frame colour', V.FRAME_COLOR, (t, v) => { if (t.glasses?.type && t.glasses.type !== 'none') t.glasses.frame = V.FRAME_COLOR[v][0]; }],
+  ['frameColor', 'glasses frame colour', V.FRAME_COLOR, (t, v) => {
+    if (!t.glasses?.type || t.glasses.type === 'none') t.glasses = { type: 'rect', lens: '#ffffff', lensAlpha: .12 };   // "gold frames" on a bare face
+    t.glasses.frame = V.FRAME_COLOR[v][0]; }],
   ['headwear', 'headwear', V.HEADWEAR, (t, v) => { t.headwear = { color: '#2f6bd8', ...t.headwear, type: v }; }],
   ['headwearColor', 'headwear colour', V.CLOTH, (t, v) => { t.headwear = { ...t.headwear, color: V.CLOTH[v][0] }; }],
   ['headwearAccent', 'second colour of the headwear (band, spots, pom-pom, logo)', V.CLOTH, (t, v) => { t.headwear = { ...t.headwear, accent: V.CLOTH[v][0] }; }, 'edit'],
@@ -134,7 +136,7 @@ async function edit(env, body) {
   let t = sanitize(body?.traits);
   const ask = 'Apply the request to the avatar. Which option should the avatar have afterwards? Choose keep unless the request names this part or directly describes how it should look. Expressions, moods, age, transformations (zombie, party) and drawing styles are handled by other questions and never change this part on their own.';
   const questions = {};
-  TRAITS.forEach(([id, label, map]) => { questions[id] = choice(`${ask} Part: ${label}.`, withKeep(id === 'glasses' ? { ...map, any: 'glasses, when the request asks for glasses without naming a type' } : map, label)); });
+  TRAITS.forEach(([id, label, map]) => { questions[id] = choice(`${ask} Part: ${label}.`, withKeep(id === 'glasses' ? { ...map, any: 'glasses, when the request asks for glasses without naming a type' } : id === 'facialHair' ? { ...map, any: 'a beard, when the request asks for a beard without naming a style' } : map, label)); });
   questions.skin = choice(`${ask} Part: skin tone.`, { keep: 'the request does not ask to change the skin tone', darker: 'a darker skin tone than now', lighter: 'a lighter skin tone than now', ...Object.fromEntries(V.SKIN_LEVELS.map(([hexv, d], i) => ['s' + i, d + ' skin'])) });
   questions.bg = choice(`${ask} Part: background colour.`, withKeep(V.BG, 'background colour'));
   Object.entries(V.DETAILS).forEach(([k, d]) => { questions['detail_' + k] = choice(`Does the request explicitly ask to add or remove ${d}, or ask for something that clearly implies it (for example older or younger for wrinkles)? Choose keep if ${d} is not asked for.`, { keep: `the request does not ask about ${d}`, add: `add ${d}`, remove: `remove ${d}` }); });
@@ -166,14 +168,21 @@ async function edit(env, body) {
   const chat = A.intent?.choice === 'none' && (A.intent.probabilities?.none ?? 0) >= 0.5;
   if (chat) return { model: FLASH, ms, usage: res.usage, questions: Object.keys(questions).length, changes: [], traits: t, code: encode(t), expression: null, style: null, intent: 'none', presentation: 'unspecified', age: 'unspecified' };
   const pres = (A.presentation?.probabilities?.[A.presentation.choice] ?? 0) > 0.5 ? A.presentation.choice : 'unspecified';
-  const age = (A.age?.probabilities?.[A.age.choice] ?? 0) > 0.5 ? A.age.choice : 'unspecified';
+  let age = (A.age?.probabilities?.[A.age.choice] ?? 0) > 0.5 ? A.age.choice : 'unspecified';
+  { const ap = A.age?.probabilities || {}; if (age === 'unspecified' && (ap.older ?? 0) + (ap.senior ?? 0) > 0.6) age = (ap.senior ?? 0) > (ap.older ?? 0) ? 'senior' : 'older'; }
   // "an old man with a beard": a person described by presentation or age leans towards a new character.
   const isNew = !chat && (pNew >= 0.5 || (pNew >= 0.3 && (pres !== 'unspecified' || age !== 'unspecified')));
   if (isNew){
     t = randomBase(pres, age, t);
     changes.push({ id: 'intent', label: 'new character', choice: [pres, age].filter(x => x !== 'unspecified').join(', ') || 'random', confidence: r2(A.intent.probabilities.new) });
   }
-  TRAITS.forEach(([id, label, map, apply]) => { const v = decided(id); if (v && changed(() => apply(t, v))) changes.push(report(id, label, A[id])); });
+  // A colour that belongs to a part changed in the same request applies more easily ("a red hijab" while wearing a cap).
+  const PART_OF = { headwearColor: 'headwear', headwearAccent: 'headwear', frameColor: 'glasses', lens: 'glasses', beardColor: 'facialHair' };
+  const loose = (id) => { const a = A[id]; if (!a || a.choice === 'keep') return null; const p = a.probabilities?.[a.choice] ?? 0; return p >= 0.35 && (a.probabilities?.keep ?? 0) < 0.45 ? a.choice : null; };
+  TRAITS.forEach(([id, label, map, apply]) => {
+    const v = decided(id) || (PART_OF[id] && changes.some(c => c.id === PART_OF[id]) ? loose(id) : null);
+    if (v && changed(() => apply(t, v))) changes.push(report(id, label, A[id]));
+  });
   const sk = decided('skin');
   if (sk && changed(() => {
     if (sk === 'darker' || sk === 'lighter'){   // relative: two steps from the nearest palette level
