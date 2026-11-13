@@ -355,6 +355,17 @@ const HEADWEAR = {
       const logo = shape(S, smooth(F.mp([[112,58,'s'],[124,60,'s'],[124,68,'s'],[112,66,'s']])), a, {noShade:true,k:.5});
       return shape(S,crown,c,{inner:seam+eyelets}) + logo + shape(S,bill,c) + `<path d="${under}" fill="${darken(c,.35)}"/>`;
     }, shadow:[[46,94],[100,90],[154,94],[150,104],[100,100],[50,104]] },
+  // Loosely wrapped scarf (shayla style): frames the forehead and cheeks, ends at the jaw, so chin and neck stay visible.
+  hijabLoose: { glassesOver:true, hideHairTop:true, hideHairBack:true, hideEars:true,
+    drape:(S,F,c)=>{
+      const side = [[100,40],[138,46],[156,82],[158,124],[154,150],[162,172],[176,204],[114,204],[111,176],[111,152],[100,150]];
+      return shape(S, smooth(F.mp([...side, ...mirrorPts(side.slice(1,-1))])), c);
+    },
+    front:(S,F,c)=>{
+      const band = smooth(F.mp([[100,34],[138,42],[156,78],[158,118],[156,148,'s'],[148,144],[146,116],[145,86],[134,64],[116,56],[100,55],[84,56],[66,64],[55,86],[54,116],[52,144],[44,148,'s'],[42,118],[44,78],[62,42]]));
+      const fold = `<path d="${smooth(F.mp([[66,62],[56,92],[54,128]]))}" fill="none" stroke="${darken(c,.28)}" stroke-width="1.6" opacity=".7"/><path d="${smooth(F.mp([[100,40],[122,44],[138,54]]))}" fill="none" stroke="${lighten(c,.25)}" stroke-width="2" opacity=".6"/>`;
+      return shape(S, band, c, { inner: fold });
+    } },
 };
 
 // ---------- features ----------

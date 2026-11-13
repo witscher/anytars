@@ -74,7 +74,7 @@ async function rasterChecks(t, style){
   if (n.B > 10 && and(L.B, L.W)/n.B > .6) f.push(['brows-under-hat', and(L.B,L.W)/n.B]);
   if (gt !== 'none' && gt !== 'monocle' && gt !== 'half' && n.E > 10 && andNot(L.E, L.G)/n.E > .35) f.push(['glasses-off-eyes', andNot(L.E,L.G)/n.E]);
   if (gt === 'monocle' && n.E > 10 && and(L.E, L.G)/n.E < .2) f.push(['monocle-off-eye', and(L.E,L.G)/n.E]);
-  if (hw !== 'hijab' && n.G > 10 && and(L.G, L.W)/n.G > .15) f.push(['glasses-under-hat', and(L.G,L.W)/n.G]);
+  if (!/^hijab/.test(hw) && n.G > 10 && and(L.G, L.W)/n.G > .15) f.push(['glasses-under-hat', and(L.G,L.W)/n.G]);
   // cropped at the canvas edge (upper part only; shoulders legitimately touch the bottom and sides)
   const edge = m => { let c=0; for (let x=0;x<N;x++){ c += m[x] + m[N+x]; } for (let y=0;y<N*0.6;y++){ c += m[y*N] + m[y*N+N-1]; } return c; };
   const ec = edge(or(L.HT, L.W, L.HB)); if (ec > 3) f.push(['cropped-at-edge', ec]);
@@ -83,7 +83,7 @@ async function rasterChecks(t, style){
     for (let i=0;i<N*N;i++){ const y=(i/N)|0; if (y > y1+2 && L.Hd[i] && !L.Bd[i] && !L.M[i]) leak++; }
     if (leak/n.Hd > .006) f.push(['skin-past-beard', leak/n.Hd]);
   }
-  if (n.W > 5 && hw !== 'hijab'){ const base = dilate(or(L.Hd, L.HT, L.HB, L.EA), 2); if (and(L.W, base) === 0) f.push(['hat-floating', 0]); }
+  if (n.W > 5 && !/^hijab/.test(hw)){ const base = dilate(or(L.Hd, L.HT, L.HB, L.EA), 2); if (and(L.W, base) === 0) f.push(['hat-floating', 0]); }
   if (n.M > 5 && and(L.M, L.G)/n.M > .25) f.push(['glasses-over-mouth', and(L.M,L.G)/n.M]);
   if (n.B > 10 && and(L.B, L.E)/n.B > .1) f.push(['brows-overlap-eyes', and(L.B,L.E)/n.B]);
   if (n.E > 10 && andNot(L.E, L.Hd)/n.E > .05) f.push(['eyes-outside-face', andNot(L.E,L.Hd)/n.E]);

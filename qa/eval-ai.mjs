@@ -94,8 +94,8 @@ add('cat-eye glasses', { glasses: ['cateye'] }); add('aviators', { glasses: ['av
 add('remove the glasses', { glasses: ['none'] }); add('add glasses', { glasses: [NOT_NONE] }); add('heart shaped glasses', { glasses: ['heart'] });
 add('sunglasses', { lens: [V.LENS.sunglasses[0], V.LENS.mirrored[0]] }, ['glasses']); add('gold frames', { frameColor: [V.FRAME_COLOR.gold[0]] }, ['glasses']);
 // headwear
-for (const [w, n] of [['a baseball cap','baseballCap'],['a beanie','beanie'],['a witch hat','witchHat'],['a wizard hat','witchHat'],['an elf hat','elfCap'],['a mushroom hat','mushroom'],['a jester hat','jester'],['devil horns','devilHorns'],['a kippah','kippah'],['a yarmulke','kippah'],['a turban','turban'],['a dastar','turban'],['a hijab','hijab'],['a headscarf','hijab'],['a party hat','partyHat']])
-  add(`put on ${w}`, { headwear: [n] });
+for (const [w, n] of [['a baseball cap','baseballCap'],['a beanie','beanie'],['a witch hat','witchHat'],['a wizard hat','witchHat'],['an elf hat','elfCap'],['a mushroom hat','mushroom'],['a jester hat','jester'],['devil horns','devilHorns'],['a kippah','kippah'],['a yarmulke','kippah'],['a turban','turban'],['a dastar','turban'],['a hijab',['hijab','hijabLoose']],['a headscarf',['hijab','hijabLoose']],['a loosely wrapped hijab that shows the chin','hijabLoose'],['a party hat','partyHat']])
+  add(`put on ${w}`, { headwear: [n].flat() });
 add('remove the hat', { headwear: ['none'] }); add('a red baseball cap', { headwear: ['baseballCap'], headwearColor: CLOTH('red') });
 // clothes, background, skin
 add('a black shirt', { shirt: CLOTH('black') }); add('white t-shirt', { shirt: CLOTH('white') }); add('a green top', { shirt: CLOTH(['olive','teal']) });
@@ -112,7 +112,7 @@ for (const [w, n] of [['anime style','anime'],['chibi style','chibi'],['flat sty
 for (const [w, n] of [['a round face',['round']],['a square jaw',['square','rectangle']],['a heart-shaped face',['heart']],['a long face',['long','rectangle']],['a diamond face shape',['diamond']],['an oval face',['oval']]]) add(w, { face: n });
 // combinations
 add('long blonde hair and round glasses', { hairBack: ['long','longWavy'], hairColor: HAIR(['blonde','platinum']), glasses: ['round','roundSmall','thickRound','oversized'] });
-add('a red hijab and cat-eye glasses', { headwear: ['hijab'], headwearColor: CLOTH('red'), glasses: ['cateye'] });
+add('a red hijab and cat-eye glasses', { headwear: ['hijab','hijabLoose'], headwearColor: CLOTH('red'), glasses: ['cateye'] });
 add('buzz cut, full beard and a black shirt', { hairTop: ['buzz'], facialHair: ['full','long','short'], shirt: CLOTH('black') });
 add('pink hair, freckles and a witch hat', { hairColor: HAIR('pink'), freckles: [true], headwear: ['witchHat'] });
 add('anime style with long blue hair', { style: ['anime'], hairBack: ['long','longWavy'], hairColor: HAIR('blue') });
