@@ -132,6 +132,13 @@ body.drop::after{content:"Drop the photo to create your avatar";position:fixed;i
 .item .mini.rm{color:var(--muted)}
 .rowlabel{display:flex;align-items:center;gap:10px}
 .linkbtn{border:0;background:none;color:var(--muted);font-size:.78rem;text-decoration:underline;cursor:pointer;padding:0}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.namerow{display:flex;align-items:center;gap:8px;margin:0}
+.namerow input{flex:1;min-width:0;font:600 1rem var(--f-display);border:1px solid transparent;border-bottom-color:var(--line);background:none;color:var(--ink);padding:6px 2px;border-radius:0}
+.namerow input:focus{outline:none;border-bottom-color:var(--accent)}
+.namestat{font-size:.78rem;color:var(--muted);white-space:nowrap}
+.namestat.ok{color:var(--ok)}
+.namestat.bad{color:var(--accent);white-space:normal}
 .editbar{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .editbar .grow{flex:1}
 .btn:disabled{opacity:.45;cursor:default}
@@ -277,6 +284,11 @@ footer a{color:inherit}
           <div class="big" id="big" role="img" aria-label="Your avatar"></div>
           <div class="styles" id="styles" role="group" aria-label="Style"></div>
         </div>
+        <form class="namerow" id="nameForm" autocomplete="off">
+          <label for="avName" class="sr">Avatar name</label>
+          <input id="avName" type="text" maxlength="40" placeholder="Name your avatar" enterkeyhint="done" spellcheck="false">
+          <span class="namestat" id="nameStat" aria-live="polite"></span>
+        </form>
         <div class="msg" id="msg" aria-live="polite"></div>
         <div class="ai-dock" id="aiDock" role="region" aria-labelledby="aiTitle">
           <div class="ai-top">
@@ -383,12 +395,13 @@ const clone = o => JSON.parse(JSON.stringify(o));
 const strip = c => { const t = clone(c); delete t.id; delete t.name; delete t.blurb; return t; };
 let t = null, style = 'chibi', variant = {expression:'happy'}, tab = 'face', presetId = null;
 let bgCfg = { shape: 'style', clear: false };
+let avName = '';   // accepted (moderated) name of the current avatar; not part of the avatar code
 const applyBg = () => { ANYTARS_CONFIG.background = bgCfg.clear ? 'none' : 'avatar'; ANYTARS_CONFIG.backgroundShape = bgCfg.shape; };
 
 function load(){
   const h = decodeURIComponent(location.hash.slice(1));
   if (h.startsWith('v1.')) { try { t = decode(h); return; } catch(e){} }
-  try { const s = JSON.parse(localStorage.getItem('anytars-maker')||'null'); if (s && s.bg && BG_SHAPES.includes(s.bg.shape)) bgCfg = {shape:s.bg.shape, clear:!!s.bg.clear}; if (s && s.t) { t = s.t; if (STYLES[s.style]) style = s.style; presetId = s.presetId||null; currentId = s.currentId||null; return; } } catch(e){}
+  try { const s = JSON.parse(localStorage.getItem('anytars-maker')||'null'); if (s && s.bg && BG_SHAPES.includes(s.bg.shape)) bgCfg = {shape:s.bg.shape, clear:!!s.bg.clear}; if (s && s.t) { t = s.t; if (STYLES[s.style]) style = s.style; presetId = s.presetId||null; currentId = s.currentId||null; avName = typeof s.name === 'string' ? s.name : ''; return; } } catch(e){}
   t = randomTraits();
 }
 // ---------- saved avatars (localStorage) ----------
@@ -406,11 +419,11 @@ try {
 } catch(e){}
 const saveLib = () => { try { localStorage.setItem(LIB_KEY, JSON.stringify(saved)); } catch(e){} };
 const entry = id => saved.find(x => x.id === id);
-const isDirty = () => !currentId || !entry(currentId) || entry(currentId).code !== encode(t);
+const isDirty = () => !currentId || !entry(currentId) || entry(currentId).code !== encode(t) || (entry(currentId).name || '') !== avName;
 function saveCurrent(asNew){
   const code = encode(t), e = !asNew && currentId && entry(currentId);
-  if (e){ e.code = code; e.ts = Date.now(); }
-  else { const id = newId(); saved.unshift({id, code, ts: Date.now(), star:false}); currentId = id; }
+  if (e){ e.code = code; e.ts = Date.now(); e.name = avName; }
+  else { const id = newId(); saved.unshift({id, code, ts: Date.now(), star:false, name: avName}); currentId = id; }
   saveLib(); drawLibrary(); syncSave(); persist(); flash(e ? 'Changes saved' : 'Saved to your avatars');
 }
 let lastRemoved = null;
@@ -432,7 +445,7 @@ function drawLibrary(){
   const list = [...saved].sort((a,b) => (b.star - a.star) || (b.ts - a.ts));
   $('saved').innerHTML = list.map(e => {
     let traits; try { traits = decode(e.code); } catch(err){ return ''; }
-    return `<div class="item"><button class="preset" type="button" data-open="${e.id}" aria-pressed="${e.id===currentId}">${render(traits,{expression:'happy'},style)}<span>${e.id===currentId && isDirty() ? 'editing' : ago(e.ts)}</span></button>
+    return `<div class="item"><button class="preset" type="button" data-open="${e.id}" aria-pressed="${e.id===currentId}">${render(traits,{expression:'happy'},style)}<span>${e.id===currentId && isDirty() ? 'editing' : (e.name ? esc(e.name) : ago(e.ts))}</span></button>
       <button class="mini star" type="button" data-star="${e.id}" aria-pressed="${!!e.star}" title="${e.star?'Unstar':'Star'}" aria-label="${e.star?'Unstar':'Star'}">${e.star?'★':'☆'}</button>
       <button class="mini rm" type="button" data-remove="${e.id}" title="Remove" aria-label="Remove">✕</button></div>`;
   }).join('');
@@ -461,14 +474,14 @@ function redo(){ if (!redoStack.length) return; undoStack.push(snapshot()); rest
 function syncUndo(){ $('undoBtn').disabled = !undoStack.length; $('redoBtn').disabled = !redoStack.length; }
 
 // Replace the current avatar (dice, character, saved avatar, pasted code). Undoable.
-function switchTo(next, opts={}){ endBurst(); beforeChange(); endBurst(); t = next; presetId = opts.presetId || null; currentId = opts.savedId || null; if (opts.variant) variant = opts.variant; redraw({presets:true}); drawLibrary(); }
+function switchTo(next, opts={}){ endBurst(); beforeChange(); endBurst(); t = next; presetId = opts.presetId || null; currentId = opts.savedId || null; setName(opts.name || ''); if (opts.variant) variant = opts.variant; redraw({presets:true}); drawLibrary(); }
 
 let saveTimer = 0;
 function persist(){
   clearTimeout(saveTimer);
   syncSave(); syncUndo();
   saveTimer = setTimeout(() => {
-    try { localStorage.setItem('anytars-maker', JSON.stringify({t, style, presetId, currentId, bg:bgCfg})); } catch(e){}
+    try { localStorage.setItem('anytars-maker', JSON.stringify({t, style, presetId, currentId, bg:bgCfg, name:avName})); } catch(e){}
     try { history.replaceState(null, '', '#' + encode(t)); } catch(e){}
   }, 250);
 }
@@ -680,8 +693,8 @@ document.addEventListener('click', e => {
   if (b.id === 'startAiCancel'){ $('startAi').hidden = true; return; }
   if (b.id === 'aiPhotoTile'){ $('aiFile').click(); return; }
   if (b.id === 'dice'){ style = pick(Object.keys(STYLES)); switchTo(randomTraits(), {variant:{expression:'happy'}}); return; }
-  if (b.dataset.preset){ switchTo(strip(CAST.find(c=>c.id===b.dataset.preset)), {presetId:b.dataset.preset}); return; }
-  if (b.dataset.open){ const e = entry(b.dataset.open); if (!e) return; try { switchTo(decode(e.code), {savedId:e.id}); } catch(err){ flash('That saved avatar could not be read.', true); } return; }
+  if (b.dataset.preset){ const c = CAST.find(c=>c.id===b.dataset.preset); switchTo(strip(c), {presetId:b.dataset.preset, name:c.name}); return; }
+  if (b.dataset.open){ const e = entry(b.dataset.open); if (!e) return; try { switchTo(decode(e.code), {savedId:e.id, name:e.name}); } catch(err){ flash('That saved avatar could not be read.', true); } return; }
   if (b.dataset.star){ const e = entry(b.dataset.star); if (e){ e.star = !e.star; saveLib(); drawLibrary(); } return; }
   if (b.dataset.remove){ removeSaved(b.dataset.remove); return; }
   if (b.id === 'restoreBtn'){ restoreSaved(); return; }
@@ -815,10 +828,34 @@ document.addEventListener('dragover', e => { if (hasFiles(e)) e.preventDefault()
 document.addEventListener('dragleave', e => { if (!hasFiles(e)) return; if (--dragDepth <= 0){ dragDepth = 0; document.body.classList.remove('drop'); } });
 document.addEventListener('drop', e => { dragDepth = 0; document.body.classList.remove('drop'); const f = [...(e.dataTransfer?.files || [])].find(f => f.type.startsWith('image/')); if (f){ e.preventDefault(); handlePhoto(f); } });
 
+// ---------- avatar name (checked by Clef flash on Workers AI) ----------
+const esc = v => String(v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+const okNames = new Set(CAST.map(c => c.name));
+let nameReq = 0;
+function setName(n){ avName = n; $('avName').value = n; nameStat('', ''); syncSave(); persist(); }
+function nameStat(text, cls){ const el = $('nameStat'); el.textContent = text; el.className = 'namestat' + (cls ? ' ' + cls : ''); }
+async function commitName(){
+  const v = $('avName').value.replace(/\s+/g, ' ').trim();
+  if (v === avName) { nameStat(v ? '✓' : '', v ? 'ok' : ''); return; }
+  if (!v){ setName(''); return; }
+  if (okNames.has(v)){ avName = v; nameStat('✓', 'ok'); syncSave(); persist(); return; }
+  const req = ++nameReq; nameStat('Checking…', '');
+  try {
+    const r = await callAi('/api/name', { name: v });
+    if (req !== nameReq) return;
+    if (r.ok){ okNames.add(r.name); avName = r.name; $('avName').value = r.name; nameStat('✓ Checked by Workers AI', 'ok'); syncSave(); persist(); }
+    else { nameStat("That name can't be used. Please choose another one.", 'bad'); $('avName').value = avName; $('avName').focus(); }
+  } catch(err){ if (req === nameReq){ nameStat(err.message, 'bad'); $('avName').value = avName; } }
+}
+$('nameForm').addEventListener('submit', e => { e.preventDefault(); $('avName').blur(); });
+$('avName').addEventListener('change', commitName);
+$('avName').addEventListener('input', () => { if ($('nameStat').classList.contains('bad')) nameStat('', ''); });
+
 // ---------- export ----------
 const flashHtml = (h) => { const el=$('msg'); el.innerHTML = h; el.className = 'msg'; clearTimeout(flash.t); flash.t = setTimeout(()=>{ el.textContent=''; }, 6000); };
 const flash = (m, err) => { const el=$('msg'); el.textContent = m; el.className = 'msg' + (err?' err':''); clearTimeout(flash.t); flash.t = setTimeout(()=>{ el.textContent=''; }, 3500); };
-function fileBase(){ return `anytars-${style}-${variantName(variant)}`; }
+const slug = v => v.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+function fileBase(){ return `${slug(avName) || 'anytars'}-${style}-${variantName(variant)}`; }
 function download(blob, name){ const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 1000); }
 $('dlSvg').addEventListener('click', () => {
   download(new Blob([svg(t, variant).replace('<svg ', '<svg width="512" height="512" ')], {type:'image/svg+xml'}), fileBase()+'.svg');
@@ -848,7 +885,7 @@ const isDark = () => { const a = document.documentElement.getAttribute('data-the
 const syncTheme = () => { $('themeBtn').textContent = isDark() ? 'Light' : 'Dark'; };
 $('themeBtn').addEventListener('click', () => { document.documentElement.setAttribute('data-theme', isDark() ? 'light' : 'dark'); syncTheme(); });
 
-load(); applyBg(); buildSections(); drawTabs(); drawPresets(); redraw(); drawLibrary(); syncTheme();
+load(); applyBg(); $('avName').value = avName; buildSections(); drawTabs(); drawPresets(); redraw(); drawLibrary(); syncTheme();
 document.addEventListener('keydown', e => {
   if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
   const tag = (e.target.tagName||'').toLowerCase(); if (tag === 'input' && e.target.type === 'text') return;

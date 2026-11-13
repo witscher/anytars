@@ -31,6 +31,7 @@ export default {
       const body = await request.json();
       if (url.pathname === '/api/edit') return json(await edit(env, body));
       if (url.pathname === '/api/photo') return json(await photo(env, body));
+      if (url.pathname === '/api/name') return json(await checkName(env, body));
       return json({ error: 'Not found.' }, 404);
     } catch (e) {
       // Never echo or log the request body (it may contain a photo).
@@ -218,6 +219,31 @@ function normalizeHair(t, asked){
     if (asked.has('hairTop') && !asked.has('hairBack')) h.back = 'none';
     else if (!asked.has('hairTop')) h.top = 'centerPart';
   }
+}
+
+// ---------- avatar names (Clef flash moderation) ----------
+// Each check is a yes/no (noul) question; a name is accepted only when every probability stays low.
+const NAME_CHECKS = {
+  profanity: 'Does this name contain profanity, swear words or obscene language, in any language, including disguised spellings (letters swapped for numbers or symbols, spaces or dots between letters)?',
+  hate: 'Is this name hateful, a slur, harassing, or does it insult or demean a person or group (for example by race, religion, gender, sexuality or disability)?',
+  sexual: 'Is this name sexual, explicit or a sexual innuendo?',
+  violence: 'Does this name promote violence, self-harm, terrorism, or name or glorify an extremist group or a perpetrator of atrocities?',
+};
+async function checkName(env, body){
+  const name = String(body?.name ?? '').normalize('NFKC').replace(/\s+/g, ' ').trim();
+  if (!name) throw fail('Enter a name.');
+  if (name.length > 40) throw fail('Names can be up to 40 characters.');
+  if (/[<>{}\[\]\\\u0000-\u001f]/.test(name)) throw fail('Names can use letters, numbers, spaces and simple punctuation.');
+  const questions = Object.fromEntries(Object.entries(NAME_CHECKS).map(([k, q]) => [k, { type: 'noul', instructions: q }]));
+  const started = Date.now();
+  // Also show the model a decoded spelling, so disguised words (sh1t, f.u.c.k) read as what they are.
+  const LEET = { '0':'o', '1':'i', '!':'i', '|':'l', '3':'e', '4':'a', '@':'a', '5':'s', '$':'s', '7':'t', '8':'b', '9':'g', '+':'t' };
+  const decoded = name.toLowerCase().replace(/[0-9!|@$+]/g, c => LEET[c] || c);
+  const joined = decoded.replace(/[^\p{L}]+/gu, '');
+  const res = await env.AI.run(FLASH, { model: 'clef-flash', state: { avatar_name: name, decoded_spelling: decoded, letters_only: joined, context: 'A user wants to give this name to their cartoon avatar. Ordinary first names, nicknames, fantasy names and harmless jokes are fine.' }, questions });
+  const scores = Object.fromEntries(Object.keys(NAME_CHECKS).map(k => [k, r2(res.answers?.[k]?.noul ?? 0)]));
+  const flagged = Object.entries(scores).filter(([, v]) => v >= 0.5).map(([k]) => k);
+  return { ok: !flagged.length, name, flagged, scores, model: FLASH, ms: Date.now() - started };
 }
 
 // ---------- random base for new characters ----------
