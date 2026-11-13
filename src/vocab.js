@@ -14,8 +14,9 @@ export const FACE = {
 
 // Generation hints (not stored on the avatar): steer the random parts of a new character.
 export const INTENT = {
-  edit: 'the request asks to change some parts of the current avatar',
-  new: 'the request asks for a new or random character, described as a whole (for example "a random feminine character", "an old man with a beard")',
+  edit: 'a change to the current avatar: add, remove or change something, e.g. "add glasses", "make the hair blonde", "bigger eyes", "anime style", "make her sad"',
+  new: 'a new character described as a whole person, e.g. "a kid with freckles", "a bald man with sunglasses", "a girl with a witch hat", "an old woman", "a random feminine character", "create a non-binary teen"',
+  none: 'not a request to change or create anything: a greeting, thanks, praise, a question, or asking to keep it as it is',
 };
 export const PRESENTATION = {
   unspecified: 'no gender presentation mentioned', feminine: 'feminine (woman, girl, female, feminine)',
@@ -92,7 +93,7 @@ export const FACIAL_HAIR = {
 
 export const GLASSES = {
   none: 'no glasses', round: 'round frames', rect: 'rectangular frames', cateye: 'cat-eye frames', aviator: 'aviator frames',
-  half: 'half-rim reading glasses', monocle: 'a monocle', oval: 'oval frames', wayfarer: 'wayfarer frames',
+  half: 'reading glasses (half-rim, sitting low on the nose)', monocle: 'a monocle', oval: 'oval frames', wayfarer: 'wayfarer frames',
   browline: 'browline frames with a thick top bar', hexagon: 'hexagonal frames', rimless: 'rimless glasses',
   oversized: 'oversized round frames', heart: 'heart-shaped novelty glasses', star: 'star-shaped party glasses',
   shield: 'one-piece shield visor sunglasses', pinceNez: 'pince-nez glasses without arms', square: 'thick square frames',

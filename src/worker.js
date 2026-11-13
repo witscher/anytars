@@ -69,7 +69,9 @@ const TRAITS = [
   ['glasses', 'glasses', V.GLASSES, (t, v) => {
     if (v === 'any') { if (t.glasses?.type && t.glasses.type !== 'none') return; v = ['rect', 'round', 'softSquare', 'panto'][Math.floor(Math.random() * 4)]; }
     t.glasses = v === 'none' ? { type: 'none' } : { frame: '#16161a', lens: '#ffffff', lensAlpha: .12, ...t.glasses, type: v }; }],
-  ['lens', 'glasses lenses', V.LENS, (t, v) => { if (t.glasses?.type && t.glasses.type !== 'none') { t.glasses.lens = V.LENS[v][0]; t.glasses.lensAlpha = V.LENS[v][1]; } }],
+  ['lens', 'glasses lenses', V.LENS, (t, v) => {
+    if (!t.glasses?.type || t.glasses.type === 'none') { if (v === 'clear') return; t.glasses = { type: 'wayfarer', frame: '#16161a' }; }   // "sunglasses" on a bare face
+    t.glasses.lens = V.LENS[v][0]; t.glasses.lensAlpha = V.LENS[v][1]; }],
   ['frameColor', 'glasses frame colour', V.FRAME_COLOR, (t, v) => { if (t.glasses?.type && t.glasses.type !== 'none') t.glasses.frame = V.FRAME_COLOR[v][0]; }],
   ['headwear', 'headwear', V.HEADWEAR, (t, v) => { t.headwear = { color: '#2f6bd8', ...t.headwear, type: v }; }],
   ['headwearColor', 'headwear colour', V.CLOTH, (t, v) => { t.headwear = { ...t.headwear, color: V.CLOTH[v][0] }; }],
@@ -124,18 +126,18 @@ async function edit(env, body) {
   const text = String(body?.text || '').trim().slice(0, MAX_TEXT);
   if (!text) throw fail('Describe what to change.');
   let t = sanitize(body?.traits);
-  const ask = 'Apply the request to the avatar. Which option should the avatar have afterwards? Choose keep unless the request asks for or clearly describes this part.';
+  const ask = 'Apply the request to the avatar. Which option should the avatar have afterwards? Choose keep unless the request names this part or directly describes how it should look. Expressions, moods, age, transformations (zombie, party) and drawing styles are handled by other questions and never change this part on their own.';
   const questions = {};
   TRAITS.forEach(([id, label, map]) => { questions[id] = choice(`${ask} Part: ${label}.`, withKeep(id === 'glasses' ? { ...map, any: 'glasses, when the request asks for glasses without naming a type' } : map, label)); });
   questions.skin = choice(`${ask} Part: skin tone.`, { keep: 'the request does not ask to change the skin tone', darker: 'a darker skin tone than now', lighter: 'a lighter skin tone than now', ...Object.fromEntries(V.SKIN_LEVELS.map(([hexv, d], i) => ['s' + i, d + ' skin'])) });
   questions.bg = choice(`${ask} Part: background colour.`, withKeep(V.BG, 'background colour'));
   Object.entries(V.DETAILS).forEach(([k, d]) => { questions['detail_' + k] = choice(`Does the request explicitly ask to add or remove ${d}, or ask for something that clearly implies it (for example older or younger for wrinkles)? Choose keep if ${d} is not asked for.`, { keep: `the request does not ask about ${d}`, add: `add ${d}`, remove: `remove ${d}` }); });
-  V.SLIDERS.forEach(([key, label, more, less]) => { questions['slider_' + key.replace('.', '_')] = choice(`${ask} Part: ${label}.`, { keep: `the request does not ask to change the ${label}`, more, less }); });
+  V.SLIDERS.forEach(([key, label, more, less]) => { questions['slider_' + key.replace('.', '_')] = choice(`Does the request explicitly ask for ${more} or ${less}? Choose keep unless the size, length or position itself is asked for; naming a colour or style is not enough.`, { keep: `the request does not ask to change the ${label}`, more, less }); });
   questions.expression = choice('Which version of the avatar does the request ask to see: an expression (neutral, happy, laughing, sincere, sad, crying, surprised, angry) or a transformation (zombie, festive party)? Choose keep if it asks for neither.', withKeep(V.EXPRESSION, 'expression or transformation'));
   questions.style = choice('Does the request ask for a different drawing style? Choose keep if not.', withKeep(V.STYLE, 'drawing style'));
   questions.eyeRender = choice('Does the request ask for a different way of drawing the eyes? Choose keep if not.', withKeep(V.EYE_RENDER, 'eye drawing style'));
   // Generation hints: is this a whole new character, and which presentation and age does it describe?
-  questions.intent = choice('Is the request a change to the current avatar, or a description of a new or random character?', desc(V.INTENT));
+  questions.intent = choice('What kind of message is this?', desc(V.INTENT));
   questions.presentation = choice('Which gender presentation does the request describe, if any?', desc(V.PRESENTATION));
   questions.age = choice('Which age does the request describe, if any?', desc(V.AGE));
 
@@ -150,7 +152,9 @@ async function edit(env, body) {
 
   const changes = [];
   // New character: start from a random base weighted by presentation and age, then apply what was asked.
-  const isNew = A.intent?.choice === 'new' && (A.intent.probabilities?.new ?? 0) > 0.5;
+  const isNew = A.intent?.choice === 'new' && (A.intent.probabilities?.new ?? 0) >= 0.5;
+  const chat = A.intent?.choice === 'none' && (A.intent.probabilities?.none ?? 0) >= 0.5;
+  if (chat) return { model: FLASH, ms, usage: res.usage, questions: Object.keys(questions).length, changes: [], traits: t, code: encode(t), expression: null, style: null, intent: 'none', presentation: 'unspecified', age: 'unspecified' };
   const pres = (A.presentation?.probabilities?.[A.presentation.choice] ?? 0) > 0.5 ? A.presentation.choice : 'unspecified';
   const age = (A.age?.probabilities?.[A.age.choice] ?? 0) > 0.5 ? A.age.choice : 'unspecified';
   if (isNew){

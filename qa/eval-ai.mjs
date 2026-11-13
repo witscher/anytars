@@ -51,8 +51,8 @@ const NOT_NONE = '*'; // any value except 'none'
 
 // Which reported change ids each expectation also allows.
 const COUPLED = {
-  hairTop: ['hairBack'], hairBack: ['hairTop'], facialHair: ['slider_beard_length', 'slider_beard_thickness', 'beardColor'],
-  glasses: ['lens', 'frameColor'], lens: ['glasses'], frameColor: ['glasses'], headwear: ['headwearColor', 'headwearAccent'],
+  hairTop: ['hairBack', 'headwear'], hairBack: ['hairTop'], facialHair: ['slider_beard_length', 'slider_beard_thickness', 'beardColor'],
+  glasses: ['lens', 'frameColor'], lens: ['glasses'], frameColor: ['glasses'], headwear: ['headwearColor', 'headwearAccent', 'expression'],
   headwearColor: ['headwear'], expression: ['headwear'], beardColor: ['facialHair'], hairColor: ['hairAccent'], hairAccent: ['hairColor'],
 };
 const changeIdFor = { freckles: 'detail_freckles', wrinkles: 'detail_wrinkles', mole: 'detail_mole', vitiligo: 'detail_vitiligo' };
@@ -126,8 +126,16 @@ add('a girl with a witch hat', { intent: ['new'], presentation: ['feminine'], he
 add('a bald man with sunglasses', { intent: ['new'], presentation: ['masculine'], hairTop: ['none','buzz'], lens: [V.LENS.sunglasses[0], V.LENS.mirrored[0]] }, ['*']);
 
 const bases = await castCodes();
-const jobs = [];
+let jobs = [];
 for (const c of C) for (const [bn, code] of Object.entries(bases)) jobs.push({ ...c, base: bn, code });
+// RETEST=1: every prompt that failed last time (all bases) plus every 4th passing prompt (3 bases), to catch regressions.
+if (process.env.RETEST){
+  const prev = JSON.parse(await (await import('node:fs/promises')).readFile(new URL('./eval-results.json', import.meta.url), 'utf8'));
+  const failed = new Set(prev.filter(r => !r.ok).map(r => r.text));
+  const passing = [...new Set(prev.filter(r => r.ok && !failed.has(r.text)).map(r => r.text))].filter((_, i) => i % 4 === 0);
+  const keepBases = new Set(Object.keys(bases).slice(0, 3));
+  jobs = jobs.filter(j => failed.has(j.text) || (passing.includes(j.text) && keepBases.has(j.base)));
+}
 jobs.splice(MAX);
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));

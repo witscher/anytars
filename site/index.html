@@ -601,7 +601,10 @@ function showAi(res, kind){
   const list = kind === 'photo' ? res.decisions : res.changes;
   const meta = `${res.model.replace('@cf/cloudflare/','')} · ${res.questions} questions · ${res.ms} ms · ${res.usage?.input_tokens?.toLocaleString?.() ?? '?'} input tokens`;
   const chips = list.length ? `<div class="dec">${list.map(c => `<span title="${c.keep != null ? 'keep: '+Math.round(c.keep*100)+'%' : ''}">${c.label}: <b>${pretty(c.choice)}</b> <i><b style="width:${Math.round(c.confidence*100)}%"></b></i><em>${Math.round(c.confidence*100)}%</em></span>`).join('')}</div>` : '';
-  const head = kind === 'photo' ? 'Created from your photo. Describe a change or fine-tune below.' : (list.length ? 'Changed:' : 'Nothing changed: the model was not confident the request was about any part of the avatar.');
+  const head = kind === 'photo' ? 'Created from your photo. Describe a change or fine-tune below.'
+    : res.intent === 'none' ? 'Nothing to change. Describe what you would like, for example "long blonde hair" or "a kid with freckles".'
+    : res.intent === 'new' ? 'New character:'
+    : (list.length ? 'Changed:' : 'Nothing changed: the model was not confident the request was about any part of the avatar.');
   aiPanel(`<div class="ai-msg">${head}</div>${chips}<div class="ai-meta">${meta}</div>`, true);
 }
 // Result panel: on phones it also shows the new avatar, since the big preview may be scrolled away.
