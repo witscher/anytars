@@ -1125,7 +1125,12 @@ function render(traits, variant={}, styleKey='chibi', opts={}){
     const sh = darken(skin,.2);
     if (topD && !curlyTop) inner += hairClip ? '' : `<path d="${topD}" fill="${sh}" transform="translate(1.5,4.5)"/>`;
     if (curlyTop) inner += `<path d="${topD}" fill="${sh}" transform="translate(1.5,4.5)"/>`;
-    if (HW.shadow) inner += `<path d="${smooth(F.mp(HW.shadow))}" fill="${sh}" opacity=".85"${hatT ? ` transform="${hatT}"` : ''}/>`;
+    // Hat cast shadow: a thin strip that follows the hat's lower edge (a fixed rectangle read as a dark bar).
+    if (HW.hairMask){
+      const edge = F.mp(HW.hairMask), deep = 4.5;
+      const pts = [...edge.map((q,i) => i===0||i===edge.length-1 ? [q[0],q[1],'s'] : q), ...edge.slice(1,-1).reverse().map(q => [q[0], q[1] + deep])];
+      inner += `<path d="${smooth(pts)}" fill="${sh}" opacity=".5"${hatT ? ` transform="${hatT}"` : ''}/>`;
+    } else if (HW.shadow) inner += `<path d="${smooth(F.mp(HW.shadow))}" fill="${sh}" opacity=".6"${hatT ? ` transform="${hatT}"` : ''}/>`;
   }
   // Cheeks: t.cheeks.amount = auto (style default) | none | light | medium | strong; expressions can add more.
   const ck = t.cheeks || {}, CHEEK_LVL = { light: .25, medium: .45, strong: .7 };
