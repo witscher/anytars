@@ -119,6 +119,10 @@ function sanitize(t) {
 }
 
 const r2 = v => Math.round((v ?? 0) * 100) / 100;
+const MENTION = [['face', 'face shape'], ['hairTop', 'hairstyle'], ['hairBack', 'hair length'], ['eyeShape', 'eye shape'], ['lashes', 'eyelashes'],
+  ['brows', 'eyebrows'], ['nose', 'nose'], ['mouthWidth', 'mouth width or size'], ['lips', 'lips'], ['facialHair', 'beard or moustache'],
+  ['glasses', 'glasses or sunglasses'], ['headwear', 'hat, headscarf or other headwear'], ['skin', 'skin tone']];
+const MENTION_IDS = new Set(MENTION.map(m => m[0]));
 const report = (id, label, a) => ({ id, label, choice: a.choice, confidence: r2(a.probabilities?.[a.choice] ?? a.confidence), ...(a.probabilities && 'keep' in a.probabilities ? { keep: r2(a.probabilities.keep) } : {}) });
 
 // ---------- text edits (Clef flash) ----------
@@ -136,6 +140,9 @@ async function edit(env, body) {
   questions.expression = choice('Which version of the avatar does the request ask to see: an expression (neutral, happy, laughing, sincere, sad, crying, surprised, angry) or a transformation (zombie, festive party)? Choose keep if it asks for neither.', withKeep(V.EXPRESSION, 'expression or transformation'));
   questions.style = choice('Does the request ask for a different drawing style? Choose keep if not.', withKeep(V.STYLE, 'drawing style'));
   questions.eyeRender = choice('Does the request ask for a different way of drawing the eyes? Choose keep if not.', withKeep(V.EYE_RENDER, 'eye drawing style'));
+  // Mention checks: a yes/no question per shape-type part. A part only changes when the request itself names or
+  // describes it, so moods, age, styles and transformations can't leak into eye shape, mouth width and so on.
+  MENTION.forEach(([id, label]) => { questions['m_' + id] = { type: 'noul', instructions: `Does the request itself mention or directly describe the ${label}? Answer no if it only asks for an expression or mood, an age, a drawing style or a transformation such as zombie or party.` }; });
   // Generation hints: is this a whole new character, and which presentation and age does it describe?
   questions.intent = choice('What kind of message is this?', desc(V.INTENT));
   questions.presentation = choice('Which gender presentation does the request describe, if any?', desc(V.PRESENTATION));
@@ -147,16 +154,19 @@ async function edit(env, body) {
   const A = res.answers || {};
   // Clef returns a probability for every option, including "keep". A part changes only when the model is
   // clearly confident the request is about it: keep below 20% and the chosen value at least 35%.
-  const decided = (id) => { const a = A[id]; if (!a || a.choice === 'keep') return null; const p = a.probabilities?.[a.choice] ?? 0; return p >= 0.35 && (a.probabilities?.keep ?? 0) < 0.2 ? a.choice : null; };
+  const mentioned = (id) => !MENTION_IDS.has(id) || (A['m_' + id]?.noul ?? 1) >= 0.5;
+  const decided = (id) => { const a = A[id]; if (!a || a.choice === 'keep' || !mentioned(id)) return null; const p = a.probabilities?.[a.choice] ?? 0; return p >= 0.35 && (a.probabilities?.keep ?? 0) < 0.2 ? a.choice : null; };
   const changed = (fn) => { const before = encode(t); fn(); return encode(t) !== before; };   // codes ignore key order
 
   const changes = [];
   // New character: start from a random base weighted by presentation and age, then apply what was asked.
-  const isNew = A.intent?.choice === 'new' && (A.intent.probabilities?.new ?? 0) >= 0.5;
+  const pNew = A.intent?.probabilities?.new ?? 0;
   const chat = A.intent?.choice === 'none' && (A.intent.probabilities?.none ?? 0) >= 0.5;
   if (chat) return { model: FLASH, ms, usage: res.usage, questions: Object.keys(questions).length, changes: [], traits: t, code: encode(t), expression: null, style: null, intent: 'none', presentation: 'unspecified', age: 'unspecified' };
   const pres = (A.presentation?.probabilities?.[A.presentation.choice] ?? 0) > 0.5 ? A.presentation.choice : 'unspecified';
   const age = (A.age?.probabilities?.[A.age.choice] ?? 0) > 0.5 ? A.age.choice : 'unspecified';
+  // "an old man with a beard": a person described by presentation or age leans towards a new character.
+  const isNew = !chat && (pNew >= 0.5 || (pNew >= 0.3 && (pres !== 'unspecified' || age !== 'unspecified')));
   if (isNew){
     t = randomBase(pres, age, t);
     changes.push({ id: 'intent', label: 'new character', choice: [pres, age].filter(x => x !== 'unspecified').join(', ') || 'random', confidence: r2(A.intent.probabilities.new) });
@@ -182,7 +192,8 @@ async function edit(env, body) {
   if (expression) changes.push(report('expression', 'expression', A.expression));
   if (style) changes.push(report('style', 'style', A.style));
 
-  return { model: FLASH, ms, usage: res.usage, questions: Object.keys(questions).length, changes, traits: t, code: encode(t), expression, style, intent: isNew ? 'new' : 'edit', presentation: pres, age };
+  return { model: FLASH, ms, usage: res.usage, questions: Object.keys(questions).length, changes, traits: t, code: encode(t), expression, style, intent: isNew ? 'new' : 'edit', presentation: pres, age,
+    hints: { intent: A.intent?.probabilities, presentation: A.presentation?.probabilities, age: A.age?.probabilities } };
 }
 
 // Keep top and back hair compatible unless both were asked for explicitly.
