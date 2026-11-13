@@ -77,6 +77,7 @@ const TRAITS = [
   ['headwearColor', 'headwear colour', V.CLOTH, (t, v) => { t.headwear = { ...t.headwear, color: V.CLOTH[v][0] }; }],
   ['headwearAccent', 'second colour of the headwear (band, spots, pom-pom, logo)', V.CLOTH, (t, v) => { t.headwear = { ...t.headwear, accent: V.CLOTH[v][0] }; }, 'edit'],
   ['shirt', 'top (clothing) colour', V.CLOTH, (t, v) => { t.shirt = V.CLOTH[v][0]; }],
+  ['cheeks', 'blush on the cheeks', V.CHEEKS, (t, v) => { t.cheeks = { ...t.cheeks, amount: v }; }, 'edit'],
 ];
 
 function describe(t) {
@@ -114,6 +115,7 @@ function sanitize(t) {
   if (t?.facialHairColor) out.facialHairColor = hex(t.facialHairColor);
   if (t?.hair?.accent) out.hair.accent = hex(t.hair.accent);
   if (t?.headwear?.accent) out.headwear.accent = hex(t.headwear.accent);
+  if (t?.cheeks && typeof t.cheeks === 'object'){ const c = {}; if (['none','light','medium','strong'].includes(t.cheeks.amount)) c.amount = t.cheeks.amount; if (t.cheeks.color) c.color = hex(t.cheeks.color); if (Object.keys(c).length) out.cheeks = c; }
   TUNE.forEach(x => { const v = Math.round(+getK(t || {}, x.key) || 0); if (v) setK(out, x.key, Math.max(x.min, Math.min(x.max, v))); });
   return out;
 }

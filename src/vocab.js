@@ -116,7 +116,7 @@ export const FRAME_COLOR = {
 };
 
 export const HEADWEAR = {
-  none: 'nothing on the head', baseballCap: 'baseball cap', beanie: 'knitted beanie', witchHat: 'pointed witch or wizard hat',
+  none: 'nothing on the head', baseballCap: 'baseball cap', hardHat: 'hard hat or construction helmet', beanie: 'knitted beanie', witchHat: 'pointed witch or wizard hat',
   elfCap: 'long pointed green elf cap', mushroom: 'big mushroom-cap hat', jester: 'jester hat with bells', devilHorns: 'devil horns',
   kippah: 'kippah (yarmulke)', turban: 'turban or Sikh dastar', hijab: 'hijab headscarf covering the hair', partyHat: 'cone party hat',
 };
@@ -165,3 +165,5 @@ export const SLIDERS = [
   ['beard.thickness', 'beard thickness', 'thicker, fuller beard', 'thinner beard'],
   ['glasses.y', 'glasses height', 'glasses lower down the nose', 'glasses higher up'],
 ];
+
+export const CHEEKS = { none: 'no blush on the cheeks', light: 'lightly rosy cheeks', medium: 'rosy cheeks', strong: 'strongly flushed, very rosy cheeks' };

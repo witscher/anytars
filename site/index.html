@@ -45,7 +45,18 @@ h1,h2,h3{font-family:var(--f-display);margin:0;letter-spacing:-.01em;text-wrap:b
 
 /* start strip */
 /* Workers AI dock: under the avatar on desktop, a bottom bar on phones */
-.ai-dock{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;border:1px solid var(--line);border-radius:14px;padding:10px;background:var(--surface-2)}
+:root{--ai-grad:linear-gradient(120deg,#f38020 0%,#d6246e 55%,#7b4fc9 100%)}
+.ai-dock{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;border:1.5px solid transparent;border-radius:16px;padding:10px 10px 12px;
+  background:linear-gradient(var(--surface-2),var(--surface-2)) padding-box, var(--ai-grad) border-box;
+  box-shadow:0 6px 22px -8px color-mix(in srgb, #d6246e 45%, transparent)}
+.ai-top{display:flex;align-items:center;gap:8px}
+.ai-top h2{font:800 1.12rem var(--f-display);margin:0;background:var(--ai-grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.ai-top .ai-badge{margin-left:auto}
+.sparkles .s1,.sparkles .s2,.sparkles .s3{transform-box:fill-box;transform-origin:center;animation:twinkle 2.8s ease-in-out infinite}
+.sparkles .s2{animation-delay:.9s}.sparkles .s3{animation-delay:1.7s}
+@keyframes twinkle{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.55;transform:scale(.72)}}
+@media (prefers-reduced-motion: reduce){.sparkles path{animation:none}}
+#aiGo{background:var(--ai-grad);border-color:transparent;color:#fff}
 .ai-form{display:flex;gap:6px;align-items:center;margin:0}
 .ai-form input[type=text]{flex:1;min-width:0;font:inherit;border:1px solid var(--line);border-radius:10px;padding:9px 12px;background:var(--surface);color:var(--ink)}
 .ai-mini{display:none}
@@ -82,6 +93,8 @@ body.drop::after{content:"Drop the photo to create your avatar";position:fixed;i
   .ai-mini{display:block;flex:0 0 auto;width:40px;height:40px;border-radius:10px;overflow:hidden;background:var(--surface-2)}
   .ai-mini svg{width:100%;height:100%;display:block}
   .ai-note{display:none}
+  .ai-top h2{font-size:.95rem}
+  .ai-top .sparkles{width:18px;height:18px}
   .ai-out{max-height:46vh;overflow:auto;padding-bottom:4px;border-bottom:1px solid var(--line)}
   .ai-out .ai-thumb{display:block;width:96px;height:96px;grid-row:1 / span 2}
   .ai-out .ai-thumb svg{width:100%;height:100%;display:block}
@@ -219,7 +232,17 @@ footer a{color:inherit}
           <button class="btn primary" id="saveBtn" type="button">Save</button>
         </div>
         <div class="big" id="big" role="img" aria-label="Your avatar"></div>
-        <div class="ai-dock" id="aiDock" role="region" aria-label="Change your avatar with Workers AI">
+        <div class="ai-dock" id="aiDock" role="region" aria-labelledby="aiTitle">
+          <div class="ai-top">
+            <svg class="sparkles" viewBox="0 0 32 32" width="22" height="22" aria-hidden="true">
+              <defs><linearGradient id="spk" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f38020"/><stop offset=".55" stop-color="#d6246e"/><stop offset="1" stop-color="#7b4fc9"/></linearGradient></defs>
+              <path class="s1" d="M13 3 Q14.6 11.4 23 13 Q14.6 14.6 13 23 Q11.4 14.6 3 13 Q11.4 11.4 13 3Z" fill="url(#spk)"/>
+              <path class="s2" d="M25 17 Q25.8 21.2 30 22 Q25.8 22.8 25 27 Q24.2 22.8 20 22 Q24.2 21.2 25 17Z" fill="url(#spk)"/>
+              <path class="s3" d="M25 2 Q25.5 4.5 28 5 Q25.5 5.5 25 8 Q24.5 5.5 22 5 Q24.5 4.5 25 2Z" fill="url(#spk)"/>
+            </svg>
+            <h2 id="aiTitle">Build with AI</h2>
+            <span class="ai-badge">Workers AI</span>
+          </div>
           <div class="ai-out" id="aiOut" hidden aria-live="polite"></div>
           <div class="ai-ex" id="aiEx"></div>
           <form class="ai-form" id="aiForm">
@@ -231,7 +254,7 @@ footer a{color:inherit}
             </label>
             <input type="file" id="aiFile" accept="image/*" hidden>
           </form>
-          <div class="ai-note"><span class="ai-badge">Workers AI</span> Clef decision models. Paste or drop a photo to start from it; photos are analysed once and not stored. <a href="#how">How it works</a></div>
+          <div class="ai-note">Describe a change or a whole new character, or paste a photo. Photos are analysed once and not stored. <a href="#how">How it works</a></div>
         </div>
         <div><div class="label">Style</div><div class="styles" id="styles"></div></div>
         <div class="bgrow"><div class="label">Background</div>
@@ -293,6 +316,7 @@ const PAL = {
 };
 const LABEL = s => s.replace(/([A-Z])/g,' $1').replace(/^./, c=>c.toUpperCase());
 const NICE = {
+  hardHat:'Hard hat', light:'Light', medium:'Medium', strong:'Strong', auto:'Auto',
   afroCurly:'Afro (curly)',
   short:'Short', long:'Long', circle:'Circle', chinStrap:'Chin strap', soulPatch:'Soul patch', muttonChops:'Mutton chops', semiRim:'Semi-rimless', roundSmall:'Small round', softSquare:'Soft square', thickRound:'Thick round',
   afroTop:'Afro', centerPart:'Centre part', sidePart:'Side part', longWavy:'Long wavy', baseballCap:'Baseball cap', witchHat:'Witch hat', elfCap:'Elf cap', devilHorns:'Devil horns',
@@ -477,6 +501,7 @@ function drawPanel(){
     case 'face':
       h += field('Face shape', thumbs('face', ENUMS.face));
       h += field('Skin tone', swatches('skin', PAL.skin));
+      h += field('Cheeks', `<div class="chips" style="margin-bottom:6px">${CHEEKS.map(v => `<button class="chip" type="button" data-set="cheeks.amount" data-val='"${v}"' aria-pressed="${(t.cheeks?.amount||'auto')===v}">${nice(v)}</button>`).join('')}</div>` + autoChip('cheeks.color') + swatches('cheeks.color', ['#ff5d82','#ff8a8a','#f2a07b','#e0566f','#d6246e','#c9665a','#b86bd8']), 'blush; happy faces add a little more');
       break;
     case 'hair':
       h += field('Top', thumbs('hair.top', ENUMS.hairTop, ENUMS.hairTop.map(v => v==='none'?'Bald':nice(v))));
@@ -550,6 +575,7 @@ function redraw(opts={}){
 function setValueOn(o, path, val){
   if (path === 'eyes.both'){ o.eyes.left = val; o.eyes.right = val; }
   else if (path === 'eyes.render' && val === 'auto') delPath(o, 'eyes.render');
+  else if (path === 'cheeks.amount' && val === 'auto') { delPath(o, 'cheeks.amount'); if (o.cheeks && !Object.keys(o.cheeks).length) delete o.cheeks; }
   else if (path === 'glasses.type'){
     o.glasses = o.glasses || {};
     if (!o.glasses.frame) Object.assign(o.glasses, {frame:'#16161a', lens:'#ffffff', lensAlpha:.12});
