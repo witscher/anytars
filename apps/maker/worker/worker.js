@@ -124,7 +124,7 @@ function sanitize(t) {
 }
 
 const r2 = v => Math.round((v ?? 0) * 100) / 100;
-const MENTION = [['face', 'face shape'], ['hairTop', 'hairstyle, haircut or baldness (for example a buzz cut, bangs, curls, a parting, bald)'], ['hairBack', 'hair length (for example long hair, a bob, short hair, an afro)'], ['eyeShape', 'eye shape'], ['lashes', 'eyelashes'],
+const MENTION = [['face', 'face shape'], ['hairTop', 'hairstyle, haircut or baldness (for example a buzz cut, bangs, curls, a parting, a mohawk, a pixie cut, cornrows, bald)'], ['hairBack', 'hair length or tied-up hair (for example long hair, a bob, short hair, an afro, a ponytail, a bun or top knot, pigtails, braids, dreadlocks)'], ['eyeShape', 'eye shape'], ['lashes', 'eyelashes'],
   ['brows', 'eyebrows'], ['nose', 'nose'], ['mouthWidth', 'mouth width or size'], ['lips', 'lips'], ['facialHair', 'beard or moustache'],
   ['glasses', 'glasses or sunglasses'], ['headwear', 'hat, headscarf or other headwear'], ['skin', 'skin tone']];
 const MENTION_IDS = new Set(MENTION.map(m => m[0]));
@@ -218,6 +218,8 @@ function normalizeHair(t, asked){
   // Locs come as a pair: the hairline and the hanging locs.
   if (h.back === 'locs' && !['locsTop', 'none'].includes(h.top) && !asked.has('hairTop')) h.top = 'locsTop';
   if (h.top === 'locsTop' && h.back !== 'locs' && !asked.has('hairBack')) h.back = 'locs';
+  // A mohawk or spikes can't sit in front of a full afro.
+  if (['mohawk', 'spiky'].includes(h.top) && h.back === 'afro' && asked.has('hairTop') && !asked.has('hairBack')) h.back = 'none';
   if (['none', 'buzz', 'afroCurly', 'mohawk'].includes(h.top) && longish.includes(h.back)){
     if (asked.has('hairTop') && !asked.has('hairBack')) h.back = 'none';
     else if (!asked.has('hairTop')) h.top = 'centerPart';

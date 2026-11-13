@@ -131,7 +131,7 @@ export const FRAME_COLOR = {
 export const HEADWEAR = {
   none: 'nothing on the head', baseballCap: 'baseball cap', hardHat: 'hard hat or construction helmet', beanie: 'knitted beanie', witchHat: 'pointed witch or wizard hat',
   elfCap: 'long pointed green elf cap', mushroom: 'big mushroom-cap hat', jester: 'jester hat with bells', devilHorns: 'devil horns',
-  kippah: 'kippah (yarmulke)', turban: 'turban or Sikh dastar', hijab: 'hijab headscarf covering the hair, wrapped under the chin', hijabLoose: 'loosely wrapped hijab or shayla: covers the hair, chin and neck visible', partyHat: 'cone party hat',
+  kippah: 'kippah (yarmulke)', turban: 'turban or Sikh dastar', hijab: 'hijab wrapped snugly around the face, covering hair, ears, chin and neck', hijabLoose: 'loose hijab or shayla draped over the hair, with the chin and neck showing', partyHat: 'cone party hat',
 };
 
 export const CLOTH = {
