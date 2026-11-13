@@ -119,7 +119,7 @@ function sanitize(t) {
 }
 
 const r2 = v => Math.round((v ?? 0) * 100) / 100;
-const MENTION = [['face', 'face shape'], ['hairTop', 'hairstyle'], ['hairBack', 'hair length'], ['eyeShape', 'eye shape'], ['lashes', 'eyelashes'],
+const MENTION = [['face', 'face shape'], ['hairTop', 'hairstyle, haircut or baldness (for example a buzz cut, bangs, curls, a parting, bald)'], ['hairBack', 'hair length (for example long hair, a bob, short hair, an afro)'], ['eyeShape', 'eye shape'], ['lashes', 'eyelashes'],
   ['brows', 'eyebrows'], ['nose', 'nose'], ['mouthWidth', 'mouth width or size'], ['lips', 'lips'], ['facialHair', 'beard or moustache'],
   ['glasses', 'glasses or sunglasses'], ['headwear', 'hat, headscarf or other headwear'], ['skin', 'skin tone']];
 const MENTION_IDS = new Set(MENTION.map(m => m[0]));
