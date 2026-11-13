@@ -124,6 +124,8 @@ body.drop::after{content:"Drop the photo to create your avatar";position:fixed;i
 .preset{flex:0 0 auto;border:1px solid var(--line);background:var(--surface-2);border-radius:14px;padding:6px 6px 4px;cursor:pointer;display:grid;gap:2px;justify-items:center;width:84px}
 .preset svg{width:68px;height:68px;display:block}
 .preset span{font-size:.76rem;color:var(--muted)}
+.item .preset span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.25}
+.item .preset .nm{color:var(--ink);font-weight:600;white-space:normal;text-align:center;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow-wrap:anywhere}
 .preset[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
 .preset.dice{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .mine{margin-top:12px}
@@ -426,7 +428,16 @@ try {
 const saveLib = () => { try { localStorage.setItem(LIB_KEY, JSON.stringify(saved)); } catch(e){} };
 const entry = id => saved.find(x => x.id === id);
 const isDirty = () => !currentId || !entry(currentId) || entry(currentId).code !== encode(t) || (entry(currentId).name || '') !== avName;
+// "Save as new" gives the copy a random adjective ("Curious Abena"), so saved versions are easy to tell apart.
+const ADJECTIVES = ['Beautiful','Curious','Furious','Dazzling','Brave','Cheerful','Clever','Cosmic','Dreamy','Fearless','Fluffy','Gentle','Gleeful','Glorious','Groovy','Jolly','Lucky','Magical','Mighty','Mysterious','Noble','Playful','Quirky','Radiant','Sleepy','Sparkly','Spicy','Sunny','Swift','Witty','Zesty','Breezy','Bold','Daring','Fancy','Fuzzy','Jazzy','Nimble','Stellar','Wild'];
+function copyName(name){
+  const words = name.split(' '), base = (ADJECTIVES.includes(words[0]) ? words.slice(1).join(' ') : name) || 'Avatar';
+  const taken = new Set(saved.map(x => x.name)), fresh = ADJECTIVES.filter(a => !taken.has(a + ' ' + base));
+  const adj = (fresh.length ? fresh : ADJECTIVES)[Math.floor(Math.random() * (fresh.length || ADJECTIVES.length))];
+  return (adj + ' ' + base).slice(0, 40).trim();
+}
 function saveCurrent(asNew){
+  if (asNew){ avName = copyName(avName); okNames.add(avName); $('avName').value = avName; nameStat('', ''); }
   const code = encode(t), e = !asNew && currentId && entry(currentId);
   if (e){ e.code = code; e.ts = Date.now(); e.name = avName; }
   else { const id = newId(); saved.unshift({id, code, ts: Date.now(), star:false, name: avName}); currentId = id; }
@@ -451,7 +462,7 @@ function drawLibrary(){
   const list = [...saved].sort((a,b) => (b.star - a.star) || (b.ts - a.ts));
   $('saved').innerHTML = list.map(e => {
     let traits; try { traits = decode(e.code); } catch(err){ return ''; }
-    return `<div class="item"><button class="preset" type="button" data-open="${e.id}" aria-pressed="${e.id===currentId}">${render(traits,{expression:'happy'},style)}<span>${e.id===currentId && isDirty() ? 'editing' : (e.name ? esc(e.name) : ago(e.ts))}</span></button>
+    return `<div class="item"><button class="preset" type="button" data-open="${e.id}" aria-pressed="${e.id===currentId}">${render(traits,{expression:'happy'},style)}${e.name ? `<span class="nm" title="${esc(e.name)}">${esc(e.name)}</span>` : ''}<span>${e.id===currentId && isDirty() ? 'editing' : ago(e.ts)}</span></button>
       <button class="mini star" type="button" data-star="${e.id}" aria-pressed="${!!e.star}" title="${e.star?'Unstar':'Star'}" aria-label="${e.star?'Unstar':'Star'}">${e.star?'★':'☆'}</button>
       <button class="mini rm" type="button" data-remove="${e.id}" title="Remove" aria-label="Remove">✕</button></div>`;
   }).join('');
