@@ -162,6 +162,7 @@ footer a{color:inherit}
         <div class="big" id="big" role="img" aria-label="Your avatar"></div>
         <div><div class="label">Style</div><div class="styles" id="styles"></div></div>
         <div class="bgrow"><div class="label">Background</div>
+          <div id="bgColors"></div>
           <div class="chips" id="bgShapes"></div>
           <label class="toggle"><input type="checkbox" id="bgClear"> Transparent</label>
         </div>
@@ -325,13 +326,14 @@ function drawPreview(){
   $('big').innerHTML = svg(t, variant);
   $('bgShapes').innerHTML = BG_SHAPES.map(v => `<button class="chip" type="button" data-bgshape="${v}" aria-pressed="${v===bgCfg.shape}">${v==='style'?'Style default':nice(v)}</button>`).join('');
   $('bgClear').checked = bgCfg.clear;
+  if (!document.activeElement || document.activeElement.id !== 'c-bg') $('bgColors').innerHTML = swatches('bg', PAL.bg);
   $('styles').innerHTML = Object.values(STYLES).map(S => `<button class="sbtn" type="button" data-style="${S.key}" aria-pressed="${S.key===style}">${render(t,{expression:'neutral'},S.key)}<span>${S.label}</span></button>`).join('');
   $('variants').innerHTML = VARIANTS.map(v => { const n = variantName(v); return `<button class="vbtn" type="button" data-variant="${n}" aria-pressed="${n===variantName(variant)}" title="${variantLabel(v)}">${svg(t, v)}<span>${variantLabel(v)}</span></button>`; }).join('');
   $('code').textContent = encode(t);
 }
 
 // ---------- editor panels ----------
-const TABS = [['face','Face'],['hair','Hair'],['eyes','Eyes'],['brows','Brows'],['nose','Nose & mouth'],['beard','Beard'],['glasses','Glasses'],['headwear','Headwear'],['extras','Details'],['colors','Clothes & background']];
+const TABS = [['face','Face'],['hair','Hair'],['eyes','Eyes'],['brows','Brows'],['nose','Nose & mouth'],['beard','Beard'],['glasses','Glasses'],['headwear','Headwear'],['extras','Details'],['colors','Clothes']];
 function thumbs(path, values, labels, def){
   const cur = getK(t, path) ?? def;
   return `<div class="thumbs">${values.map((v,i) => `<button class="thumb" type="button" data-set="${path}" data-val='${JSON.stringify(v)}' aria-pressed="${JSON.stringify(cur)===JSON.stringify(v)}">${svg(withK(path, v))}<span>${labels ? labels[i] : nice(String(v))}</span></button>`).join('')}</div>`;
@@ -410,7 +412,6 @@ function drawPanel(){
       break;
     case 'colors':
       h += field('Top', swatches('shirt', PAL.cloth));
-      h += field('Background colour', swatches('bg', PAL.bg), 'shape and transparency are next to the preview');
       break;
   }
   $('panel').innerHTML = h;
@@ -437,7 +438,7 @@ function setValueOn(o, path, val){
   else if (path === 'headwear.type'){ o.headwear = o.headwear || {}; o.headwear.type = val; if (!o.headwear.color) o.headwear.color = '#2f6bd8'; }
   else setK(o, path, val);
 }
-function setValue(path, val){ setValueOn(t, path, val); presetId = null; }
+function setValue(path, val){ setValueOn(t, path, val); presetId = null; if (path === 'bg' && bgCfg.clear){ bgCfg.clear = false; applyBg(); } }
 document.addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   if (b.id === 'dice'){ switchTo(randomTraits(), {variant:{expression:'happy'}}); return; }

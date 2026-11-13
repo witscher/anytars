@@ -887,17 +887,23 @@ function background(S, bg, festive, zombie, transparent, shape){
     let fill = S.sticker ? lighten(bg,.25) : bg;
     if (S.bg==='gradient'){ const gid = uid('g'); s += `<linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${lighten(bg,.45)}"/><stop offset="1" stop-color="${bg}"/></linearGradient>`; fill = `url(#${gid})`; }
     s += shapeEl(shape, fill);
+    // Style decorations are clipped to the backdrop shape so nothing pokes out of a circle or rounded corner.
+    let deco = '';
     if (S.bg==='sparkle'){
       const star = (x,y,r) => `<path d="M${x},${y-r} Q${x+r*.18},${y-r*.18} ${x+r},${y} Q${x+r*.18},${y+r*.18} ${x},${y+r} Q${x-r*.18},${y+r*.18} ${x-r},${y} Q${x-r*.18},${y-r*.18} ${x},${y-r}Z" fill="${lighten(bg,.6)}"/>`;
-      s += `<circle cx="100" cy="104" r="84" fill="${lighten(bg,.2)}"/>` + star(30,38,9) + star(172,64,7) + star(160,24,4.5) + star(24,150,5);
+      deco += `<circle cx="100" cy="104" r="84" fill="${lighten(bg,.2)}"/>` + star(30,38,9) + star(172,64,7) + star(160,24,4.5) + star(24,150,5);
     } else if (S.bg==='gradient'){
-      s += `<path d="M150,0 L200,0 L200,50Z M0,170 L0,200 L30,200Z" fill="${lighten(bg,.6)}" opacity=".6"/>`;
+      deco += `<path d="M150,0 L200,0 L200,50Z M0,170 L0,200 L30,200Z" fill="${lighten(bg,.6)}" opacity=".6"/>`;
     } else if (S.bg==='circle'){
-      s += `<circle cx="84" cy="84" r="70" fill="${lighten(bg,.22)}"/>`;
+      deco += `<circle cx="84" cy="84" r="70" fill="${lighten(bg,.22)}"/>`;
     } else if (S.bg==='square'){
-      s += `<circle cx="100" cy="112" r="80" fill="${lighten(bg,.18)}"/>`;
+      deco += `<circle cx="100" cy="112" r="80" fill="${lighten(bg,.18)}"/>`;
     }
-    if (zombie) s += `<circle cx="160" cy="40" r="16" fill="#e8e4c8" opacity=".55"/>`;
+    if (zombie) deco += `<circle cx="160" cy="40" r="16" fill="#e8e4c8" opacity=".55"/>`;
+    if (deco){
+      if (shape==='full') s += deco;
+      else { const dc = uid('bc'); s += `<clipPath id="${dc}">${shapeEl(shape,'#000')}</clipPath><g clip-path="url(#${dc})">${deco}</g>`; }
+    }
   }
   if (festive){
     const cols=['#f0453f','#f2c230','#3aa7e0','#7bc96f','#b86bd8'];
