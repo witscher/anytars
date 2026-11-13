@@ -198,6 +198,7 @@ main.grid{display:grid;grid-template-columns:minmax(300px,420px) minmax(0,1fr);g
 .vbtn span{font-size:.66rem;color:var(--muted)}
 .vbtn[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
 .actions{display:flex;flex-wrap:wrap;gap:8px}
+.sec-note{margin:0 0 10px;font-size:.8rem;color:var(--muted)}
 .bgrow{display:grid;gap:6px}
 .bgrow .chip{padding:4px 10px;font-size:.8rem}
 .btn{border:1px solid var(--line);background:var(--surface-2);border-radius:10px;padding:8px 12px;font-size:.88rem;font-weight:500;cursor:pointer}
@@ -326,7 +327,7 @@ footer .legal{display:contents}
     <section class="editor" aria-label="Customize">
       <details class="acc" data-sec="expression" open>
         <summary data-tab="expression"><span>Expression</span><span class="acc-sub" id="sub-expression"></span></summary>
-        <div class="acc-body"><div class="variants" id="variants"></div></div>
+        <div class="acc-body"><p class="sec-note">Expressions don't change your avatar. They only set the mood for the preview and the download; the avatar code and your saved avatars stay the same.</p><div class="variants" id="variants"></div></div>
       </details>
       <div id="partSections"></div>
       <details class="acc" data-sec="background">
@@ -343,6 +344,7 @@ footer .legal{display:contents}
           <div class="actions">
             <button class="btn" id="dlPng" type="button">Download PNG</button>
             <button class="btn" id="dlSvg" type="button">Download SVG</button>
+            <button class="btn" id="dlZip" type="button">All expressions (ZIP)</button>
             <button class="btn" id="copyLink" type="button">Copy link</button>
           </div>
           <div class="code">
@@ -884,6 +886,44 @@ $('dlPng').addEventListener('click', () => {
   img.onload = () => { const c = document.createElement('canvas'); c.width = c.height = size; c.getContext('2d').drawImage(img, 0, 0, size, size); c.toBlob(b => download(b, fileBase()+'.png'), 'image/png'); };
   img.onerror = () => flash('Could not create the PNG in this browser. Try SVG.', true);
   img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg(t, variant).replace('<svg ', `<svg width="${size}" height="${size}" `));
+});
+// All expressions and transforms in the current style as one ZIP (SVG + 1024 px PNG each), built in the browser.
+const svgPng = (src, size) => new Promise((ok, no) => {
+  const img = new Image();
+  img.onload = () => { const c = document.createElement('canvas'); c.width = c.height = size; c.getContext('2d').drawImage(img, 0, 0, size, size); c.toBlob(b => b ? ok(b) : no(new Error('png')), 'image/png'); };
+  img.onerror = () => no(new Error('png'));
+  img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(src.replace('<svg ', `<svg width="${size}" height="${size}" `));
+});
+const CRC = (() => { const tb = new Uint32Array(256); for (let n = 0; n < 256; n++){ let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; tb[n] = c >>> 0; } return tb; })();
+const crc32 = u => { let c = 0xFFFFFFFF; for (let i = 0; i < u.length; i++) c = CRC[(c ^ u[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+// Minimal ZIP writer (stored, no compression): PNGs are already compressed and SVGs are small.
+function makeZip(files){
+  const enc = new TextEncoder(), parts = [], dir = []; let off = 0;
+  const d = new Date(), time = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1), date = ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
+  for (const { name, data } of files){
+    const nm = enc.encode(name), crc = crc32(data), h = new DataView(new ArrayBuffer(30));
+    [[0,0x04034b50,4],[4,20,2],[6,0x800,2],[8,0,2],[10,time,2],[12,date,2],[14,crc,4],[18,data.length,4],[22,data.length,4],[26,nm.length,2],[28,0,2]].forEach(([o,v,n]) => n === 4 ? h.setUint32(o, v, true) : h.setUint16(o, v, true));
+    const c = new DataView(new ArrayBuffer(46));
+    [[0,0x02014b50,4],[4,20,2],[6,20,2],[8,0x800,2],[10,0,2],[12,time,2],[14,date,2],[16,crc,4],[20,data.length,4],[24,data.length,4],[28,nm.length,2],[30,0,2],[32,0,2],[34,0,2],[36,0,2],[38,0,4],[42,off,4]].forEach(([o,v,n]) => n === 4 ? c.setUint32(o, v, true) : c.setUint16(o, v, true));
+    parts.push(h, nm, data); dir.push(c, nm); off += 30 + nm.length + data.length;
+  }
+  const size = dir.reduce((a, x) => a + x.byteLength, 0), e = new DataView(new ArrayBuffer(22));
+  [[0,0x06054b50,4],[4,0,2],[6,0,2],[8,files.length,2],[10,files.length,2],[12,size,4],[16,off,4],[20,0,2]].forEach(([o,v,n]) => n === 4 ? e.setUint32(o, v, true) : e.setUint16(o, v, true));
+  return new Blob([...parts, ...dir, e], { type: 'application/zip' });
+}
+$('dlZip').addEventListener('click', async () => {
+  const btn = $('dlZip'); if (btn.disabled) return;
+  btn.disabled = true; const label = btn.textContent; btn.textContent = 'Creating ZIP…';
+  try {
+    const base = `${slug(avName) || 'anytars'}-${style}`, enc = new TextEncoder(), files = [];
+    for (const v of VARIANTS){
+      const src = svg(t, v), n = variantName(v);
+      files.push({ name: `${base}/svg/${base}-${n}.svg`, data: enc.encode(src.replace('<svg ', '<svg width="512" height="512" ')) });
+      files.push({ name: `${base}/png/${base}-${n}.png`, data: new Uint8Array(await (await svgPng(src, 1024)).arrayBuffer()) });
+    }
+    download(makeZip(files), base + '-all-expressions.zip');
+  } catch(err){ flash('Could not create the ZIP in this browser. Try single downloads.', true); }
+  finally { btn.disabled = false; btn.textContent = label; }
 });
 $('copyLink').addEventListener('click', () => {
   const url = location.origin + '/#' + encode(t);
