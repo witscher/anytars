@@ -78,6 +78,8 @@ main.grid{display:grid;grid-template-columns:minmax(300px,420px) minmax(0,1fr);g
 .vbtn span{font-size:.66rem;color:var(--muted)}
 .vbtn[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
 .actions{display:flex;flex-wrap:wrap;gap:8px}
+.bgrow{display:grid;gap:6px}
+.bgrow .chip{padding:4px 10px;font-size:.8rem}
 .btn{border:1px solid var(--line);background:var(--surface-2);border-radius:10px;padding:8px 12px;font-size:.88rem;font-weight:500;cursor:pointer}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .code{display:grid;gap:6px}
@@ -144,6 +146,10 @@ footer a{color:inherit}
       <div class="stage">
         <div class="big" id="big" role="img" aria-label="Your avatar"></div>
         <div><div class="label">Style</div><div class="styles" id="styles"></div></div>
+        <div class="bgrow"><div class="label">Background</div>
+          <div class="chips" id="bgShapes"></div>
+          <label class="toggle"><input type="checkbox" id="bgClear"> Transparent</label>
+        </div>
         <div><div class="label">Versions</div><div class="variants" id="variants"></div></div>
         <div class="actions">
           <button class="btn primary" id="dlPng" type="button">Download PNG</button>
@@ -187,6 +193,7 @@ const PAL = {
 };
 const LABEL = s => s.replace(/([A-Z])/g,' $1').replace(/^./, c=>c.toUpperCase());
 const NICE = {
+  short:'Short', long:'Long', circle:'Circle', chinStrap:'Chin strap', soulPatch:'Soul patch', muttonChops:'Mutton chops', semiRim:'Semi-rimless', roundSmall:'Small round', softSquare:'Soft square', thickRound:'Thick round',
   afroTop:'Afro', centerPart:'Centre part', sidePart:'Side part', longWavy:'Long wavy', baseballCap:'Baseball cap', witchHat:'Witch hat', elfCap:'Elf cap', devilHorns:'Devil horns',
   turban:'Dastar', partyHat:'Party hat', pinceNez:'Pince-nez', cateye:'Cat-eye', rect:'Rectangular', half:'Half-rim', none:'None', fringe:'Fringe',
 };
@@ -196,18 +203,20 @@ const nice = v => NICE[v] || LABEL(v);
 const clone = o => JSON.parse(JSON.stringify(o));
 const strip = c => { const t = clone(c); delete t.id; delete t.name; delete t.blurb; return t; };
 let t = null, style = 'chibi', variant = {expression:'happy'}, tab = 'face', presetId = null;
+let bgCfg = { shape: 'style', clear: false };
+const applyBg = () => { ANYTARS_CONFIG.background = bgCfg.clear ? 'none' : 'avatar'; ANYTARS_CONFIG.backgroundShape = bgCfg.shape; };
 
 function load(){
   const h = decodeURIComponent(location.hash.slice(1));
   if (h.startsWith('v1.')) { try { t = decode(h); return; } catch(e){} }
-  try { const s = JSON.parse(localStorage.getItem('anytars-maker')||'null'); if (s && s.t) { t = s.t; if (STYLES[s.style]) style = s.style; presetId = s.presetId||null; return; } } catch(e){}
+  try { const s = JSON.parse(localStorage.getItem('anytars-maker')||'null'); if (s && s.bg && BG_SHAPES.includes(s.bg.shape)) bgCfg = {shape:s.bg.shape, clear:!!s.bg.clear}; if (s && s.t) { t = s.t; if (STYLES[s.style]) style = s.style; presetId = s.presetId||null; return; } } catch(e){}
   t = randomTraits();
 }
 let saveTimer = 0;
 function persist(){
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
-    try { localStorage.setItem('anytars-maker', JSON.stringify({t, style, presetId})); } catch(e){}
+    try { localStorage.setItem('anytars-maker', JSON.stringify({t, style, presetId, bg:bgCfg})); } catch(e){}
     try { history.replaceState(null, '', '#' + encode(t)); } catch(e){}
   }, 250);
 }
@@ -254,6 +263,8 @@ function drawPresets(){
 }
 function drawPreview(){
   $('big').innerHTML = svg(t, variant);
+  $('bgShapes').innerHTML = BG_SHAPES.map(v => `<button class="chip" type="button" data-bgshape="${v}" aria-pressed="${v===bgCfg.shape}">${v==='style'?'Style default':nice(v)}</button>`).join('');
+  $('bgClear').checked = bgCfg.clear;
   $('styles').innerHTML = Object.values(STYLES).map(S => `<button class="sbtn" type="button" data-style="${S.key}" aria-pressed="${S.key===style}">${render(t,{expression:'neutral'},S.key)}<span>${S.label}</span></button>`).join('');
   $('variants').innerHTML = VARIANTS.map(v => { const n = variantName(v); return `<button class="vbtn" type="button" data-variant="${n}" aria-pressed="${n===variantName(variant)}" title="${variantLabel(v)}">${svg(t, v)}<span>${variantLabel(v)}</span></button>`; }).join('');
   $('code').textContent = encode(t);
@@ -317,6 +328,7 @@ function drawPanel(){
     case 'beard':
       h += field('Facial hair', thumbs('facialHair', ENUMS.facialHair));
       h += field('Colour', swatches('facialHairColor', PAL.hair, t.hair.color), 'defaults to hair colour');
+      if ((t.facialHair||'none') !== 'none') h += field('Size', sliders('Beard'));
       break;
     case 'glasses': {
       const g = t.glasses || {type:'none'};
@@ -338,7 +350,7 @@ function drawPanel(){
       break;
     case 'colors':
       h += field('Top', swatches('shirt', PAL.cloth));
-      h += field('Background', swatches('bg', PAL.bg));
+      h += field('Background colour', swatches('bg', PAL.bg), 'shape and transparency are next to the preview');
       break;
   }
   $('panel').innerHTML = h;
@@ -370,6 +382,7 @@ document.addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   if (b.id === 'dice'){ t = randomTraits(); presetId = null; variant = {expression:'happy'}; redraw({presets:true}); return; }
   if (b.dataset.preset){ t = strip(CAST.find(c=>c.id===b.dataset.preset)); presetId = b.dataset.preset; redraw({presets:true}); return; }
+  if (b.dataset.bgshape){ bgCfg.shape = b.dataset.bgshape; applyBg(); redraw({presets:true}); return; }
   if (b.dataset.style){ style = b.dataset.style; redraw({presets:true}); return; }
   if (b.dataset.variant){ const n = b.dataset.variant; variant = (n==='zombie'||n==='festive') ? {transform:n} : {expression:n}; drawPreview(); return; }
   if (b.dataset.tab){ tab = b.dataset.tab; drawTabs(); drawPanel(); return; }
@@ -384,6 +397,7 @@ document.addEventListener('input', e => {
 });
 document.addEventListener('change', e => {
   const el = e.target;
+  if (el.id === 'bgClear'){ bgCfg.clear = el.checked; applyBg(); redraw({presets:true}); return; }
   if (el.id === 'hetero'){ if (!el.checked) t.eyes.right = t.eyes.left; else if (t.eyes.left === t.eyes.right) t.eyes.right = PAL.eyes.find(c=>c!==t.eyes.left); redraw(); }
   else if (el.dataset.slide || el.dataset.color || el.dataset.tint) { drawPanel(); drawPresets(); }
 });
@@ -420,7 +434,7 @@ const isDark = () => { const a = document.documentElement.getAttribute('data-the
 const syncTheme = () => { $('themeBtn').textContent = isDark() ? 'Light' : 'Dark'; };
 $('themeBtn').addEventListener('click', () => { document.documentElement.setAttribute('data-theme', isDark() ? 'light' : 'dark'); syncTheme(); });
 
-load(); drawTabs(); drawPresets(); redraw(); syncTheme();
+load(); applyBg(); drawTabs(); drawPresets(); redraw(); syncTheme();
 </script>
 </body>
 </html>
