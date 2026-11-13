@@ -10,7 +10,7 @@
 
 ## Legal & privacy
 Whoever deploys anytars is its operator and links to their own legal pages. Never put an operator's legal URLs, name or address in this repository.
-- Every page and view links to the operator's central pages, reachable in one click: "Legal Notice" and "Privacy". The URLs are deployment settings: the Worker reads `LEGAL_IMPRINT_URL` and `LEGAL_PRIVACY_URL` (Worker variables in the Cloudflare dashboard, `.dev.vars` locally) and writes plain `<a>` links into each page's `[data-legal]` slot on the server (`withLegalLinks` in `apps/maker/worker/worker.js`), not in browser JavaScript. A new page needs a `data-legal` slot and its path in `run_worker_first` in `wrangler.jsonc`.
+- Every page and view links to the operator's central pages, reachable in one click: "Legal Notice" and "Privacy". The URLs are deployment settings: the Worker reads `LEGAL_IMPRINT_URL` and `LEGAL_PRIVACY_URL` (Worker variables in the Cloudflare dashboard, `.dev.vars` locally) and writes plain `<a>` links into each page's `[data-legal]` slot on the server (`withSiteMeta` in `apps/maker/worker/worker.js`), not in browser JavaScript. A new page needs a `data-legal` slot and its path in `run_worker_first` in `wrangler.jsonc`.
 - Never create own legal notice, imprint, privacy, cookie or "legal" pages, texts or banners. Credits, sources and licence attributions are fine on a separate /credits page.
 - Never put any postal address in this project.
 - No analytics, tracking, ads, or third-party resources (fonts, scripts, images, iframes, CDNs). Serve fonts and assets from this project's own domain (`apps/shared/fonts`). Plain links to other sites (e.g. GitHub) are fine. If a third-party resource seems unavoidable, stop and ask.

@@ -21,7 +21,17 @@ const doc = (body, extraHead = '') => `<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="anytars style lab: compare candidate styles, expressions and transforms.">
+<meta name="description" content="anytars style lab: the example characters in every style, expression and transform.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="anytars">
+<meta property="og:title" content="anytars style lab">
+<meta property="og:description" content="The anytars example characters in every style, expression and transform. Open source avatars for humans in their diversity.">
+<meta property="og:url" content="/lab/">
+<meta property="og:image" content="/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="627">
+<meta property="og:image:alt" content="The anytars logo next to six cartoon avatars of different people in five drawing styles">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <style>
 :root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -49,6 +59,7 @@ await writeFile(`${OUT}/lab/index.html`, doc(lab));
 await writeFile(`${OUT}/anytars.js`, core);
 await writeFile(`${OUT}/cast.js`, cast);
 await writeFile(`${OUT}/favicon.svg`, favicon);
+await copyFile('apps/maker/public/og.png', `${OUT}/og.png`);   // social preview, made by scripts/og-image.cjs
 // Fonts are served from this site (no third-party requests), with their licences.
 await mkdir(`${OUT}/fonts`, { recursive: true });
 for (const f of await readdir('apps/shared/fonts')) await copyFile(`apps/shared/fonts/${f}`, `${OUT}/fonts/${f}`);
