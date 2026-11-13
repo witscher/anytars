@@ -82,7 +82,7 @@ table.sheet{border-collapse:separate;border-spacing:0;min-width:880px;width:100%
 .sheet th.tx, .sheet td.tx{background:var(--surface-2)}
 
 .sizes{display:grid;gap:4px;padding:14px;min-width:640px}
-.sizes .row{display:grid;grid-template-columns:72px repeat(10, minmax(0,1fr));align-items:center;gap:6px}
+.sizes .row{display:grid;grid-template-columns:72px repeat(var(--n,10), minmax(46px,1fr));align-items:center;gap:6px}
 .sizes .row > div{display:flex;justify-content:center}
 .sizes .hd{font:600 .7rem var(--f-body);text-transform:uppercase;letter-spacing:.1em;color:var(--muted);text-align:center}
 .sizes .px{font:500 .8rem var(--f-mono);color:var(--muted);justify-content:flex-start!important}
@@ -102,7 +102,7 @@ table.sheet{border-collapse:separate;border-spacing:0;min-width:880px;width:100%
 .tune-styles figure{margin:0;display:grid;gap:4px;text-align:center}
 .tune-styles figcaption{font-size:.74rem;color:var(--muted)}
 .tune-styles svg{width:100%;height:auto;display:block}
-.tune-expr{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:6px}
+.tune-expr{display:grid;grid-template-columns:repeat(auto-fill,minmax(58px,1fr));gap:6px}
 .tune-expr svg{width:100%;height:auto;display:block}
 .btnrow{display:flex;gap:8px;flex-wrap:wrap}
 .btn{border:1px solid var(--line);background:var(--surface-2);color:var(--ink);border-radius:10px;padding:7px 12px;font:500 .85rem var(--f-body);cursor:pointer}
@@ -569,6 +569,15 @@ const EXPR = {
   sincere:  {label:'Sincere',  lidTop:2.2, lower:1.2, brow:[-3,-1.5,.5], mouth:'soft', blush:.2},
   sad:      {label:'Sad',      lidTop:1, lidOuter:3.5, brow:[-4.5,-1.5,2.5], mouth:'frown'},
   crying:   {label:'Crying',   closed:'sad', brow:[-5.5,-2,3], mouth:'wail', rivers:true, blush:.45},
+  // emoji-style expressions
+  lol:       {label:'LOL',        closed:true, brow:[-3,-4,-2.5], mouth:'laugh', blush:.8, joyTears:true},
+  rofl:      {label:'ROFL',       closed:true, brow:[-3,-4,-2.5], mouth:'laugh', blush:.8, joyTears:true, tilt:-18},
+  smileTear: {label:'Smile-cry',  lidTop:1.5, lower:2.2, brow:[-4,-1.5,1.5], mouth:'soft', blush:.4, tearSide:1},
+  wink:      {label:'Wink',       winkSide:1, lower:1.5, brow:[-1.5,-2,-1], browR:[1,0,0], mouth:'smile', blush:.45},
+  upsideDown:{label:'Upside down',lower:1.5, brow:[-1,-1.5,-.5], mouth:'smile', blush:.3, flip:true},
+  shrug:     {label:'Shrug',      lidTop:2.8, browL:[-5,-4,-2], browR:[1,.5,0], mouth:'meh', hands:true},
+  heartEyes: {label:'Heart eyes', eyeIcon:'heart', brow:[-2,-2.5,-1.5], mouth:'smile', blush:.6},
+  starStruck:{label:'Star-struck',eyeIcon:'star', brow:[-4,-5,-3], mouth:'laugh', blush:.4},
   surprised:{label:'Surprised',wide:1.22, iris:.78, brow:[-6,-7,-5], mouth:'o'},
   angry:    {label:'Angry',    lidInner:5, brow:[5,1.5,-2.5], mouth:'grit'},
   zombie:   {label:'Zombie',   lidTop:2.5, iris:.72, browL:[3,1,-1], browR:[-3,-2.5,0], mouth:'zombie', zombie:true},
@@ -576,7 +585,7 @@ const EXPR = {
 const CHEEKS = ['auto','none','light','medium','strong'];
 const EYE_RENDER = ['auto','detailed','bean','flatIris','dot','beanLid','button'];
 const EYE_RENDER_LABEL = {auto:'Style default', detailed:'#0 Detailed', bean:'#1 Solid bean', flatIris:'#2 White + flat iris', dot:'#3 Dot', beanLid:'#4 Bean + lid line', button:'#5 Glossy button'};
-const EXPRESSIONS = ['neutral','happy','laughing','sincere','sad','crying','surprised','angry'];
+const EXPRESSIONS = ['neutral','happy','laughing','sincere','sad','crying','surprised','angry','lol','rofl','smileTear','wink','upsideDown','shrug','heartEyes','starStruck'];
 const VARIANTS = [...EXPRESSIONS.map(e=>({expression:e})), {transform:'zombie'}, {transform:'festive'}];
 const variantLabel = v => v.transform ? v.transform[0].toUpperCase()+v.transform.slice(1) : EXPR[v.expression].label;
 
@@ -613,7 +622,12 @@ function drawEye(S,t,F,ex,side,color,skin,ink,eyeMode){
   const p = eyePos(S,F,t,side);
   const tr = `translate(${n1(p.x)},${n1(p.y)}) scale(${side},1) rotate(${tilt}) scale(${n1(sc*100)/100})`;
   const lw = (S.sw ? Math.max(2, S.sw*0.8) : 2) / sc;
-  if (ex.closed){
+  if (ex.eyeIcon){
+    const k = sc * 1.15, fill = ex.eyeIcon === 'heart' ? '#e5304f' : '#f2c230';
+    const d = ex.eyeIcon === 'heart' ? 'M0,5 C-9,-1 -7,-9.5 0,-4.2 C7,-9.5 9,-1 0,5Z' : starD(9, 4);
+    return `<g transform="translate(${n1(p.x)},${n1(p.y)}) scale(${n1(k*100)/100})"><path d="${d}" fill="${fill}" stroke="${ink}" stroke-width="${n1((S.sw ? S.sw*.55 : 1.2)/k)}" stroke-linejoin="round"/><circle cx="-2.6" cy="-2.2" r="1.3" fill="#fff" opacity=".85"/></g>`;
+  }
+  if (ex.closed || ex.winkSide === side){
     const cd = ex.closed==='sad' ? `M${-base.W-0.5},-0.5 Q0,3 ${base.W+0.5},2.5` : `M${-base.W-0.5},2 Q0,-8.5 ${base.W+0.5},2`;
     return `<g transform="${tr}"><path d="${cd}" fill="none" stroke="${ink}" stroke-width="${n1(lw*1.25)}" stroke-linecap="round"/></g>`;
   }
@@ -650,7 +664,7 @@ function drawEye(S,t,F,ex,side,color,skin,ink,eyeMode){
       if (S.sw) s += `<g clip-path="url(#${id})"><ellipse cx="0" cy="${n1(mcy)}" rx="${n1(rx)}" ry="${n1(ry)}" fill="none" stroke="${ink}" stroke-width="${n1(S.sw*.4/sc)}"/></g>`;
       s += `<circle cx="${hlx}" cy="${n1(mcy-ry*.4)}" r="1.5" fill="${hlc}"/><circle cx="${n1(-1.6*side)}" cy="${n1(mcy+ry*.4)}" r=".7" fill="${hlc}"/>` + lidLine(.9);
     }
-    if (ex.tear) s += '';
+    if (ex.tear || ex.tearSide === side) s += `<path d="M${W-1},${n1(Hb*0.7+2)} q3,6 0,8.5 q-3,-2.5 0,-8.5Z" fill="#7cc6f2" stroke="${ink}" stroke-width="${n1(Math.max(.8,S.sw*.3)/sc)}"/>`;
     return s + `</g>`;
   }
   const cy = n1((Hb-Ht)*0.375 + (S.chibi?0.2:S.anime?-0.2:0.6)), r = (S.chibi?5.6:S.anime?5.4:4.6)*(ex.iris||1);
@@ -690,7 +704,7 @@ function drawEye(S,t,F,ex,side,color,skin,ink,eyeMode){
     const fl = t.eyes.lashes==='long' ? [[W-0.5,base.yo-1.6,4.2,-3],[W*0.55,-Ht*0.62,3.2,-4],[W*0.1,-Ht*0.75,1.6,-4.4]] : [[W-0.5,base.yo-1.2,3.2,-2.4]];
     fl.forEach(([x,y,dx,dy]) => s += `<path d="M${n1(x)},${n1(y)} l${dx},${dy}" stroke="${ink}" stroke-width="${n1(lw*0.75)}" stroke-linecap="round"/>`);
   }
-  if (ex.tear) s += `<path d="M${W-1},${n1(Hb*0.7+2)} q3,6 0,8.5 q-3,-2.5 0,-8.5Z" fill="#7cc6f2" stroke="${ink}" stroke-width="${n1(Math.max(.8,S.sw*.3)/sc)}"/>`;
+  if (ex.tear || ex.tearSide === side) s += `<path d="M${W-1},${n1(Hb*0.7+2)} q3,6 0,8.5 q-3,-2.5 0,-8.5Z" fill="#7cc6f2" stroke="${ink}" stroke-width="${n1(Math.max(.8,S.sw*.3)/sc)}"/>`;
   return s + `</g>`;
 }
 
@@ -802,6 +816,7 @@ function drawMouth(S,t,F,ex,skin,ink,zombie){
   const outl = S.sw ? ` stroke="${ink}" stroke-width="${lw}" stroke-linejoin="round"` : '';
   switch(ex.mouth){
     case 'neutral': s += lip(.7) + line(`M${n1(-w)},0 Q0,1.4 ${n1(w)},0`); break;
+    case 'meh':     s += line(`M${n1(-w*.9)},1.2 Q${n1(-w*.2)},1.6 ${n1(w*.9)},-1.8`); break;
     case 'smile':   s += lip(2.8) + line(`M${n1(-w-1.5)},-2.5 Q0,8 ${n1(w+1.5)},-2.5`); break;
     case 'soft':    s += lip(1.3) + line(`M${n1(-w*.85)},-0.5 Q0,3.2 ${n1(w*.85)},-0.5`); break;
     case 'frown':   s += lip(-0.6) + line(`M${n1(-w)},3 Q0,-3.6 ${n1(w)},3`); break;
@@ -1062,9 +1077,9 @@ function render(traits, variant={}, styleKey='chibi', opts={}){
 
   const headT = S.head!==1 ? `translate(100,${S.headY||120}) scale(${S.head}) translate(-100,-112)` : '';
   const bodyT = S.body!==1 ? `translate(100,196) scale(${S.body}) translate(-100,-196)` : '';
-  const tiltT = zombie ? 'rotate(-5 100 160)' : '';
+  const tiltT = zombie ? 'rotate(-5 100 160)' : ex.tilt ? `rotate(${ex.tilt} 100 150)` : '';
   const H = s => `<g transform="${headT} ${tiltT}">${s}</g>`;
-  const B = s => bodyT ? `<g transform="${bodyT}">${s}</g>` : s;
+  const B = s => (bodyT || ex.hands) ? `<g transform="${ex.hands ? 'translate(0,-5) ' : ''}${bodyT}">${s}</g>` : s;
 
   const headD = headPath(F);
   const headClip = uid('hc');
@@ -1109,7 +1124,7 @@ function render(traits, variant={}, styleKey='chibi', opts={}){
   let neck = `<clipPath id="${neckClip}"><path d="${neckD}"/></clipPath><path d="${neckD}" fill="${skin}"${strokeAttr(S,skin)}/>`;
   neck += `<g clip-path="url(#${neckClip})"><path d="${headD}" fill="${darken(skin,S.shade==='none'?.14:.26)}" transform="translate(0,${S.shade==='none'?5:8})"/></g>`;
   const shirtD = smooth([[8,206],[12,188],[30,175],[60,166],[86,161,'s'],[100,172],[114,161,'s'],[140,166],[170,175],[188,188],[192,206]]);
-  L += tag('body', B(neck + shape(S, shirtD, shirt)));
+  if (!ex.flip) L += tag('body', B(neck + shape(S, shirtD, shirt)));
   if (zombie) L += tag('body', B(`<path d="M60,190 l6,-10 l4,8 l5,-12 l3,14 M132,186 l5,-9 l3,7" fill="none" stroke="${darken(shirt,.5)}" stroke-width="2" stroke-linejoin="round"/>`));
   // 3. drapes (long hair over shoulders, hijab)
   if (back && back.base) L += tag('hairBack', H(HC(shape(S, smooth(F.mp(back.base)), darken(hair,.1), {inner: accentGroup(F, hairAccent(F, HAIR_ACCENT_BACK[t.hair.back]), accent, aw)}))));
@@ -1153,14 +1168,16 @@ function render(traits, variant={}, styleKey='chibi', opts={}){
     face += tag('details', zs);
   }
   // eyes
+  const flipC = ((eyePos(S,F,t,1).y) + mouthCenterY(S,t,F)) / 2;
+  const FL = s => s;
   const eyeMode = cfg.eyeMode || (t.eyes.render && t.eyes.render!=='auto' ? t.eyes.render : S.eyeDefault);
-  face += tag('eyes', drawEye(S,t,F,ex,-1,t.eyes.left,skin,ink,eyeMode) + drawEye(S,t,F,ex,1,t.eyes.right,skin,ink,eyeMode));
-  face += tag('nose', drawNose(S,t,F,skin));
+  face += tag('eyes', FL(drawEye(S,t,F,ex,-1,t.eyes.left,skin,ink,eyeMode) + drawEye(S,t,F,ex,1,t.eyes.right,skin,ink,eyeMode)));
+  face += tag('nose', FL(drawNose(S,t,F,skin)));
   face += tag('beard', drawFacialHair(S,t,F,beardCol,skin,headClip));
   // Tears stay on the face: clipped to the head outline.
   if (ex.rivers) face += tag('tears', `<g clip-path="url(#${headClip})">${drawRivers(S,t,F,-1) + drawRivers(S,t,F,1)}</g>`);
-  face += tag('mouth', drawMouth(S,t,F,ex,skin,ink,zombie));
-  face += tag('glasses', drawGlasses(S,t,F,zombie,'back'));
+  face += tag('mouth', FL(drawMouth(S,t,F,ex,skin,ink,zombie)));
+  face += tag('glasses', FL(drawGlasses(S,t,F,zombie,'back')));
   // hair on top
   if (topD){
     let hs = '';
@@ -1181,12 +1198,40 @@ function render(traits, variant={}, styleKey='chibi', opts={}){
     face += tag('hairTop', HC(hs));
   }
   // Brows and lenses sit on top of the hair (cartoon convention), glasses arms stay under it.
-  face += tag('brows', drawBrow(S,t,F,ex,-1,browCol) + drawBrow(S,t,F,ex,1,browCol));
-  if (!HW.glassesOver) face += tag('glasses', drawGlasses(S,t,F,zombie,'front'));
+  face += tag('brows', FL(drawBrow(S,t,F,ex,-1,browCol) + drawBrow(S,t,F,ex,1,browCol)));
+  if (!HW.glassesOver) face += tag('glasses', FL(drawGlasses(S,t,F,zombie,'front')));
   if (HW.front) face += tag('headwear', hatT ? `<g transform="${hatT}">${HW.front(S,F,hwColor,hwCtx,hwAccent)}</g>` : HW.front(S,F,hwColor,hwCtx,hwAccent));
-  if (HW.glassesOver) face += tag('glasses', drawGlasses(S,t,F,zombie,'front'));
+  if (HW.glassesOver) face += tag('glasses', FL(drawGlasses(S,t,F,zombie,'front')));
 
+  if (ex.joyTears){
+    let jt = '';
+    [-1,1].forEach(side => {
+      const pe = eyePos(S,F,t,side), sc = S.eye*(1+tv(t,'eyes.size')), x = pe.x + side*(EYES[t.eyes.shape].W*sc + 2), y = pe.y + 1;
+      [[0, 1], [7, .7]].forEach(([off, k]) => jt += `<path d="M0,-6 Q4.2,0 3.2,3.2 Q0,6.2 -3.2,3.2 Q-4.2,0 0,-6Z" transform="translate(${n1(x + side*off)},${n1(y + off*.6)}) rotate(${side*62}) scale(${k})" fill="#7cc6f2" stroke="${ink}" stroke-width="${n1(Math.max(.8, S.sw*.35)/k)}"/>`);
+    });
+    face += tag('tears', jt);
+  }
   L += H(face);
+  // Upside-down (🙃): the whole head turns over, shoulders left out, centred in the frame.
+  if (ex.flip){
+    const hy = (S.headY||120) + ((F.top + F.chinY)/2 - 112) * (S.head||1);
+    L = `<g transform="translate(0,${n1(100 - hy)}) rotate(180 100 ${n1(hy)})">${L}</g>`;
+  }
+  if (ex.hands){
+    // Shrug: forearms from the raised shoulders and open palms, drawn in body coordinates.
+    const lc = lineFor(S, skin) || 'none', sw = S.sw || 0;
+    const rot = (cx,cy,rx,ry,deg) => { const a = deg*Math.PI/180, pts = []; for (let i=0;i<8;i++){ const u = -i/8*Math.PI*2; const x = rx*Math.cos(u), y = ry*Math.sin(u); pts.push([cx + x*Math.cos(a) - y*Math.sin(a), cy + x*Math.sin(a) + y*Math.cos(a)]); } return smooth(pts); };
+    const hand = [rot(0,0,9.5,6.5,-12), rot(3,-8,2.7,6.2,18), rot(7.5,-6.6,2.7,6.2,36), rot(11,-3.6,2.6,5.8,56), rot(12.6,.4,2.4,5,76), rot(-7.5,-4.5,2.6,5.2,-38)].join('');
+    let hs = '';
+    [1,-1].forEach(side => {
+      const g = side === 1 ? '' : ' transform="translate(200,0) scale(-1,1)"';
+      const arm = 'M146,186 Q156,170 163,158';
+      hs += `<g${g}>` + (sw ? `<path d="${arm}" fill="none" stroke="${lineFor(S, shirt)}" stroke-width="${n1(14 + sw*2)}" stroke-linecap="round"/>` : '')
+        + `<path d="${arm}" fill="none" stroke="${shirt}" stroke-width="14" stroke-linecap="round"/>`
+        + `<g transform="translate(166,150)">${shape(S, hand, skin, {under:true, k:.7})}</g></g>`;
+    });
+    L += tag('hands', B(hs));
+  }
 
   // Fit: if hair or headwear would leave the canvas, shrink the whole avatar slightly (anchored at the bottom centre).
   {
@@ -1419,7 +1464,7 @@ function buildSizes(){
   [20,32,48,64].forEach(px => {
     h += `<div class="row"><div class="px">${px} px</div>${vs.map(v=>`<div><div style="width:${px}px;height:${px}px">${render(p,v,S).replace('<svg ', `<svg width="${px}" height="${px}" `)}</div></div>`).join('')}</div>`;
   });
-  $('sizeGrid').innerHTML = h;
+  $('sizeGrid').innerHTML = h; $('sizeGrid').style.setProperty('--n', VARIANTS.length); $('sizeGrid').style.minWidth = (80 + VARIANTS.length*56) + 'px';
 }
 
 function buildWardrobe(){

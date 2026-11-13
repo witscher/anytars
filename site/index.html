@@ -653,7 +653,7 @@ document.addEventListener('change', e => {
 });
 
 // ---------- Workers AI ----------
-const AI_EXAMPLES = ['long blonde hair', 'add round glasses', 'turn into a zombie', 'make it anime with a witch hat', 'add a short grey beard', 'happier, with freckles'];
+const AI_EXAMPLES = ['long blonde hair', 'add round glasses', 'make me wink', 'turn into a zombie', 'make it anime with a witch hat', 'add a short grey beard', 'happier, with freckles'];
 $('aiEx').innerHTML = AI_EXAMPLES.map(x => `<button type="button" data-ex="${x}">${x}</button>`).join('');
 const pretty = v => nice(String(v)).replace(/^S(\d)$/, 'level $1');
 function showAi(res, kind){
