@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "node scripts/build.mjs",
-    "test": "npm run build && node --test packages/core/test/*.test.mjs",
+    "test": "npm run build && node --test packages/core/test/*.test.mjs apps/maker/worker/*.test.mjs",
     "deploy": "npm run build && wrangler deploy",
     "qa": "npm run build && node qa/run.cjs 2000 4",
     "eval:ai": "node qa/eval-ai.mjs"

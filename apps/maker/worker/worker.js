@@ -346,6 +346,9 @@ async function photo(env, body) {
   questions.wrinkles = { type: 'noul', instructions: 'Does the person have visible wrinkles or deep smile lines?' };
   questions.smiling = { type: 'noul', instructions: 'Is the person smiling?' };
   questions.isPerson = { type: 'noul', instructions: 'Does the image show a real person\'s face clearly enough to describe it?' };
+  // Glasses are decided by a yes/no question first: as one option among ~25 frame types, "no glasses" loses too
+  // often, and the frame colour and lens questions always return some answer.
+  questions.glassesOn = { type: 'noul', instructions: 'Is the person wearing glasses or sunglasses on their face, in front of their eyes? Answer no if there are no glasses, or if glasses are only pushed up on the head, hanging from clothing or held in a hand.' };
 
   const started = Date.now();
   const res = await env.AI.run(OMNI, { model: 'clef-omni', state: 'A photo uploaded to create a cartoon avatar of the person in it.', images: [image], questions });
@@ -355,7 +358,18 @@ async function photo(env, body) {
 
   const t = { ...base, details: [] };
   const decisions = [];
-  TRAITS.forEach(([id, label, map, apply, only]) => { if (only === 'edit') return; const a = A[id]; if (a?.choice && a.choice in map) { apply(t, a.choice); decisions.push(report(id, label, a)); } });
+  const glassesOn = (A.glassesOn?.noul ?? 0) >= 0.5;
+  if (glassesOn && A.glasses){
+    // On the face but "none" ranked first: take the likeliest frame type instead.
+    const probs = Object.entries(A.glasses.probabilities || {}).filter(([k]) => k !== 'none' && k in V.GLASSES).sort((a, b) => b[1] - a[1]);
+    if (A.glasses.choice === 'none' || !(A.glasses.choice in V.GLASSES)) A.glasses = { ...A.glasses, choice: probs[0]?.[0] || 'rect' };
+  }
+  TRAITS.forEach(([id, label, map, apply, only]) => {
+    if (only === 'edit') return;
+    if (!glassesOn && (id === 'glasses' || id === 'lens' || id === 'frameColor')) return;
+    const a = A[id]; if (a?.choice && a.choice in map) { apply(t, a.choice); decisions.push(report(id, label, a)); }
+  });
+  if (!glassesOn){ t.glasses = { type: 'none' }; decisions.push({ id: 'glasses', label: 'glasses', choice: 'none', confidence: Math.round((1 - (A.glassesOn?.noul ?? 0)) * 100) / 100 }); }
   // Colour and lens answers only matter when the part is present.
   const hide = new Set([...(t.glasses.type === 'none' ? ['lens', 'frameColor'] : []), ...(t.headwear.type === 'none' ? ['headwearColor'] : [])]);
   for (let k = decisions.length - 1; k >= 0; k--) if (hide.has(decisions[k].id)) decisions.splice(k, 1);
