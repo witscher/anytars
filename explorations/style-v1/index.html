@@ -108,6 +108,13 @@ table.sheet{border-collapse:separate;border-spacing:0;min-width:880px;width:100%
 .code{font:500 .78rem var(--f-mono);background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;overflow-x:auto;white-space:pre;margin:0;color:var(--ink)}
 .codeline{font:500 .8rem var(--f-mono);word-break:break-all;background:var(--surface-2);border:1px dashed var(--line);border-radius:10px;padding:8px 10px}
 
+.eyegrid{display:grid;grid-template-columns:96px repeat(6, minmax(110px,1fr));gap:10px;padding:14px;min-width:820px;align-items:center}
+.eyegrid .hd{font:600 .72rem var(--f-body);text-transform:uppercase;letter-spacing:.1em;color:var(--muted);text-align:center;line-height:1.3}
+.eyegrid .hd b{display:block;font:800 1.5rem var(--f-display);color:var(--ink);letter-spacing:0}
+.eyegrid .st{font:700 1rem var(--f-display)}
+.eyegrid figure{margin:0;display:grid;gap:4px;text-align:center}
+.eyegrid figcaption{font:500 .74rem var(--f-mono);color:var(--muted)}
+.eyegrid .ref{opacity:.75}
 .ward{display:grid;gap:18px}
 .ward .rowh{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
 .ward .items{display:grid;grid-template-columns:repeat(auto-fill, minmax(92px, 1fr));gap:10px}
@@ -143,6 +150,15 @@ table.sheet{border-collapse:separate;border-spacing:0;min-width:880px;width:100%
     <span class="spacer"></span>
     <button class="seg" id="themeBtn" type="button">Dark page</button>
   </div>
+
+  <section id="eyes">
+    <header>
+      <div class="eyebrow">0 · Eye variants · Harpreet</div>
+      <h2>Which eyes fit?</h2>
+      <p class="muted">Five simpler eye treatments, numbered the same in every style. #0 is the current eye for reference. Reply with a style and number, for example "Anime 4" or "all 2".</p>
+    </header>
+    <div class="frame"><div class="eyegrid" id="eyeGrid"></div></div>
+  </section>
 
   <section id="compare">
     <header>
@@ -493,7 +509,7 @@ function eyePos(S,F,t,side){
   return { x: 100 + side*(S.eyeDX + tv(t,'eyes.spacing')), y: F.eyeY + S.eyeDY + tv(t,'eyes.y') };
 }
 
-function drawEye(S,t,F,ex,side,color,skin,ink){
+function drawEye(S,t,F,ex,side,color,skin,ink,eyeMode){
   const base = EYES[t.eyes.shape];
   const sc = S.eye * (1 + tv(t,'eyes.size'));
   const tilt = -tv(t,'eyes.tilt');
@@ -509,6 +525,33 @@ function drawEye(S,t,F,ex,side,color,skin,ink){
   const top = `M${-W},${base.yi} C${n1(-W*.5)},${n1(-Ht+(ex.lidInner||0))} ${n1(W*.5)},${n1(-Ht+(ex.lidOuter||0))} ${W},${base.yo}`;
   const d = top + ` C${n1(W*.5)},${n1(Hb)} ${n1(-W*.5)},${n1(Hb)} ${-W},${base.yi}Z`;
   const id = uid('e');
+  if (eyeMode && eyeMode!=='detailed' && !ex.zombie){
+    const mcy = (Hb-Ht)*0.375, dark = mix(color,'#140e14',.38);
+    const hlx = n1(1.8*side), hlc = '#ffffff';
+    let s = `<g transform="${tr}"><clipPath id="${id}"><path d="${d}"/></clipPath>`;
+    const lidLine = (k=1, dy=0) => `<path d="${top}" fill="none" stroke="${ink}" stroke-width="${n1(lw*k)}" stroke-linecap="round" transform="translate(0,${dy})"/>`;
+    const flicks = (k=1, dy=0) => (t.eyes.lashes && t.eyes.lashes!=='none') ? `<path d="M${W-0.5},${n1(base.yo-1.2+dy)} l3.4,-2.6${t.eyes.lashes==='long'?` M${n1(W*.5)},${n1(-Ht*.6+dy)} l2.4,-3.4`:''}" stroke="${ink}" stroke-width="${n1(lw*0.7*k)}" stroke-linecap="round"/>` : '';
+    if (eyeMode==='bean'){
+      s += `<g clip-path="url(#${id})"><ellipse cx="0" cy="${n1(mcy)}" rx="${n1(W*.62)}" ry="${n1((Ht+Hb)*.4)}" fill="${dark}"/></g>`;
+      s += `<circle cx="${hlx}" cy="${n1(mcy-(Ht+Hb)*.16)}" r="1.6" fill="${hlc}"/>`;
+    } else if (eyeMode==='flatIris'){
+      s += `<path d="${d}" fill="#fbfaf7"/><g clip-path="url(#${id})"><circle cx="0.3" cy="${n1(mcy+0.6)}" r="4.6" fill="${color}"/></g>`;
+      s += `<circle cx="${n1(0.3+1.6*side)}" cy="${n1(mcy-1.2)}" r="1.3" fill="${hlc}"/>` + lidLine(.85) + flicks();
+    } else if (eyeMode==='dot'){
+      const ry = Math.max(1.2, 3.6*Math.min(1,(Ht+Hb)/18));
+      s += `<ellipse cx="0" cy="${n1(mcy+0.5)}" rx="2.7" ry="${n1(ry)}" fill="${mix(color,'#140e14',.6)}"/><circle cx="${n1(0.8*side)}" cy="${n1(mcy-ry*.35)}" r=".9" fill="${hlc}"/>`;
+    } else if (eyeMode==='beanLid'){
+      s += `<g clip-path="url(#${id})"><ellipse cx="0" cy="${n1(mcy+1)}" rx="${n1(W*.5)}" ry="${n1((Ht+Hb)*.36)}" fill="${dark}"/></g>`;
+      s += `<circle cx="${hlx}" cy="${n1(mcy-(Ht+Hb)*.1)}" r="1.4" fill="${hlc}"/>` + lidLine(1.05,-0.6) + flicks(1,-0.6);
+    } else if (eyeMode==='button'){
+      const rx = W*.72, ry = (Ht+Hb)*.4;
+      s += `<g clip-path="url(#${id})"><ellipse cx="0" cy="${n1(mcy)}" rx="${n1(rx)}" ry="${n1(ry)}" fill="${color}"/><ellipse cx="0" cy="${n1(mcy+0.4)}" rx="${n1(rx*.45)}" ry="${n1(ry*.5)}" fill="${mix(color,'#140e14',.65)}"/></g>`;
+      if (S.sw) s += `<g clip-path="url(#${id})"><ellipse cx="0" cy="${n1(mcy)}" rx="${n1(rx)}" ry="${n1(ry)}" fill="none" stroke="${ink}" stroke-width="${n1(S.sw*.4/sc)}"/></g>`;
+      s += `<circle cx="${hlx}" cy="${n1(mcy-ry*.4)}" r="1.5" fill="${hlc}"/><circle cx="${n1(-1.6*side)}" cy="${n1(mcy+ry*.4)}" r=".7" fill="${hlc}"/>` + lidLine(.9);
+    }
+    if (ex.tear) s += '';
+    return s + `</g>`;
+  }
   const cy = n1((Hb-Ht)*0.375 + (S.chibi?0.2:S.anime?-0.2:0.6)), r = (S.chibi?5.6:S.anime?5.4:4.6)*(ex.iris||1);
   const rx = S.anime ? r*0.86 : r, ry = S.anime ? r*1.22 : r;
   const iris = ex.zombie ? mix(color,'#f4f1d8',.6) : color;
@@ -774,7 +817,7 @@ function background(S, bg, festive, zombie){
 }
 
 // ---------- main renderer ----------
-function render(traits, variant={}, styleKey='chibi'){
+function render(traits, variant={}, styleKey='chibi', opts={}){
   const S = STYLES[styleKey];
   const t = traits;
   const zombie = variant.transform==='zombie', festive = variant.transform==='festive';
@@ -857,7 +900,7 @@ function render(traits, variant={}, styleKey='chibi'){
     for (let i=-2;i<=2;i++) face += `<path d="M${n1(sx+i*3.2-2.2)},${n1(sy+i*2.4+3)} l4.4,-6" stroke="${darken(skin,.55)}" stroke-width="1.3" stroke-linecap="round"/>`;
   }
   // eyes
-  face += drawEye(S,t,F,ex,-1,t.eyes.left,skin,ink) + drawEye(S,t,F,ex,1,t.eyes.right,skin,ink);
+  face += drawEye(S,t,F,ex,-1,t.eyes.left,skin,ink,opts.eyeMode) + drawEye(S,t,F,ex,1,t.eyes.right,skin,ink,opts.eyeMode);
   face += drawBrow(S,t,F,ex,-1,browCol) + drawBrow(S,t,F,ex,1,browCol);
   face += drawNose(S,t,F,skin);
   face += drawFacialHair(S,t,F,beardCol,skin,headClip);
@@ -1018,6 +1061,19 @@ function buildHero(){
   $('heroStrip').innerHTML = ['chibi','anime','cel','flat','sticker'].map((s,i)=>render(CAST[[7,3,0,4,6][i]], {expression:['happy','sincere','laughing','surprised','happy'][i]}, s)).join('');
 }
 
+const EYE_MODES = [['detailed','Current'],['bean','Solid bean'],['flatIris','White + flat iris'],['dot','Dot'],['beanLid','Bean + lid line'],['button','Glossy button']];
+function buildEyes(){
+  const c = CAST.find(x=>x.id==='harpreet');
+  let h = `<div></div>` + EYE_MODES.map(([m,l],i)=>`<div class="hd"><b>#${i}</b>${l}</div>`).join('');
+  Object.values(STYLES).forEach(S => {
+    h += `<div class="st">${S.label}</div>` + EYE_MODES.map(([m,l],i)=>{
+      const key = 'a'+(++regN); REG.set(key, {traits:c, variant:{expression:'neutral'}, style:S.key, eyeMode:m});
+      return `<figure class="${i?'':'ref'}"><button class="av" type="button" data-k="${key}" aria-label="${S.label} ${i}">${render(c,{expression:'neutral'},S.key,{eyeMode:m})}</button><figcaption>${S.label} ${i}</figcaption></figure>`;
+    }).join('');
+  });
+  $('eyeGrid').innerHTML = h;
+}
+
 function buildCompare(){
   const p = person();
   $('compareGrid').innerHTML = Object.values(STYLES).map(S => `
@@ -1098,7 +1154,7 @@ function buildTunePreview(){
 
 function refresh(skipSliders){
   REG.clear(); regN = 0;
-  syncBar(); buildCompare(); buildSheet(); buildSizes(); buildWardrobe(); buildTunePreview();
+  syncBar(); buildEyes(); buildCompare(); buildSheet(); buildSizes(); buildWardrobe(); buildTunePreview();
 }
 
 // ---------- inspector ----------
@@ -1108,7 +1164,7 @@ document.addEventListener('click', e => {
   const r = REG.get(b.dataset.k); if (!r) return;
   lastFocus = b;
   const t = cleanTraits(r.traits);
-  $('inspAv').innerHTML = render(r.traits, r.variant, r.style);
+  $('inspAv').innerHTML = render(r.traits, r.variant, r.style, {eyeMode:r.eyeMode});
   $('inspEyebrow').textContent = `${STYLES[r.style].label} · ${variantLabel(r.variant)}`;
   $('inspTitle').textContent = r.traits.name || 'Avatar';
   $('inspCode').textContent = encode(t);
