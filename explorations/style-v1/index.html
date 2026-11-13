@@ -52,13 +52,14 @@ header.hero .lede{margin-top:12px;color:var(--muted);font-size:1.02rem}
 section{padding-block:40px 8px;display:grid;gap:16px}
 section > header{display:grid;gap:6px}
 
-.compare{display:grid;grid-template-columns:repeat(4, minmax(0,1fr));gap:14px}
-@media (max-width:980px){ .compare{grid-template-columns:repeat(2, minmax(0,1fr))} }
+.compare{display:grid;grid-template-columns:repeat(5, minmax(0,1fr));gap:12px}
+@media (max-width:1060px){ .compare{grid-template-columns:repeat(3, minmax(0,1fr))} }
+@media (max-width:720px){ .compare{grid-template-columns:repeat(2, minmax(0,1fr))} }
 @media (max-width:520px){ .compare{grid-template-columns:1fr} }
 .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px;display:grid;gap:10px;align-content:start}
 .card .big{width:100%;aspect-ratio:1;max-width:100%}
 .card .big svg{width:100%;height:100%;display:block}
-.card .minis{display:grid;grid-template-columns:repeat(5, minmax(0,1fr));gap:6px}
+.card .minis{display:grid;grid-template-columns:repeat(5, minmax(0,1fr));gap:4px}
 .card .minis svg{width:100%;height:auto;display:block}
 .card p{font-size:.88rem;color:var(--muted)}
 .tag{display:inline-block;font:600 .7rem var(--f-body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
@@ -81,7 +82,7 @@ table.sheet{border-collapse:separate;border-spacing:0;min-width:880px;width:100%
 .sheet th.tx, .sheet td.tx{background:var(--surface-2)}
 
 .sizes{display:grid;gap:4px;padding:14px;min-width:640px}
-.sizes .row{display:grid;grid-template-columns:72px repeat(9, minmax(0,1fr));align-items:center;gap:6px}
+.sizes .row{display:grid;grid-template-columns:72px repeat(10, minmax(0,1fr));align-items:center;gap:6px}
 .sizes .row > div{display:flex;justify-content:center}
 .sizes .hd{font:600 .7rem var(--f-body);text-transform:uppercase;letter-spacing:.1em;color:var(--muted);text-align:center}
 .sizes .px{font:500 .8rem var(--f-mono);color:var(--muted);justify-content:flex-start!important}
@@ -95,11 +96,11 @@ table.sheet{border-collapse:separate;border-spacing:0;min-width:880px;width:100%
 .srow output{font:500 .8rem var(--f-mono);text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
 .srow input[type=range]{width:100%;accent-color:var(--accent)}
 .tune-out{display:grid;gap:12px;align-content:start}
-.tune-styles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.tune-styles{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
 .tune-styles figure{margin:0;display:grid;gap:4px;text-align:center}
 .tune-styles figcaption{font-size:.74rem;color:var(--muted)}
 .tune-styles svg{width:100%;height:auto;display:block}
-.tune-expr{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:6px}
+.tune-expr{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:6px}
 .tune-expr svg{width:100%;height:auto;display:block}
 .btnrow{display:flex;gap:8px;flex-wrap:wrap}
 .btn{border:1px solid var(--line);background:var(--surface-2);color:var(--ink);border-radius:10px;padding:7px 12px;font:500 .85rem var(--f-body);cursor:pointer}
@@ -131,7 +132,7 @@ table.sheet{border-collapse:separate;border-spacing:0;min-width:880px;width:100%
     <div>
       <div class="eyebrow">anytars · style exploration v1</div>
       <h1>Anytars Style Lab</h1>
-      <p class="lede">Four candidate looks for an open avatar library. Every face on this page is drawn live from the same trait JSON, so the person stays fixed while style, expression and transforms change. Click any avatar to see its traits and its reversible code.</p>
+      <p class="lede">Five candidate looks for an open avatar library. Every face on this page is drawn live from the same trait JSON, so the person stays fixed while style, expression and transforms change. Click any avatar to see its traits and its reversible code.</p>
     </div>
     <div class="hero-strip" id="heroStrip" aria-hidden="true"></div>
   </header>
@@ -145,9 +146,9 @@ table.sheet{border-collapse:separate;border-spacing:0;min-width:880px;width:100%
 
   <section id="compare">
     <header>
-      <div class="eyebrow">1 · Same person, four styles</div>
+      <div class="eyebrow">1 · Same person, five styles</div>
       <h2>Which look carries the person best?</h2>
-      <p class="muted">Pick a person in the bar. Each card shows the neutral face plus happy, laughing, sad, surprised and zombie.</p>
+      <p class="muted">Pick a person in the bar. Each card shows the neutral face plus happy, laughing, crying, surprised and zombie.</p>
     </header>
     <div class="compare" id="compareGrid"></div>
   </section>
@@ -161,7 +162,7 @@ table.sheet{border-collapse:separate;border-spacing:0;min-width:880px;width:100%
     <div class="tune">
       <div class="sliders" id="sliders"></div>
       <div class="tune-out">
-        <div class="card"><span class="tag">All four styles, neutral</span><div class="tune-styles" id="tuneStyles"></div></div>
+        <div class="card"><span class="tag">All five styles, neutral</span><div class="tune-styles" id="tuneStyles"></div></div>
         <div class="card"><span class="tag">Current style, every variant</span><div class="tune-expr" id="tuneExpr"></div></div>
         <div class="card"><span class="tag">Reversible avatar code (prototype)</span><div class="codeline" id="tuneCode"></div><p class="muted" id="tuneCodeNote"></p></div>
       </div>
@@ -171,7 +172,7 @@ table.sheet{border-collapse:separate;border-spacing:0;min-width:880px;width:100%
   <section id="sheet">
     <header>
       <div class="eyebrow">3 · Expression sheet</div>
-      <h2 id="sheetTitle">Eight people, nine versions each</h2>
+      <h2 id="sheetTitle">Eight people, ten versions each</h2>
       <p class="muted">Expressions only swap lids, brows, mouth and cheeks. Transforms (zombie, festive) recolor and add props, but keep face shape, hair, headwear and glasses so the person stays recognizable.</p>
     </header>
     <div class="frame"><table class="sheet" id="sheetTable"></table></div>
@@ -301,6 +302,9 @@ const STYLES = {
             blurb:'Tinted thin lines, two hard-edged shadow tones and hair highlights. The most illustrated.'},
   flat:    {key:'flat',    label:'Flat',        line:null,      sw:0,   tinted:false, shade:'none', bg:'square',   head:1,   eye:1,    eyeDY:0, eyeDX:18, body:1,   sticker:false,
             blurb:'No outlines, no shading. Clean and UI-friendly, relies on colour contrast.'},
+  anime:   {key:'anime',   label:'Anime',       line:'#3b2433', sw:1.5, tinted:true,  shade:'cel',  bg:'gradient', head:1.02, headY:114, eye:1.22, eyeDY:3, eyeDX:19, body:.94, sticker:false,
+            anime:true, noseMode:'anime', noseDY:1, noseScale:.9, mouthDY:-1, mouthScale:.72, browK:.62,
+            blurb:'Tall glossy eyes with heavy lash lines, V-shaped chin, a hint of a nose, hair shine. Thin tinted lineart.'},
   sticker: {key:'sticker', label:'Sticker',     line:'#2a2233', sw:2.6, tinted:false, shade:'hard', bg:'none',     head:1.1, headY:120, eye:1.42, eyeDY:4, eyeDX:19, body:0.8, sticker:true,
             noseSmall:true, noseDY:6, noseScale:1.1, mouthDY:2, mouthScale:.85,
             blurb:'Slightly enlarged head and eyes, die-cut white border. Closest to emoji.'},
@@ -457,12 +461,13 @@ const EXPR = {
   happy:    {label:'Happy',    lower:2.2, brow:[-1.5,-2,-1], mouth:'smile', blush:.5},
   laughing: {label:'Laughing', closed:true, brow:[-3,-4,-2.5], mouth:'laugh', blush:.75},
   sincere:  {label:'Sincere',  lidTop:2.2, lower:1.2, brow:[-3,-1.5,.5], mouth:'soft', blush:.2},
-  sad:      {label:'Sad',      lidTop:1, lidOuter:3.5, brow:[-4.5,-1.5,2.5], mouth:'frown', tear:true},
+  sad:      {label:'Sad',      lidTop:1, lidOuter:3.5, brow:[-4.5,-1.5,2.5], mouth:'frown'},
+  crying:   {label:'Crying',   closed:'sad', brow:[-5.5,-2,3], mouth:'wail', rivers:true, blush:.45},
   surprised:{label:'Surprised',wide:1.22, iris:.78, brow:[-6,-7,-5], mouth:'o'},
   angry:    {label:'Angry',    lidInner:5, brow:[5,1.5,-2.5], mouth:'grit'},
   zombie:   {label:'Zombie',   lidTop:2.5, iris:.72, browL:[3,1,-1], browR:[-3,-2.5,0], mouth:'zombie', zombie:true},
 };
-const EXPRESSIONS = ['neutral','happy','laughing','sincere','sad','surprised','angry'];
+const EXPRESSIONS = ['neutral','happy','laughing','sincere','sad','crying','surprised','angry'];
 const VARIANTS = [...EXPRESSIONS.map(e=>({expression:e})), {transform:'zombie'}, {transform:'festive'}];
 const variantLabel = v => v.transform ? v.transform[0].toUpperCase()+v.transform.slice(1) : EXPR[v.expression].label;
 
@@ -496,21 +501,31 @@ function drawEye(S,t,F,ex,side,color,skin,ink){
   const tr = `translate(${n1(p.x)},${n1(p.y)}) scale(${side},1) rotate(${tilt}) scale(${n1(sc*100)/100})`;
   const lw = (S.sw ? Math.max(2, S.sw*0.8) : 2) / sc;
   if (ex.closed){
-    return `<g transform="${tr}"><path d="M${-base.W-0.5},2 Q0,-8.5 ${base.W+0.5},2" fill="none" stroke="${ink}" stroke-width="${n1(lw*1.25)}" stroke-linecap="round"/></g>`;
+    const cd = ex.closed==='sad' ? `M${-base.W-0.5},-0.5 Q0,3 ${base.W+0.5},2.5` : `M${-base.W-0.5},2 Q0,-8.5 ${base.W+0.5},2`;
+    return `<g transform="${tr}"><path d="${cd}" fill="none" stroke="${ink}" stroke-width="${n1(lw*1.25)}" stroke-linecap="round"/></g>`;
   }
-  const wide = ex.wide||1, W=base.W;
+  const wide = (ex.wide||1) * (S.anime ? 1.16 : 1), W=base.W;
   const Ht = Math.max(1.5, base.Ht*wide - (ex.lidTop||0)), Hb = Math.max(1.5, base.Hb*wide - (ex.lower||0));
   const top = `M${-W},${base.yi} C${n1(-W*.5)},${n1(-Ht+(ex.lidInner||0))} ${n1(W*.5)},${n1(-Ht+(ex.lidOuter||0))} ${W},${base.yo}`;
   const d = top + ` C${n1(W*.5)},${n1(Hb)} ${n1(-W*.5)},${n1(Hb)} ${-W},${base.yi}Z`;
   const id = uid('e');
-  const cy = n1((Hb-Ht)*0.375 + (S.chibi?0.2:0.6)), r = (S.chibi?5.6:4.6)*(ex.iris||1);
+  const cy = n1((Hb-Ht)*0.375 + (S.chibi?0.2:S.anime?-0.2:0.6)), r = (S.chibi?5.6:S.anime?5.4:4.6)*(ex.iris||1);
+  const rx = S.anime ? r*0.86 : r, ry = S.anime ? r*1.22 : r;
   const iris = ex.zombie ? mix(color,'#f4f1d8',.6) : color;
   let s = `<g transform="${tr}"><clipPath id="${id}"><path d="${d}"/></clipPath>`;
   if (ex.zombie) s += `<path d="${ell(0,2,W+3,Hb+3)}" fill="${darken(skin,.35)}" opacity=".55"/>`;
   s += `<path d="${d}" fill="${ex.zombie?'#ece7c4':'#fbfaf7'}"/>`;
-  s += `<g clip-path="url(#${id})"><circle cx="0.3" cy="${cy}" r="${n1(r)}" fill="${iris}"/>`;
-  if (S.shade!=='none') s += `<circle cx="0.3" cy="${cy}" r="${n1(r)}" fill="none" stroke="${darken(iris,.35)}" stroke-width="1"/>`;
-  if (S.chibi && !ex.zombie){
+  const irisD = ell(0.3, +cy, rx, ry);
+  s += `<g clip-path="url(#${id})"><path d="${irisD}" fill="${iris}"/>`;
+  if (S.anime && !ex.zombie){
+    const ic = uid('i');
+    s += `<clipPath id="${ic}"><path d="${irisD}"/></clipPath><g clip-path="url(#${ic})"><ellipse cx="0.3" cy="${n1(cy-ry*.55)}" rx="${n1(rx*1.1)}" ry="${n1(ry*.7)}" fill="${darken(iris,.5)}"/><ellipse cx="0.3" cy="${n1(+cy+ry*.62)}" rx="${n1(rx*.72)}" ry="${n1(ry*.45)}" fill="${lighten(iris,.42)}"/></g>`;
+    s += `<path d="${irisD}" fill="none" stroke="${darken(iris,.55)}" stroke-width=".9"/>`;
+    s += `<ellipse cx="0.3" cy="${n1(cy-0.4)}" rx="1.7" ry="2.8" fill="#16121a"/>`;
+    s += `<ellipse cx="${n1(0.3-2.1*side)}" cy="${n1(cy-ry*.42)}" rx="1.9" ry="2.6" fill="#fff" transform="rotate(${-20*side} ${n1(0.3-2.1*side)} ${n1(cy-ry*.42)})"/><circle cx="${n1(0.3+2.2*side)}" cy="${n1(+cy+ry*.5)}" r=".95" fill="#fff"/>`;
+  } else if (S.shade!=='none') s += `<path d="${irisD}" fill="none" stroke="${darken(iris,.35)}" stroke-width="1"/>`;
+  if (S.anime && !ex.zombie){
+  } else if (S.chibi && !ex.zombie){
     s += `<ellipse cx="0.3" cy="${n1(cy+1.6)}" rx="${n1(r*.78)}" ry="${n1(r*.7)}" fill="${lighten(iris,.28)}"/><path d="M${n1(-r+0.3)},${cy} A${n1(r)},${n1(r)} 0 0,1 ${n1(r+0.3)},${cy}" fill="${darken(iris,.35)}" opacity=".85"/>`;
     s += `<circle cx="0.3" cy="${n1(+cy+0.4)}" r="1.9" fill="#16121a"/><circle cx="${n1(0.3+1.9*side)}" cy="${n1(cy-2.2)}" r="1.9" fill="#fff"/><circle cx="${n1(0.3-2*side)}" cy="${n1(+cy+2.6)}" r=".9" fill="#fff"/>`;
   } else {
@@ -518,14 +533,40 @@ function drawEye(S,t,F,ex,side,color,skin,ink){
     if (!ex.zombie) s += `<circle cx="${n1(0.3+1.7*side)}" cy="${n1(cy-1.7)}" r="1.3" fill="#fff"/>`;
   }
   s += `<path d="${top}" fill="none" stroke="#2a1a2a" stroke-opacity=".14" stroke-width="3.2" transform="translate(0,1.2)"/></g>`;
-  if (S.sw>0) s += `<path d="${d}" fill="none" stroke="${ink}" stroke-width="${n1(S.sw*0.42/sc)}" stroke-linejoin="round"/>`;
-  s += `<path d="${top}" fill="none" stroke="${ink}" stroke-width="${n1(lw)}" stroke-linecap="round"/>`;
+  if (S.anime){
+    const lash = '#2a1822';
+    s += `<path d="${top}" fill="none" stroke="${lash}" stroke-width="${n1(2.9/sc)}" stroke-linecap="round"/>`;
+    s += `<path d="M${n1(W*.55)},${n1(base.yo-Ht*.32)} Q${n1(W+1.5)},${n1(base.yo-1)} ${n1(W+3.6)},${n1(base.yo-3.4)} Q${n1(W+1)},${n1(base.yo+0.6)} ${W},${n1(base.yo+0.8)}Z" fill="${lash}"/>`;
+    s += `<path d="M${n1(W*.15)},${n1(Hb*.74)} Q${n1(W*.62)},${n1(Hb*.7)} ${n1(W*.92)},${n1(base.yo+Hb*.38)}" fill="none" stroke="${ink}" stroke-width="${n1(1/sc)}" stroke-linecap="round"/>`;
+  } else {
+    if (S.sw>0) s += `<path d="${d}" fill="none" stroke="${ink}" stroke-width="${n1(S.sw*0.42/sc)}" stroke-linejoin="round"/>`;
+    s += `<path d="${top}" fill="none" stroke="${ink}" stroke-width="${n1(lw)}" stroke-linecap="round"/>`;
+  }
   if (t.eyes.lashes && t.eyes.lashes!=='none'){
     const fl = t.eyes.lashes==='long' ? [[W-0.5,base.yo-1.6,4.2,-3],[W*0.55,-Ht*0.62,3.2,-4],[W*0.1,-Ht*0.75,1.6,-4.4]] : [[W-0.5,base.yo-1.2,3.2,-2.4]];
     fl.forEach(([x,y,dx,dy]) => s += `<path d="M${n1(x)},${n1(y)} l${dx},${dy}" stroke="${ink}" stroke-width="${n1(lw*0.75)}" stroke-linecap="round"/>`);
   }
   if (ex.tear) s += `<path d="M${W-1},${n1(Hb*0.7+2)} q3,6 0,8.5 q-3,-2.5 0,-8.5Z" fill="#7cc6f2" stroke="${ink}" stroke-width="${n1(Math.max(.8,S.sw*.3)/sc)}"/>`;
   return s + `</g>`;
+}
+
+function drawRivers(S,t,F,side){
+  const base = EYES[t.eyes.shape], sc = S.eye * (1 + tv(t,'eyes.size'));
+  const p = eyePos(S,F,t,side);
+  const xc = p.x + side*base.W*sc*0.38, y0 = p.y + 1.5*sc, yb = F.chinY - 6;
+  const L = [], R = [], N = 6;
+  for (let k=0;k<=N;k++){
+    const u = k/N, y = y0 + (yb-y0)*u, hw = (3.6 + 2.6*u)*Math.min(sc,1.35);
+    const wob = (k%2 ? 2.4 : -2) * (k?1:0.3);
+    L.push([xc - hw + wob, y]); R.push([xc + hw + wob*0.8, y]);
+  }
+  const bot = [[xc+7, yb+3],[xc, yb+9],[xc-7, yb+3]];
+  const pts = [[L[0][0],L[0][1],'s'], ...L.slice(1), ...bot, ...R.slice(1).reverse(), [R[0][0],R[0][1],'s']];
+  const d = smooth(pts);
+  const edge = S.sw ? lineFor(S,'#9fd6f2') && (S.tinted ? '#4f9bc8' : S.line) : '#5aa9d6';
+  let s = `<path d="${d}" fill="#a9dcf5" fill-opacity=".92" stroke="${edge}" stroke-width="${n1(S.sw ? Math.max(1.3,S.sw*.5) : 1.2)}" stroke-linejoin="round"/>`;
+  s += `<path d="M${n1(xc-1)},${n1(y0+6)} Q${n1(xc+1.2)},${n1((y0+yb)/2)} ${n1(xc-0.6)},${n1(yb-2)}" fill="none" stroke="#ffffff" stroke-opacity=".8" stroke-width="1.6" stroke-linecap="round"/>`;
+  return s;
 }
 
 function drawBrow(S,t,F,ex,side,color){
@@ -544,7 +585,7 @@ function drawBrow(S,t,F,ex,side,color){
     const x=a*P0[0]+bb*C[0]+c*P2[0], y=a*P0[1]+bb*C[1]+c*P2[1];
     const tx=2*(1-u)*(C[0]-P0[0])+2*u*(P2[0]-C[0]), ty=2*(1-u)*(C[1]-P0[1])+2*u*(P2[1]-C[1]);
     const L=Math.hypot(tx,ty)||1, nx=-ty/L, ny=tx/L;
-    const h=b.th/2*(1-0.55*u) + 0.25;
+    const h=b.th*(S.browK||1)/2*(1-0.55*u) + 0.25;
     topS.push([x+nx*h,y+ny*h]); botS.push([x-nx*h,y-ny*h]);
   }
   const pts=[...topS,...botS.reverse()];
@@ -562,15 +603,16 @@ const NOSES = {
   straight:['M2,-17 Q4.5,-5 4.2,1 Q1,5 -3.2,3.2'],
   pointed: ['M0.5,-19 Q8,-4 5.5,2 Q1.5,5.4 -3.2,3.2'],
   small:   ['M-2.8,2 Q0,3.8 2.8,2'],
+  anime:   ['M2.4,-3 Q3.6,0.5 1.2,2.4'],
 };
 function drawNose(S,t,F,skin){
-  const type = S.noseSmall ? 'small' : t.nose.type;
+  const type = S.noseMode==='anime' ? 'anime' : (S.noseSmall ? 'small' : t.nose.type);
   const sc = (1 + tv(t,'nose.size')) * (S.noseScale||1);
   const y = F.noseY + tv(t,'nose.y') + (S.noseDY||0);
   const col = darken(skin, S.sw ? .42 : .28);
   const w = S.sw ? Math.max(1.8, S.sw*0.62) : 2.4;
   let s = `<g transform="translate(100,${n1(y)}) scale(${n1(sc*100)/100})">`;
-  if (S.shade==='cel' && type!=='small') s += `<ellipse cx="4" cy="-3" rx="3" ry="6" fill="${darken(skin,.14)}"/>`;
+  if (S.shade==='cel' && type!=='small' && type!=='anime') s += `<ellipse cx="4" cy="-3" rx="3" ry="6" fill="${darken(skin,.14)}"/>`;
   NOSES[type].forEach(d => s += `<path d="${d}" fill="none" stroke="${col}" stroke-width="${n1(w/sc)}" stroke-linecap="round" stroke-linejoin="round"/>`);
   return s + `</g>`;
 }
@@ -595,6 +637,10 @@ function drawMouth(S,t,F,ex,skin,ink,zombie){
     case 'smile':   s += lip(2.8) + line(`M${n1(-w-1.5)},-2.5 Q0,8 ${n1(w+1.5)},-2.5`); break;
     case 'soft':    s += lip(1.3) + line(`M${n1(-w*.85)},-0.5 Q0,3.2 ${n1(w*.85)},-0.5`); break;
     case 'frown':   s += lip(-0.6) + line(`M${n1(-w)},3 Q0,-3.6 ${n1(w)},3`); break;
+    case 'wail': {
+      const d = `M${n1(-w-1)},2 Q${n1(-w*.55)},-3.5 ${n1(-w*.2)},-0.5 Q0,-2.5 ${n1(w*.2)},-0.5 Q${n1(w*.55)},-3.5 ${n1(w+1)},2 Q${n1(w*.8)},9.5 0,9 Q${n1(-w*.8)},9.5 ${n1(-w-1)},2Z`, id=uid('m');
+      s += `<clipPath id="${id}"><path d="${d}"/></clipPath><path d="${d}" fill="#c4485a"/><g clip-path="url(#${id})"><ellipse cx="0" cy="9" rx="${n1(w*.6)}" ry="4" fill="#f08a96"/></g>`;
+      s += `<path d="${d}" fill="none" stroke="${S.sw?ink:mc}" stroke-width="${S.sw?lw:1.4}" stroke-linejoin="round"/>`; break; }
     case 'o':       s += `<ellipse cx="0" cy="1.5" rx="3.8" ry="5" fill="#5a1a24"${outl}/>`; break;
     case 'laugh': {
       const d = `M${n1(-w-2)},-2 Q0,0.5 ${n1(w+2)},-2 Q${n1(w*.8)},13 0,13 Q${n1(-w*.8)},13 ${n1(-w-2)},-2Z`, id=uid('m');
@@ -707,6 +753,10 @@ function background(S, bg, festive, zombie){
   if (S.bg==='sparkle'){
     const star = (x,y,r) => `<path d="M${x},${y-r} Q${x+r*.18},${y-r*.18} ${x+r},${y} Q${x+r*.18},${y+r*.18} ${x},${y+r} Q${x-r*.18},${y+r*.18} ${x-r},${y} Q${x-r*.18},${y-r*.18} ${x},${y-r}Z" fill="${lighten(bg,.6)}"/>`;
     s += `<rect width="200" height="200" rx="26" fill="${bg}"/><circle cx="100" cy="104" r="84" fill="${lighten(bg,.2)}"/>` + star(30,38,9) + star(172,64,7) + star(160,24,4.5) + star(24,150,5);
+  } else if (S.bg==='gradient'){
+    const gid = uid('g');
+    s += `<linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${lighten(bg,.45)}"/><stop offset="1" stop-color="${bg}"/></linearGradient><rect width="200" height="200" rx="18" fill="url(#${gid})"/>`;
+    s += `<path d="M150,0 L200,0 L200,50Z M0,170 L0,200 L30,200Z" fill="${lighten(bg,.6)}" opacity=".6"/>`;
   } else if (S.bg==='circle'){
     s += `<circle cx="100" cy="100" r="100" fill="${bg}"/><circle cx="84" cy="84" r="70" fill="${lighten(bg,.22)}"/>`;
   } else if (S.bg==='none'){
@@ -733,6 +783,7 @@ function render(traits, variant={}, styleKey='chibi'){
   if (zombie){ skin=mix(desat(skin,.55),'#8db27a',.5); hair=mix(desat(hair,.4),'#5d5a4c',.35); shirt=mix(desat(shirt,.5),'#5d5a4c',.4); bg=mix(bg,'#38423a',.62); hwColor=desat(hwColor,.4); }
   const F = faceGeom(t.face);
   if (S.chibi){ F.chinW += 7; F.chinY -= 3; F.jawY -= 2; }
+  if (S.anime){ F.chinW = Math.max(5, F.chinW-4); F.jw -= 1; F.jawY -= 2; F.chinY += 2; }
   let hwType = t.headwear?.type||'none';
   if (festive && hwType==='none') hwType = 'partyHat';
   const HW = HEADWEAR[hwType];
@@ -796,6 +847,7 @@ function render(traits, variant={}, styleKey='chibi'){
     if (HW.shadow) inner += `<path d="${smooth(F.mp(HW.shadow))}" fill="${sh}" opacity=".85"/>`;
   }
   const blush = Math.max(ex.blush||0, S.blush || (S.shade==='cel' ? .18 : 0));
+  if (S.anime && blush>=.4 && !zombie) [-1,1].forEach(sd => { const bx=100+sd*27*F.sx, by=F.noseY+4; for (let k=-1;k<=1;k++) inner += `<path d="M${n1(bx+k*3.4-1.4)},${by+2.2} l2.8,-4.4" stroke="#e0566f" stroke-width="1" stroke-linecap="round" opacity=".7"/>`; });
   if (blush && !zombie) inner += `<ellipse cx="${n1(100-27*F.sx)}" cy="${F.noseY+4}" rx="7.5" ry="4.2" fill="#ff5d82" opacity="${n1(blush*.42)}"/><ellipse cx="${n1(100+27*F.sx)}" cy="${F.noseY+4}" rx="7.5" ry="4.2" fill="#ff5d82" opacity="${n1(blush*.42)}"/>`;
   face += shape(S, headD, skin, {inner});
   face += drawDetails(S,t,F,skin,headClip);
@@ -809,6 +861,7 @@ function render(traits, variant={}, styleKey='chibi'){
   face += drawBrow(S,t,F,ex,-1,browCol) + drawBrow(S,t,F,ex,1,browCol);
   face += drawNose(S,t,F,skin);
   face += drawFacialHair(S,t,F,beardCol,skin,headClip);
+  if (ex.rivers) face += drawRivers(S,t,F,-1) + drawRivers(S,t,F,1);
   face += drawMouth(S,t,F,ex,skin,ink,zombie);
   face += drawGlasses(S,t,F,zombie);
   // hair on top
@@ -819,7 +872,8 @@ function render(traits, variant={}, styleKey='chibi'){
       const sc = mix(hair,skin,.55);
       hs += shape(S, smooth(F.mp(side)), sc, {noShade:true}) + shape(S, smooth(F.mp(mirrorPts(side))), sc, {noShade:true});
     }
-    const hl = S.shade==='cel' && topDef!=='curly' ? `<path d="M${n1(100-26*F.sx)},${54+F.dy} Q100,${40+F.dy} ${n1(100+22*F.sx)},${52+F.dy}" fill="none" stroke="${lighten(hair,.4)}" stroke-width="4.5" stroke-linecap="round" opacity=".75" transform="translate(-6,4)"/>` : '';
+    const hl = S.anime && topDef!=='curly' ? `<path d="M${n1(100-30*F.sx)},${58+F.dy} Q100,${44+F.dy} ${n1(100+30*F.sx)},${58+F.dy}" fill="none" stroke="${lighten(hair,.5)}" stroke-width="4.5" stroke-linecap="round" opacity=".7" transform="translate(-3,0)"/>` + `<path d="M${n1(100-14*F.sx)},${62+F.dy} q4,10 1,20 M${n1(100+10*F.sx)},${60+F.dy} q-3,9 0,17" fill="none" stroke="${darken(hair,.3)}" stroke-width="1.2" opacity=".7"/>` :
+      S.shade==='cel' && topDef!=='curly' ? `<path d="M${n1(100-26*F.sx)},${54+F.dy} Q100,${40+F.dy} ${n1(100+22*F.sx)},${52+F.dy}" fill="none" stroke="${lighten(hair,.4)}" stroke-width="4.5" stroke-linecap="round" opacity=".75" transform="translate(-6,4)"/>` : '';
     const part = t.hair.top==='centerPart' && S.sw ? `<path d="M100,${58+F.dy} Q98,${48+F.dy} 100,${41+F.dy}" fill="none" stroke="${darken(hair,.35)}" stroke-width="1.3"/>` : '';
     hs += shape(S, topD, t.hair.top==='buzz' ? mix(hair,skin,.25) : hair, {under: topDef==='curly', inner: hl+part});
     face += HC(hs);
@@ -838,7 +892,7 @@ function render(traits, variant={}, styleKey='chibi'){
     const cc = uid('cc');
     defs += `<clipPath id="${cc}"><circle cx="100" cy="100" r="100"/></clipPath>`;
     content = `<g clip-path="url(#${cc})">${L}</g>`;
-  } else if (S.bg==='sparkle'){
+  } else if (S.bg==='sparkle' || S.bg==='gradient'){
     const cc = uid('cc');
     defs += `<clipPath id="${cc}"><rect width="200" height="200" rx="26"/></clipPath>`;
     content = `<g clip-path="url(#${cc})">${L}</g>`;
@@ -961,7 +1015,7 @@ function syncBar(){
 
 function buildHero(){
   const c = CAST[3];
-  $('heroStrip').innerHTML = ['chibi','cel','flat','sticker'].map((s,i)=>render(CAST[[7,0,3,4][i]], {expression:['happy','laughing','sincere','surprised'][i]}, s)).join('');
+  $('heroStrip').innerHTML = ['chibi','anime','cel','flat','sticker'].map((s,i)=>render(CAST[[7,3,0,4,6][i]], {expression:['happy','sincere','laughing','surprised','happy'][i]}, s)).join('');
 }
 
 function buildCompare(){
@@ -970,7 +1024,7 @@ function buildCompare(){
     <div class="card">
       <div class="rowh"><h3>${S.label}</h3></div>
       <div class="big">${avBtn(p,{expression:'neutral'},S.key,`${p.name}, neutral, ${S.label}`)}</div>
-      <div class="minis">${[{expression:'happy'},{expression:'laughing'},{expression:'sad'},{expression:'surprised'},{transform:'zombie'}].map(v=>avBtn(p,v,S.key,`${p.name}, ${variantLabel(v)}`)).join('')}</div>
+      <div class="minis">${[{expression:'happy'},{expression:'laughing'},{expression:'crying'},{expression:'surprised'},{transform:'zombie'}].map(v=>avBtn(p,v,S.key,`${p.name}, ${variantLabel(v)}`)).join('')}</div>
       <p>${S.blurb}</p>
     </div>`).join('');
 }
