@@ -578,6 +578,8 @@ const EXPR = {
   shrug:     {label:'Shrug',      lidTop:2.8, browL:[-5,-4,-2], browR:[1,.5,0], mouth:'meh', hands:true},
   heartEyes: {label:'Heart eyes', eyeIcon:'heart', brow:[-2,-2.5,-1.5], mouth:'smile', blush:.6},
   starStruck:{label:'Star-struck',eyeIcon:'star', brow:[-4,-5,-3], mouth:'laugh', blush:.4},
+  kiss:      {label:'Kiss',       winkSide:-1, closed:false, lower:1.5, brow:[-1.5,-2,-1], mouth:'kiss', blush:.6, heart:true},
+  sleepy:    {label:'Sleepy',     closed:'sleep', brow:[1,1.5,1.5], mouth:'sleep', blush:.2, zzz:true},
   surprised:{label:'Surprised',wide:1.22, iris:.78, brow:[-6,-7,-5], mouth:'o'},
   angry:    {label:'Angry',    lidInner:5, brow:[5,1.5,-2.5], mouth:'grit'},
   zombie:   {label:'Zombie',   lidTop:2.5, iris:.72, browL:[3,1,-1], browR:[-3,-2.5,0], mouth:'zombie', zombie:true},
@@ -585,7 +587,7 @@ const EXPR = {
 const CHEEKS = ['auto','none','light','medium','strong'];
 const EYE_RENDER = ['auto','detailed','bean','flatIris','dot','beanLid','button'];
 const EYE_RENDER_LABEL = {auto:'Style default', detailed:'#0 Detailed', bean:'#1 Solid bean', flatIris:'#2 White + flat iris', dot:'#3 Dot', beanLid:'#4 Bean + lid line', button:'#5 Glossy button'};
-const EXPRESSIONS = ['neutral','happy','laughing','sincere','sad','crying','surprised','angry','lol','rofl','smileTear','wink','upsideDown','shrug','heartEyes','starStruck'];
+const EXPRESSIONS = ['neutral','happy','laughing','sincere','sad','crying','surprised','angry','lol','rofl','smileTear','wink','upsideDown','shrug','heartEyes','starStruck','kiss','sleepy'];
 const VARIANTS = [...EXPRESSIONS.map(e=>({expression:e})), {transform:'zombie'}, {transform:'festive'}];
 const variantLabel = v => v.transform ? v.transform[0].toUpperCase()+v.transform.slice(1) : EXPR[v.expression].label;
 
@@ -628,7 +630,7 @@ function drawEye(S,t,F,ex,side,color,skin,ink,eyeMode){
     return `<g transform="translate(${n1(p.x)},${n1(p.y)}) scale(${n1(k*100)/100})"><path d="${d}" fill="${fill}" stroke="${ink}" stroke-width="${n1((S.sw ? S.sw*.55 : 1.2)/k)}" stroke-linejoin="round"/><circle cx="-2.6" cy="-2.2" r="1.3" fill="#fff" opacity=".85"/></g>`;
   }
   if (ex.closed || ex.winkSide === side){
-    const cd = ex.closed==='sad' ? `M${-base.W-0.5},-0.5 Q0,3 ${base.W+0.5},2.5` : `M${-base.W-0.5},2 Q0,-8.5 ${base.W+0.5},2`;
+    const cd = ex.closed==='sleep' ? `M${-base.W},0.5 Q0,4.2 ${base.W},0.5` : ex.closed==='sad' ? `M${-base.W-0.5},-0.5 Q0,3 ${base.W+0.5},2.5` : `M${-base.W-0.5},2 Q0,-8.5 ${base.W+0.5},2`;
     return `<g transform="${tr}"><path d="${cd}" fill="none" stroke="${ink}" stroke-width="${n1(lw*1.25)}" stroke-linecap="round"/></g>`;
   }
   const wide = (ex.wide||1) * (S.anime ? 1.16 : 1), W=base.W;
@@ -816,6 +818,8 @@ function drawMouth(S,t,F,ex,skin,ink,zombie){
   const outl = S.sw ? ` stroke="${ink}" stroke-width="${lw}" stroke-linejoin="round"` : '';
   switch(ex.mouth){
     case 'neutral': s += lip(.7) + line(`M${n1(-w)},0 Q0,1.4 ${n1(w)},0`); break;
+    case 'kiss':    s += `<path d="M${n1(-1.2)},-3.6 q4,1 .8,3.4 q4,1.6 -.6,3.8" fill="${lc}" stroke="${S.sw?ink:mc}" stroke-width="${lw}" stroke-linecap="round" stroke-linejoin="round"/>`; break;
+    case 'sleep':   s += `<ellipse cx="0" cy="1.5" rx="2.6" ry="3.2" fill="#5a1a24"${outl}/>`; break;
     case 'meh':     s += line(`M${n1(-w*.9)},1.2 Q${n1(-w*.2)},1.6 ${n1(w*.9)},-1.8`); break;
     case 'smile':   s += lip(2.8) + line(`M${n1(-w-1.5)},-2.5 Q0,8 ${n1(w+1.5)},-2.5`); break;
     case 'soft':    s += lip(1.3) + line(`M${n1(-w*.85)},-0.5 Q0,3.2 ${n1(w*.85)},-0.5`); break;
@@ -1203,6 +1207,15 @@ function render(traits, variant={}, styleKey='chibi', opts={}){
   if (HW.front) face += tag('headwear', hatT ? `<g transform="${hatT}">${HW.front(S,F,hwColor,hwCtx,hwAccent)}</g>` : HW.front(S,F,hwColor,hwCtx,hwAccent));
   if (HW.glassesOver) face += tag('glasses', FL(drawGlasses(S,t,F,zombie,'front')));
 
+  if (ex.heart){
+    const x = 100 + 16*F.sx, y = mouthCenterY(S,t,F) - 4;
+    face += tag('tears', `<path d="M0,4 C-7,-1 -5.5,-7.5 0,-3.4 C5.5,-7.5 7,-1 0,4Z" transform="translate(${n1(x)},${n1(y)}) rotate(18) scale(.9)" fill="#e5304f" stroke="${ink}" stroke-width="${n1(S.sw ? S.sw*.5 : 1)}" stroke-linejoin="round"/>`);
+  }
+  if (ex.zzz){
+    const z = (x,y,k) => `<path d="M${n1(x)},${n1(y)} h${n1(k)} l${n1(-k)},${n1(k)} h${n1(k)}" fill="none" stroke="${zombie ? '#e8e4c8' : '#5868c9'}" stroke-width="${n1(1.4 + k*.18)}" stroke-linecap="round" stroke-linejoin="round"/>`;
+    const bx = 100 + (F.w - 4)*F.sx, by = F.top + 10;
+    face += tag('tears', z(bx, by, 6) + z(bx + 9, by - 12, 8) + z(bx + 20, by - 27, 10));
+  }
   if (ex.joyTears){
     let jt = '';
     [-1,1].forEach(side => {

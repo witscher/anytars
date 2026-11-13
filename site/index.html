@@ -155,12 +155,27 @@ main.grid{display:grid;grid-template-columns:minmax(300px,420px) minmax(0,1fr);g
 @media (max-width:900px){ main.grid{grid-template-columns:1fr} }
 
 /* preview */
-.preview{position:sticky;top:max(12px, env(safe-area-inset-top,0px));display:grid;gap:12px}
-@media (max-width:900px){ .preview{position:static} }
+.preview{position:sticky;top:max(12px, env(safe-area-inset-top,0px));display:grid;gap:12px;max-height:calc(100vh - 24px);overflow:auto;scrollbar-width:thin}
+@media (max-width:900px){ .preview{position:static;max-height:none;overflow:visible} }
 .stage{background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:14px;display:grid;gap:12px}
 .big{width:100%;max-width:100%;aspect-ratio:1}
 .big svg{width:100%;height:100%;display:block}
-.styles{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.bigwrap{display:grid;grid-template-columns:minmax(0,1fr) 62px;gap:8px;align-items:start}
+.styles{display:grid;grid-template-columns:1fr;gap:6px}
+.sbtn span{line-height:1.1;text-align:center}
+@media (max-width:900px){ .bigwrap{grid-template-columns:1fr} .styles{grid-template-columns:repeat(5,minmax(0,1fr))} }
+.editor{display:grid;gap:0}
+.acc{border-top:1px solid var(--line)}
+.acc:first-child{border-top:0}
+.acc > summary{list-style:none;display:flex;align-items:center;gap:10px;padding:13px 16px;cursor:pointer;font:700 1rem var(--f-display)}
+.acc > summary::-webkit-details-marker{display:none}
+.acc > summary::after{content:"";margin-left:auto;width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);transition:transform .15s}
+.acc[open] > summary::after{transform:rotate(-135deg)}
+.acc > summary:hover{background:var(--surface-2)}
+.acc-sub{font:400 .82rem var(--f-body);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.acc-body{padding:4px 16px 18px;display:grid;gap:20px}
+.acc-body .variants{grid-template-columns:repeat(auto-fill,minmax(70px,1fr))}
+@media (prefers-reduced-motion: reduce){ .acc > summary::after{transition:none} }
 .sbtn{border:1px solid var(--line);background:var(--surface-2);border-radius:12px;padding:4px 4px 3px;cursor:pointer;display:grid;gap:2px;justify-items:center}
 .sbtn svg{width:100%;height:auto;display:block}
 .sbtn span{font-size:.7rem;color:var(--muted)}
@@ -258,7 +273,11 @@ footer a{color:inherit}
           <button class="btn linkish" id="saveNewBtn" type="button" hidden>Save as new</button>
           <button class="btn primary" id="saveBtn" type="button">Save</button>
         </div>
-        <div class="big" id="big" role="img" aria-label="Your avatar"></div>
+        <div class="bigwrap">
+          <div class="big" id="big" role="img" aria-label="Your avatar"></div>
+          <div class="styles" id="styles" role="group" aria-label="Style"></div>
+        </div>
+        <div class="msg" id="msg" aria-live="polite"></div>
         <div class="ai-dock" id="aiDock" role="region" aria-labelledby="aiTitle">
           <div class="ai-top">
             <svg class="sparkles" viewBox="0 0 32 32" width="22" height="22" aria-hidden="true">
@@ -283,30 +302,38 @@ footer a{color:inherit}
           </form>
           <div class="ai-note">Describe a change or a whole new character, or paste a photo. Photos are analysed once and not stored. <a href="#how">How it works</a></div>
         </div>
-        <div><div class="label">Style</div><div class="styles" id="styles"></div></div>
-        <div class="bgrow"><div class="label">Background</div>
-          <div id="bgColors"></div>
-          <div class="chips" id="bgShapes"></div>
-          <label class="toggle"><input type="checkbox" id="bgClear"> Transparent</label>
-        </div>
-        <div><div class="label">Versions</div><div class="variants" id="variants"></div></div>
-        <div class="actions">
-          <button class="btn" id="dlPng" type="button">Download PNG</button>
-          <button class="btn" id="dlSvg" type="button">Download SVG</button>
-          <button class="btn" id="copyLink" type="button">Copy link</button>
-        </div>
-        <div class="code">
-          <div class="label">Avatar code</div>
-          <div class="codebox" id="code"></div>
-          <div class="loadrow"><input id="loadIn" type="text" placeholder="Paste a code (v1.…)" aria-label="Avatar code to load" spellcheck="false" autocomplete="off"><button class="btn" id="loadBtn" type="button">Load</button></div>
-          <div class="msg" id="msg" aria-live="polite"></div>
-        </div>
       </div>
     </aside>
 
     <section class="editor" aria-label="Customize">
-      <div class="tabs" role="tablist" id="tabs"></div>
-      <div class="panel" id="panel" role="tabpanel"></div>
+      <details class="acc" data-sec="expression" open>
+        <summary data-tab="expression"><span>Expression</span><span class="acc-sub" id="sub-expression"></span></summary>
+        <div class="acc-body"><div class="variants" id="variants"></div></div>
+      </details>
+      <div id="partSections"></div>
+      <details class="acc" data-sec="background">
+        <summary data-tab="background"><span>Background</span><span class="acc-sub" id="sub-background"></span></summary>
+        <div class="acc-body bgrow">
+          <div id="bgColors"></div>
+          <div class="chips" id="bgShapes"></div>
+          <label class="toggle"><input type="checkbox" id="bgClear"> Transparent</label>
+        </div>
+      </details>
+      <details class="acc" data-sec="export">
+        <summary data-tab="export"><span>Download &amp; share</span></summary>
+        <div class="acc-body">
+          <div class="actions">
+            <button class="btn" id="dlPng" type="button">Download PNG</button>
+            <button class="btn" id="dlSvg" type="button">Download SVG</button>
+            <button class="btn" id="copyLink" type="button">Copy link</button>
+          </div>
+          <div class="code">
+            <div class="label">Avatar code</div>
+            <div class="codebox" id="code"></div>
+            <div class="loadrow"><input id="loadIn" type="text" placeholder="Paste a code (v1.…)" aria-label="Avatar code to load" spellcheck="false" autocomplete="off"><button class="btn" id="loadBtn" type="button">Load</button></div>
+          </div>
+        </div>
+      </details>
     </section>
   </main>
 
@@ -498,6 +525,7 @@ function drawPreview(){
   $('styles').innerHTML = Object.values(STYLES).map(S => `<button class="sbtn" type="button" data-style="${S.key}" aria-pressed="${S.key===style}">${render(t,{expression:'neutral'},S.key)}<span>${S.label}</span></button>`).join('');
   $('variants').innerHTML = VARIANTS.map(v => { const n = variantName(v); return `<button class="vbtn" type="button" data-variant="${n}" aria-pressed="${n===variantName(variant)}" title="${variantLabel(v)}">${svg(t, v)}<span>${variantLabel(v)}</span></button>`; }).join('');
   $('code').textContent = encode(t);
+  if (typeof drawSummaries === 'function' && $('partSections').children.length) drawSummaries();
 }
 
 // ---------- editor panels ----------
@@ -524,7 +552,41 @@ function sliders(group){
 const autoChip = path => `<div class="chips" style="margin-bottom:6px"><button class="chip" type="button" data-unset="${path}" aria-pressed="${!getK(t, path)}">Auto</button></div>`;
 const field = (title, body, sub) => `<div class="field"><h3>${title}${sub?` <span class="sub">${sub}</span>`:''}</h3>${body}</div>`;
 
-function drawPanel(){
+// Accordion: each part is a <details> section; only open sections are rendered.
+const OPEN_KEY = 'anytars-maker-open';
+let openSecs = new Set(['expression', 'face']);
+try { const o = JSON.parse(localStorage.getItem(OPEN_KEY) || 'null'); if (Array.isArray(o)) openSecs = new Set(o); } catch(e){}
+function buildSections(){
+  $('partSections').innerHTML = TABS.map(([k,l]) => `<details class="acc" data-sec="${k}"${openSecs.has(k)?' open':''}><summary data-tab="${k}"><span>${l}</span><span class="acc-sub" id="sub-${k}"></span></summary><div class="acc-body" id="sec-${k}"></div></details>`).join('');
+  document.querySelectorAll('details.acc').forEach(d => {
+    if (openSecs.has(d.dataset.sec)) d.open = true; else if (d.dataset.sec !== 'expression' || !openSecs.size) d.open = openSecs.has(d.dataset.sec);
+    d.addEventListener('toggle', () => {
+      if (d.open) openSecs.add(d.dataset.sec); else openSecs.delete(d.dataset.sec);
+      try { localStorage.setItem(OPEN_KEY, JSON.stringify([...openSecs])); } catch(e){}
+      if (d.open && $('sec-' + d.dataset.sec)) drawSection(d.dataset.sec);
+    });
+  });
+}
+function sectionSummary(k){
+  const g = t.glasses?.type || 'none', hw = t.headwear?.type || 'none';
+  switch(k){
+    case 'expression': return variantLabel(variant);
+    case 'face': return nice(t.face);
+    case 'hair': return [nice(t.hair.top), t.hair.back !== 'none' ? nice(t.hair.back) : ''].filter(Boolean).join(', ');
+    case 'eyes': return nice(t.eyes.shape);
+    case 'brows': return nice(t.brows.type);
+    case 'nose': return `${nice(t.nose.type)} nose, ${nice(t.mouth.width)} mouth`;
+    case 'beard': return nice(t.facialHair || 'none');
+    case 'glasses': return nice(g);
+    case 'headwear': return nice(hw);
+    case 'extras': return (t.details || []).map(nice).join(', ') || 'None';
+    case 'background': return bgCfg.clear ? 'Transparent' : nice(bgCfg.shape === 'style' ? 'style default' : bgCfg.shape);
+    default: return '';
+  }
+}
+function drawSummaries(){ document.querySelectorAll('details.acc').forEach(d => { const el = $('sub-' + d.dataset.sec); if (el) el.textContent = sectionSummary(d.dataset.sec); }); }
+function drawPanel(){ TABS.forEach(([k]) => { const d = document.querySelector(`details.acc[data-sec="${k}"]`); if (d && d.open) drawSection(k); }); drawSummaries(); }
+function drawSection(tab){
   let h = '';
   switch(tab){
     case 'face':
@@ -587,11 +649,9 @@ function drawPanel(){
       h += field('Top', swatches('shirt', PAL.cloth));
       break;
   }
-  $('panel').innerHTML = h;
+  const el = $('sec-' + tab); if (el) el.innerHTML = h;
 }
-function drawTabs(){
-  $('tabs').innerHTML = TABS.map(([k,l]) => `<button class="tab" type="button" role="tab" data-tab="${k}" aria-selected="${k===tab}">${l}</button>`).join('');
-}
+function drawTabs(){}
 function redraw(opts={}){
   if (currentId && !entry(currentId)) currentId = null;
   drawPreview();
@@ -634,7 +694,6 @@ document.addEventListener('click', e => {
   if (b.dataset.bgshape){ bgCfg.shape = b.dataset.bgshape; applyBg(); redraw({presets:true}); drawLibrary(); return; }
   if (b.dataset.style){ style = b.dataset.style; redraw({presets:true}); drawLibrary(); return; }
   if (b.dataset.variant){ const n = b.dataset.variant; variant = (n==='zombie'||n==='festive') ? {transform:n} : {expression:n}; drawPreview(); return; }
-  if (b.dataset.tab){ tab = b.dataset.tab; drawTabs(); drawPanel(); return; }
   if (b.dataset.set){ setValue(b.dataset.set, JSON.parse(b.dataset.val)); redraw({presets:true}); return; }
   if (b.dataset.unset){ beforeChange(); delPath(t, b.dataset.unset); presetId = null; redraw({presets:true}); return; }
   if (b.dataset.detail){ beforeChange(); const d = b.dataset.detail; t.details = t.details || []; t.details = t.details.includes(d) ? t.details.filter(x=>x!==d) : [...t.details, d]; presetId=null; redraw(); return; }
@@ -789,7 +848,7 @@ const isDark = () => { const a = document.documentElement.getAttribute('data-the
 const syncTheme = () => { $('themeBtn').textContent = isDark() ? 'Light' : 'Dark'; };
 $('themeBtn').addEventListener('click', () => { document.documentElement.setAttribute('data-theme', isDark() ? 'light' : 'dark'); syncTheme(); });
 
-load(); applyBg(); drawTabs(); drawPresets(); redraw(); drawLibrary(); syncTheme();
+load(); applyBg(); buildSections(); drawTabs(); drawPresets(); redraw(); drawLibrary(); syncTheme();
 document.addEventListener('keydown', e => {
   if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
   const tag = (e.target.tagName||'').toLowerCase(); if (tag === 'input' && e.target.type === 'text') return;

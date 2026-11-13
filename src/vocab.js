@@ -146,7 +146,7 @@ export const EXPRESSION = {
   sad: 'sad', crying: 'crying', surprised: 'surprised', angry: 'angry',
   lol: 'laughing so hard it brings tears (LOL, tears of joy)', rofl: 'rolling on the floor laughing (ROFL), head tilted',
   smileTear: 'smiling through a single tear, touched or bittersweet', wink: 'winking', upsideDown: 'upside-down face, silly or ironic',
-  shrug: 'shrugging, unsure, whatever', heartEyes: 'heart eyes, in love', starStruck: 'star-struck, amazed with star eyes',
+  shrug: 'shrugging, unsure, whatever', heartEyes: 'heart eyes, in love', starStruck: 'star-struck, amazed with star eyes', kiss: 'blowing a kiss', sleepy: 'sleepy or asleep, zzz',
   zombie: 'transformation: turned into a zombie (undead, spooky, Halloween)', festive: 'transformation: festive party version (celebration, birthday, party hat)',
 };
 
