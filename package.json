@@ -1,0 +1,13 @@
+{
+  "name": "anytars",
+  "private": true,
+  "description": "Open-source SVG avatar library for humans in their diversity",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build-site.mjs",
+    "deploy": "npm run build && wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "4.156.0"
+  }
+}
