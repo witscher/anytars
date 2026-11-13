@@ -7,6 +7,23 @@ export const FACE = {
   square: 'square face with a strong, wide jaw',
   heart: 'heart-shaped face: wide forehead, narrow pointed chin',
   long: 'long, narrow face',
+  diamond: 'diamond-shaped face: widest at the cheekbones, narrow forehead and pointed chin',
+  rectangle: 'long rectangular face with a strong, straight jaw',
+  triangle: 'triangle face: narrow forehead, jaw wider than the forehead',
+};
+
+// Generation hints (not stored on the avatar): steer the random parts of a new character.
+export const INTENT = {
+  edit: 'the request asks to change some parts of the current avatar',
+  new: 'the request asks for a new or random character, described as a whole (for example "a random feminine character", "an old man with a beard")',
+};
+export const PRESENTATION = {
+  unspecified: 'no gender presentation mentioned', feminine: 'feminine (woman, girl, female, feminine)',
+  masculine: 'masculine (man, boy, male, masculine)', androgynous: 'androgynous or non-binary',
+};
+export const AGE = {
+  unspecified: 'no age mentioned', child: 'a child or kid', young: 'a teenager or young adult',
+  adult: 'an adult', older: 'middle-aged or older', senior: 'elderly, a senior',
 };
 
 export const HAIR_TOP = {

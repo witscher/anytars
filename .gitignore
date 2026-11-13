@@ -4,3 +4,4 @@ dist/
 qa/results.json
 qa/*.png
 build/
+qa/eval-results.json

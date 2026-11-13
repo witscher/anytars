@@ -293,6 +293,10 @@ const FACES = {
   square: {top:52,w:46,cheekY:98, jw:44,jawY:136,chinY:154,chinW:24},
   heart:  {top:50,w:48,cheekY:94, jw:32,jawY:130,chinY:156,chinW:9},
   long:   {top:46,w:41,cheekY:100,jw:35,jawY:136,chinY:160,chinW:13},
+  // added later; appended so codes keep their indices
+  diamond:  {top:52,w:47,cheekY:104,jw:31,jawY:132,chinY:157,chinW:8},
+  rectangle:{top:46,w:43,cheekY:98, jw:42,jawY:140,chinY:160,chinW:24},
+  triangle: {top:54,w:41,cheekY:104,jw:45,jawY:134,chinY:154,chinW:26},
 };
 function faceGeom(name){
   const f = {...FACES[name]};
@@ -1276,6 +1280,13 @@ const ORIGINAL = JSON.parse(JSON.stringify(CAST));
 // =====================================================================
 // Page
 // =====================================================================
+// Starred avatars from the maker (same site only) join the cast as examples.
+try {
+  const saved = JSON.parse(localStorage.getItem('anytars-maker-saved') || '[]');
+  saved.filter(e => e && e.star && typeof e.code === 'string').forEach((e, i) => {
+    try { const t = decode(e.code); const c = { id: 'star-' + e.id, name: '★ ' + (i + 1), blurb: 'Starred in the avatar maker', ...t }; CAST.push(c); ORIGINAL.push(JSON.parse(JSON.stringify(c))); } catch(err){}
+  });
+} catch(e){}
 const state = { style:'chibi', person:'david', bg:'avatar', shape:'style' };
 const BG_CHOICES = [['avatar','Per avatar'],['#e6e7ec','Grey'],['#cfe0ee','Blue'],['#f3d27a','Yellow'],['#2b2d3a','Dark'],['none','None']];
 try { const s = JSON.parse(localStorage.getItem('anytars-lab')||'{}'); if (STYLES[s.style]) state.style=s.style; if (CAST.find(c=>c.id===s.person)) state.person=s.person; if (BG_CHOICES.some(b=>b[0]===s.bg)) state.bg=s.bg; if (BG_SHAPES.includes(s.shape)) state.shape=s.shape; } catch(e){}

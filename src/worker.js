@@ -66,7 +66,9 @@ const TRAITS = [
   ['lips', 'lips', V.LIPS, (t, v) => { t.mouth.lips = v; }],
   ['facialHair', 'facial hair', V.FACIAL_HAIR, (t, v) => { t.facialHair = v; }],
   ['beardColor', 'beard colour', V.HAIR_COLOR, (t, v) => { t.facialHairColor = V.HAIR_COLOR[v][0]; }],
-  ['glasses', 'glasses', V.GLASSES, (t, v) => { t.glasses = v === 'none' ? { type: 'none' } : { frame: '#16161a', lens: '#ffffff', lensAlpha: .12, ...t.glasses, type: v }; }],
+  ['glasses', 'glasses', V.GLASSES, (t, v) => {
+    if (v === 'any') { if (t.glasses?.type && t.glasses.type !== 'none') return; v = ['rect', 'round', 'softSquare', 'panto'][Math.floor(Math.random() * 4)]; }
+    t.glasses = v === 'none' ? { type: 'none' } : { frame: '#16161a', lens: '#ffffff', lensAlpha: .12, ...t.glasses, type: v }; }],
   ['lens', 'glasses lenses', V.LENS, (t, v) => { if (t.glasses?.type && t.glasses.type !== 'none') { t.glasses.lens = V.LENS[v][0]; t.glasses.lensAlpha = V.LENS[v][1]; } }],
   ['frameColor', 'glasses frame colour', V.FRAME_COLOR, (t, v) => { if (t.glasses?.type && t.glasses.type !== 'none') t.glasses.frame = V.FRAME_COLOR[v][0]; }],
   ['headwear', 'headwear', V.HEADWEAR, (t, v) => { t.headwear = { color: '#2f6bd8', ...t.headwear, type: v }; }],
@@ -121,10 +123,10 @@ const report = (id, label, a) => ({ id, label, choice: a.choice, confidence: r2(
 async function edit(env, body) {
   const text = String(body?.text || '').trim().slice(0, MAX_TEXT);
   if (!text) throw fail('Describe what to change.');
-  const t = sanitize(body?.traits);
-  const ask = 'Apply the request to the current avatar. Which option should the avatar have afterwards? Choose keep unless the request asks for a change to this part.';
+  let t = sanitize(body?.traits);
+  const ask = 'Apply the request to the avatar. Which option should the avatar have afterwards? Choose keep unless the request asks for or clearly describes this part.';
   const questions = {};
-  TRAITS.forEach(([id, label, map]) => { questions[id] = choice(`${ask} Part: ${label}.`, withKeep(map, label)); });
+  TRAITS.forEach(([id, label, map]) => { questions[id] = choice(`${ask} Part: ${label}.`, withKeep(id === 'glasses' ? { ...map, any: 'glasses, when the request asks for glasses without naming a type' } : map, label)); });
   questions.skin = choice(`${ask} Part: skin tone.`, { keep: 'the request does not ask to change the skin tone', darker: 'a darker skin tone than now', lighter: 'a lighter skin tone than now', ...Object.fromEntries(V.SKIN_LEVELS.map(([hexv, d], i) => ['s' + i, d + ' skin'])) });
   questions.bg = choice(`${ask} Part: background colour.`, withKeep(V.BG, 'background colour'));
   Object.entries(V.DETAILS).forEach(([k, d]) => { questions['detail_' + k] = choice(`Does the request explicitly ask to add or remove ${d}, or ask for something that clearly implies it (for example older or younger for wrinkles)? Choose keep if ${d} is not asked for.`, { keep: `the request does not ask about ${d}`, add: `add ${d}`, remove: `remove ${d}` }); });
@@ -132,6 +134,10 @@ async function edit(env, body) {
   questions.expression = choice('Which version of the avatar does the request ask to see: an expression (neutral, happy, laughing, sincere, sad, crying, surprised, angry) or a transformation (zombie, festive party)? Choose keep if it asks for neither.', withKeep(V.EXPRESSION, 'expression or transformation'));
   questions.style = choice('Does the request ask for a different drawing style? Choose keep if not.', withKeep(V.STYLE, 'drawing style'));
   questions.eyeRender = choice('Does the request ask for a different way of drawing the eyes? Choose keep if not.', withKeep(V.EYE_RENDER, 'eye drawing style'));
+  // Generation hints: is this a whole new character, and which presentation and age does it describe?
+  questions.intent = choice('Is the request a change to the current avatar, or a description of a new or random character?', desc(V.INTENT));
+  questions.presentation = choice('Which gender presentation does the request describe, if any?', desc(V.PRESENTATION));
+  questions.age = choice('Which age does the request describe, if any?', desc(V.AGE));
 
   const started = Date.now();
   const res = await env.AI.run(FLASH, { model: 'clef-flash', state: { request: text, current_avatar: describe(t) }, questions });
@@ -143,6 +149,14 @@ async function edit(env, body) {
   const changed = (fn) => { const before = encode(t); fn(); return encode(t) !== before; };   // codes ignore key order
 
   const changes = [];
+  // New character: start from a random base weighted by presentation and age, then apply what was asked.
+  const isNew = A.intent?.choice === 'new' && (A.intent.probabilities?.new ?? 0) > 0.5;
+  const pres = (A.presentation?.probabilities?.[A.presentation.choice] ?? 0) > 0.5 ? A.presentation.choice : 'unspecified';
+  const age = (A.age?.probabilities?.[A.age.choice] ?? 0) > 0.5 ? A.age.choice : 'unspecified';
+  if (isNew){
+    t = randomBase(pres, age, t);
+    changes.push({ id: 'intent', label: 'new character', choice: [pres, age].filter(x => x !== 'unspecified').join(', ') || 'random', confidence: r2(A.intent.probabilities.new) });
+  }
   TRAITS.forEach(([id, label, map, apply]) => { const v = decided(id); if (v && changed(() => apply(t, v))) changes.push(report(id, label, A[id])); });
   const sk = decided('skin');
   if (sk && changed(() => {
@@ -158,12 +172,59 @@ async function edit(env, body) {
   V.SLIDERS.forEach(([key, label]) => { const id = 'slider_' + key.replace('.', '_'), v = decided(id); if (!v) return;
     const x = TUNE.find(s => s.key === key), cur = +getK(t, key) || 0, step = v === 'more' ? 2 : -2;
     setK(t, key, Math.max(x.min, Math.min(x.max, cur + step))); changes.push(report(id, label, A[id])); });
+  normalizeHair(t, new Set(changes.map(c => c.id)));
   const er = decided('eyeRender'); if (er) { if (er === 'auto') delete t.eyes.render; else t.eyes.render = er; changes.push(report('eyeRender', 'eye drawing', A.eyeRender)); }
   const expression = decided('expression'), style = decided('style');
   if (expression) changes.push(report('expression', 'expression', A.expression));
   if (style) changes.push(report('style', 'style', A.style));
 
-  return { model: FLASH, ms, usage: res.usage, questions: Object.keys(questions).length, changes, traits: t, code: encode(t), expression, style };
+  return { model: FLASH, ms, usage: res.usage, questions: Object.keys(questions).length, changes, traits: t, code: encode(t), expression, style, intent: isNew ? 'new' : 'edit', presentation: pres, age };
+}
+
+// Keep top and back hair compatible unless both were asked for explicitly.
+function normalizeHair(t, asked){
+  const h = t.hair, longish = ['long', 'longWavy', 'bob'];
+  if (h.back === 'afro' && !['afroTop', 'afroCurly', 'curly'].includes(h.top) && !asked.has('hairTop')) h.top = 'afroTop';
+  if (h.top === 'afroTop' && h.back !== 'afro' && !asked.has('hairTop')) h.top = longish.includes(h.back) ? 'centerPart' : 'curly';
+  if (h.top === 'afroTop' && h.back !== 'afro' && asked.has('hairTop') && !asked.has('hairBack')) h.back = 'afro';
+  if (['none', 'buzz', 'afroCurly'].includes(h.top) && longish.includes(h.back)){
+    if (asked.has('hairTop') && !asked.has('hairBack')) h.back = 'none';
+    else if (!asked.has('hairTop')) h.top = 'centerPart';
+  }
+}
+
+// ---------- random base for new characters ----------
+// Presentation and age only shift probabilities; any feature stays possible for anyone. Face shape and
+// skin tone are always uniform.
+function randomBase(pres, age, prev){
+  const pick = a => a[Math.floor(Math.random() * a.length)];
+  const wpick = w => { const tot = Object.values(w).reduce((a, b) => a + b, 0); let r = Math.random() * tot; for (const [k, v] of Object.entries(w)) { if ((r -= v) <= 0) return k; } return Object.keys(w)[0]; };
+  const fem = pres === 'feminine', masc = pres === 'masculine';
+  const old = age === 'older' || age === 'senior', kid = age === 'child';
+  const hairColors = Object.values(V.HAIR_COLOR).map(x => x[0]);
+  const natural = hairColors.slice(0, 10);
+  const top = wpick(fem ? { centerPart: 4, sidePart: 4, fringe: 3, curly: 2, afroCurly: 2, afroTop: 1.5, short: 1, undercut: .5, buzz: .2 }
+               : masc ? { short: 4, undercut: 2, buzz: 2, receding: old ? 4 : .5, curly: 2, afroCurly: 1.5, sidePart: 2, none: old ? 2 : .5, afroTop: 1 }
+               : { short: 2, undercut: 2, fringe: 2, sidePart: 2, centerPart: 2, curly: 2, afroCurly: 1.5, buzz: 1, afroTop: 1 });
+  const back = top === 'afroTop' ? 'afro' : ['afroCurly', 'buzz', 'none', 'receding'].includes(top) ? 'none'
+    : wpick(fem ? { long: 4, longWavy: 3, bob: 2, none: 1 } : masc ? { none: 8, long: 1, bob: .5 } : { none: 3, bob: 2, long: 1.5, longWavy: 1 });
+  const color = old && Math.random() < .65 ? pick(['#d4cfc8', '#f4f1ec']) : (Math.random() < .9 ? pick(natural) : pick(hairColors.slice(10)));
+  const eye = pick(Object.values(V.EYE_COLOR).map(x => x[0]));
+  const t = {
+    skin: pick(V.SKIN_LEVELS.map(x => x[0])), face: pick(Object.keys(V.FACE)),
+    hair: { top, back, color },
+    eyes: { shape: pick(Object.keys(V.EYE_SHAPE)), left: eye, right: eye, lashes: wpick(fem ? { long: 3, natural: 3, none: .5 } : masc ? { none: 4, natural: 1 } : { natural: 2, none: 2, long: .5 }) },
+    brows: { type: wpick(fem ? { thin: 2, arched: 3, medium: 2, straight: 1 } : masc ? { thick: 3, bushy: old ? 3 : 1, medium: 2, straight: 2 } : { medium: 2, straight: 2, thin: 1, thick: 1 }) },
+    nose: { type: kid ? pick(['button', 'small']) : pick(Object.keys(V.NOSE)) },
+    mouth: { width: pick(Object.keys(V.MOUTH_WIDTH)), lips: wpick(fem ? { full: 3, medium: 3, thin: 1 } : { medium: 3, thin: 2, full: 1.5 }) },
+    facialHair: kid || fem ? 'none' : masc ? wpick({ none: 4, stubble: 2, full: 2, short: 2, mustache: 1, goatee: 1, long: old ? 1.5 : .3, circle: 1 }) : wpick({ none: 8, stubble: 1 }),
+    details: [...(old ? ['wrinkles'] : []), ...(Math.random() < .15 ? ['freckles'] : [])],
+    glasses: Math.random() < (old ? .6 : .3) ? { type: pick(['round', 'rect', 'cateye', 'oval', 'wayfarer', 'browline', 'softSquare', 'panto', 'roundSmall', ...(old ? ['half', 'half'] : [])]), frame: pick(Object.values(V.FRAME_COLOR).map(x => x[0])), lens: '#ffffff', lensAlpha: .12 } : { type: 'none' },
+    headwear: { type: 'none', color: '#2f6bd8' },
+    shirt: pick(Object.values(V.CLOTH).map(x => x[0])), bg: prev?.bg || pick(Object.values(V.BG).slice(0, 10).map(x => x[0])),
+  };
+  if (kid) setK(t, 'eyes.size', 1);
+  return t;
 }
 
 // ---------- photo to avatar (Clef omni) ----------
