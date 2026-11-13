@@ -62,6 +62,8 @@ h1,h2,h3{font-family:var(--f-display);margin:0;letter-spacing:-.01em;text-wrap:b
 .ai-photo{display:grid;gap:6px;justify-items:start}
 .ai-photo .btn{cursor:pointer}
 .fine{margin:0;font-size:.76rem;color:var(--muted);max-width:30ch}
+.fine kbd{font:500 .7rem var(--f-mono);border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 3px;background:var(--surface-2)}
+.ai.drop{outline:2px dashed var(--accent);outline-offset:-6px}
 .ai-out{display:grid;gap:8px;border-top:1px solid var(--line);padding-top:10px}
 .ai-meta{font:500 .76rem var(--f-mono);color:var(--muted)}
 .ai-msg{font-size:.9rem}
@@ -212,7 +214,7 @@ footer a{color:inherit}
         <span class="label">New avatar from a photo</span>
         <label class="btn" for="aiFile" id="aiFileLbl">Choose a photo</label>
         <input type="file" id="aiFile" accept="image/*" hidden>
-        <p class="fine">Analysed once by Clef omni and discarded. Not stored.</p>
+        <p class="fine">Or paste one (<kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>V</kbd>) or drop it here. Analysed once by Clef omni and discarded. Not stored.</p>
       </div>
     </div>
     <div class="ai-out" id="aiOut" hidden></div>
@@ -615,13 +617,29 @@ function shrink(file, max = 768){
     img.src = url;
   });
 }
-$('aiFile').addEventListener('change', async e => {
-  const file = e.target.files[0]; e.target.value = ''; if (!file) return;
+let photoBusy = false;
+async function handlePhoto(file){
+  if (!file || photoBusy) return;
+  if (!/^image\//.test(file.type)) { aiError('That is not an image. Use a JPEG, PNG or WebP photo.'); return; }
+  photoBusy = true;
   const lbl = $('aiFileLbl'); lbl.setAttribute('aria-busy','true'); lbl.textContent = 'Analysing…';
+  $('aiOut').innerHTML = '<div class="ai-msg">Analysing your photo with Clef omni…</div>'; $('aiOut').hidden = false;
   try { let image = await shrink(file); const res = await callAi('/api/photo', { image, traits: t }); image = null; applyAi(res); showAi(res, 'photo'); }
   catch(err){ aiError(err.message); }
-  finally { lbl.removeAttribute('aria-busy'); lbl.textContent = 'Choose a photo'; }
+  finally { photoBusy = false; lbl.removeAttribute('aria-busy'); lbl.textContent = 'Choose a photo'; }
+}
+$('aiFile').addEventListener('change', e => { const file = e.target.files[0]; e.target.value = ''; handlePhoto(file); });
+// Paste an image anywhere on the page (text pastes into inputs work as usual).
+document.addEventListener('paste', e => {
+  const item = [...(e.clipboardData?.items || [])].find(i => i.kind === 'file' && i.type.startsWith('image/'));
+  if (!item) return;
+  e.preventDefault(); handlePhoto(item.getAsFile());
 });
+// Drop an image onto the Workers AI card.
+const aiCard = document.querySelector('.ai');
+['dragenter','dragover'].forEach(ev => aiCard.addEventListener(ev, e => { if ([...e.dataTransfer.types].includes('Files')) { e.preventDefault(); aiCard.classList.add('drop'); } }));
+['dragleave','drop'].forEach(ev => aiCard.addEventListener(ev, e => { if (ev === 'dragleave' && aiCard.contains(e.relatedTarget)) return; aiCard.classList.remove('drop'); }));
+aiCard.addEventListener('drop', e => { const f = [...(e.dataTransfer?.files || [])].find(f => f.type.startsWith('image/')); if (f){ e.preventDefault(); handlePhoto(f); } });
 
 // ---------- export ----------
 const flashHtml = (h) => { const el=$('msg'); el.innerHTML = h; el.className = 'msg'; clearTimeout(flash.t); flash.t = setTimeout(()=>{ el.textContent=''; }, 6000); };
