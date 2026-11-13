@@ -46,6 +46,8 @@ npm run qa
 | `npm run eval:ai` | After changing `vocab.js` or the AI questions in `worker.js`. Sends about 1,000 prompts to the live endpoint, takes about an hour because of the rate limit, and must stay at or above 98%. Do not run it casually; it calls a paid API. |
 | `npm run build` | Builds `dist/`. Needed to view the maker or lab locally (`npx wrangler dev`, or serve `dist/` statically for the pages without AI). |
 
+CI (`.github/workflows/test.yml`) runs `npm test` on every push and pull request. Releases of the library are published by the maintainer by pushing a `core-vX.Y.Z` tag that matches `packages/core/package.json` (`.github/workflows/publish-core.yml`, with npm provenance).
+
 Deploying (`npm run deploy`) is done by the maintainer only. Do not deploy, publish to npm, or change Cloudflare settings unless the maintainer asks you to.
 
 ## Rules that must not be broken
