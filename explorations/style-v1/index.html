@@ -568,7 +568,7 @@ const EXPR = {
   laughing: {label:'Laughing', closed:true, brow:[-3,-4,-2.5], mouth:'laugh', blush:.75},
   sincere:  {label:'Sincere',  lidTop:2.2, lower:1.2, brow:[-3,-1.5,.5], mouth:'soft', blush:.2},
   sad:      {label:'Sad',      lidTop:1, lidOuter:3.5, brow:[-4.5,-1.5,2.5], mouth:'frown'},
-  crying:   {label:'Crying',   closed:'sad', brow:[-5.5,-2,3], mouth:'wail', rivers:true, blush:.45},
+  crying:   {label:'Crying',   closed:'squeeze', brow:[-5.5,-2,3], mouth:'cryOpen', rivers:true, blush:.45},
   // emoji-style expressions
   lol:       {label:'LOL',        closed:true, brow:[-3,-4,-2.5], mouth:'laugh', blush:.8, joyTears:true},
   rofl:      {label:'ROFL',       closed:true, brow:[-3,-4,-2.5], mouth:'laugh', blush:.8, joyTears:true, tilt:-18},
@@ -824,6 +824,7 @@ function drawMouth(S,t,F,ex,skin,ink,zombie){
       // Crying mouths keep their width and get flatter instead (the references are wide mouths).
       const room = bottomMax - topMin;
       syK = Math.max(.55, Math.min(1, room / ((EXT[0] + EXT[1]) * sc)));
+      if ((EXT[0] + EXT[1]) * sc * syK > room) sc = room / ((EXT[0] + EXT[1]) * syK);   // still too tall: shrink too
       y = topMin + EXT[0]*sc*syK;
     } else if (y - EXT[0]*sc < topMin){
       const room = bottomMax - topMin;
