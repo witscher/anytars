@@ -2,6 +2,7 @@
 //   /            avatar maker (site/index.html)
 //   /lab/        style lab (explorations/style-v1/index.html, wrapped in a full document)
 //   /anytars.js  renderer core, extracted from the lab between @anytars-core markers
+//   build/anytars-core.mjs  the same core as an ES module, bundled into the Worker
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 
 const LAB = 'explorations/style-v1/index.html';
@@ -40,5 +41,8 @@ await mkdir(`${OUT}/lab`, { recursive: true });
 await writeFile(`${OUT}/index.html`, await readFile('site/index.html', 'utf8'));
 await writeFile(`${OUT}/lab/index.html`, labHtml);
 await writeFile(`${OUT}/anytars.js`, core);
+// ES module build of the same core for the Worker (validation, avatar codes).
+await mkdir('build', { recursive: true });
+await writeFile('build/anytars-core.mjs', `${core}\nexport { ENUMS, TUNE, EYE_RENDER, VARIANTS, STYLES, getK, setK, encode, decode, render };\n`);
 await writeFile(`${OUT}/favicon.svg`, favicon);
 console.log(`Built ${OUT}/ (maker, lab, anytars.js ${core.length} bytes)`);
