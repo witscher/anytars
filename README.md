@@ -2,7 +2,7 @@
 
 Open-source SVG avatar library for humans in their diversity. Every person has one recognizable base avatar plus versions of it: expressions (happy, sad, crying, ...) and transforms (zombie, festive, ...).
 
-Live style lab: https://anytars.davebuilds.net
+Live: https://anytars.davebuilds.net (avatar maker with Workers AI) and https://anytars.davebuilds.net/lab/ (style lab)
 
 ## Status
 
