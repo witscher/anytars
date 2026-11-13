@@ -21,7 +21,7 @@ const MAX_IMAGE_BYTES = 3 * 1024 * 1024;   // after base64 decoding; the browser
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    if (!url.pathname.startsWith('/api/')) return env.ASSETS.fetch(request);
+    if (!url.pathname.startsWith('/api/')) return withLegalLinks(await env.ASSETS.fetch(request), env);
     if (request.method !== 'POST') return json({ error: 'Use POST.' }, 405);
     if (env.AI_LIMIT) {
       const { success } = await env.AI_LIMIT.limit({ key: request.headers.get('cf-connecting-ip') || 'anon' });
@@ -39,6 +39,19 @@ export default {
     }
   },
 };
+
+// Legal links are deployment settings, not source: each operator sets LEGAL_IMPRINT_URL and LEGAL_PRIVACY_URL
+// (Worker variables; .dev.vars locally). They are written into every page's [data-legal] slot here, so they
+// arrive as plain links in the HTML. Without them the slot is removed, and a fork never points at someone
+// else's legal pages.
+const LEGAL = [['LEGAL_IMPRINT_URL', 'Legal Notice'], ['LEGAL_PRIVACY_URL', 'Privacy']];
+const httpsUrl = v => { try { const u = new URL(v); return u.protocol === 'https:' ? u.href : null; } catch { return null; } };
+const attr = s => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+function withLegalLinks(res, env){
+  if (!(res.headers.get('content-type') || '').includes('text/html')) return res;
+  const links = LEGAL.map(([k, label]) => { const u = httpsUrl(env[k]); return u ? `<a href="${attr(u)}">${label}</a>` : ''; }).join('');
+  return new HTMLRewriter().on('[data-legal]', { element(el){ if (links) el.setInnerContent(links, { html: true }); else el.remove(); } }).transform(res);
+}
 
 const json = (data, status = 200) => new Response(JSON.stringify(data), {
   status, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' },

@@ -69,7 +69,9 @@ npm install
 npm run deploy
 ```
 
-Change the custom domain in `wrangler.jsonc` first, or remove `routes` to use a workers.dev URL. Deploying needs a Cloudflare account with Workers AI. Set `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, or log in with `npx wrangler login`.
+Change the custom domain in `wrangler.jsonc` first, or remove `routes` to use a workers.dev URL.
+
+**Legal pages.** Each deployment links to its own operator's legal notice and privacy policy. Set the Worker variables `LEGAL_IMPRINT_URL` and `LEGAL_PRIVACY_URL` in the Cloudflare dashboard (Workers & Pages → anytars → Settings → Variables); the Worker adds them as "Legal Notice" and "Privacy" links to every page. Without them the pages show no legal links. For `wrangler dev`, copy `.dev.vars.example` to `.dev.vars`. Deploying needs a Cloudflare account with Workers AI. Set `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, or log in with `npx wrangler login`.
 
 ## License
 
