@@ -1,0 +1,59 @@
+{
+  "name": "anytars",
+  "version": "0.1.0",
+  "description": "SVG avatars for humans in their diversity: one person, many expressions, five styles, a portable avatar code.",
+  "license": "MIT",
+  "author": "the anytars contributors",
+  "homepage": "https://anytars.davebuilds.net",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/witscher/anytars.git",
+    "directory": "packages/core"
+  },
+  "bugs": {
+    "url": "https://github.com/witscher/anytars/issues"
+  },
+  "type": "module",
+  "main": "./dist/anytars.cjs",
+  "module": "./dist/anytars.mjs",
+  "types": "./index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./index.d.ts",
+        "default": "./dist/anytars.mjs"
+      },
+      "require": {
+        "types": "./index.d.cts",
+        "default": "./dist/anytars.cjs"
+      }
+    },
+    "./global": "./dist/anytars.global.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "index.d.ts",
+    "index.d.cts",
+    "README.md",
+    "CODE-FORMAT.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "avatar",
+    "svg",
+    "avatars",
+    "emoji",
+    "expressions",
+    "generator"
+  ],
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node scripts/build.mjs && node --test test/*.test.mjs",
+    "prepublishOnly": "node scripts/build.mjs && node --test test/*.test.mjs"
+  }
+}

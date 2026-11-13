@@ -1,0 +1,4 @@
+# Copy to .dev.vars for `wrangler dev`. Use your own pages: every deployment links to its operator's
+# legal notice and privacy policy. In production, set these as Worker variables in the Cloudflare dashboard.
+LEGAL_IMPRINT_URL=https://example.com/imprint
+LEGAL_PRIVACY_URL=https://example.com/privacy

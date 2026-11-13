@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.wrangler/
+qa/results.json
+qa/*.png
+build/
+qa/eval-results.json
+packages/core/index.d.cts
+.dev.vars
+CLAUDE.local.md

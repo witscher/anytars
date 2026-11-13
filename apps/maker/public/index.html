@@ -1,0 +1,957 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<title>Anytars Avatar Maker</title>
+<meta name="description" content="Make your avatar: pick a character or roll a random one, customize every part, and get it in five styles and ten expressions.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/fonts/fonts.css">
+<style>
+/* Layout: sticky preview column on the left, editor with part tabs on the right; stacks on phones. */
+:root{
+  --bg:#eef0f5; --surface:#ffffff; --surface-2:#f5f6fa; --ink:#1b1a22; --muted:#5b5e6e; --line:#d9dce6;
+  --accent:#d6246e; --accent-ink:#ffffff; --accent-soft:#fbe3ee; --focus:#2f6bff; --ok:#1f8a5b;
+  --f-display:"Bricolage Grotesque","Avenir Next","Segoe UI",system-ui,sans-serif;
+  --f-body:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#121319; --surface:#1b1c25; --surface-2:#23242f; --ink:#ecebf3; --muted:#a4a6b8; --line:#2f3140;
+  --accent:#ff5c95; --accent-ink:#1b0a12; --accent-soft:#3a1a29; --focus:#7aa2ff; --ok:#4cc38a; color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#121319; --surface:#1b1c25; --surface-2:#23242f; --ink:#ecebf3; --muted:#a4a6b8; --line:#2f3140;
+  --accent:#ff5c95; --accent-ink:#1b0a12; --accent-soft:#3a1a29; --focus:#7aa2ff; --ok:#4cc38a; color-scheme:dark }
+*{box-sizing:border-box}
+html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 var(--f-body);
+  padding-left:max(16px, env(safe-area-inset-left,0px));padding-right:max(16px, env(safe-area-inset-right,0px));padding-block:0 48px}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.wrap{max-width:1240px;margin:0 auto}
+h1,h2,h3{font-family:var(--f-display);margin:0;letter-spacing:-.01em;text-wrap:balance}
+
+.top{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding-block:18px 14px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit}
+.brand svg{width:34px;height:34px;display:block}
+.brand b{font:800 1.5rem var(--f-display);letter-spacing:-.02em}
+.top nav{margin-left:auto;display:flex;gap:6px;align-items:center}
+.link{color:var(--muted);text-decoration:none;font-size:.9rem;padding:6px 10px;border-radius:8px}
+.link:hover{color:var(--ink);background:var(--surface)}
+.gh{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:5px 12px 5px 10px;font-size:.86rem;font-weight:500;text-decoration:none}
+.gh:hover{border-color:var(--ink)}
+@media (max-width:480px){.gh span{display:none}.gh{padding:6px 8px}}
+.ghost{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:.86rem;cursor:pointer}
+
+/* start strip */
+/* Workers AI dock: under the avatar on desktop, a bottom bar on phones */
+:root{--ai-grad:linear-gradient(120deg,#f38020 0%,#d6246e 55%,#7b4fc9 100%)}
+.ai-dock{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;border:1.5px solid transparent;border-radius:16px;padding:10px 10px 12px;
+  background:linear-gradient(var(--surface-2),var(--surface-2)) padding-box, var(--ai-grad) border-box;
+  box-shadow:0 6px 22px -8px color-mix(in srgb, #d6246e 45%, transparent)}
+.ai-top{display:flex;align-items:center;gap:8px}
+.ai-top h2{font:800 1.12rem var(--f-display);margin:0;background:var(--ai-grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.ai-top .ai-badge{margin-left:auto}
+.sparkles .s1,.sparkles .s2,.sparkles .s3{transform-box:fill-box;transform-origin:center;animation:twinkle 2.8s ease-in-out infinite}
+.sparkles .s2{animation-delay:.9s}.sparkles .s3{animation-delay:1.7s}
+@keyframes twinkle{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.55;transform:scale(.72)}}
+@media (prefers-reduced-motion: reduce){.sparkles path{animation:none}}
+#aiGo{background:var(--ai-grad);border-color:transparent;color:#fff}
+.ai-form{display:flex;gap:6px;align-items:center;margin:0}
+.ai-form input[type=text]{flex:1;min-width:0;font:inherit;border:1px solid var(--line);border-radius:10px;padding:9px 12px;background:var(--surface);color:var(--ink)}
+.ai-mini{display:none}
+.btn.icon.cam{display:inline-grid;place-items:center;padding:7px 9px;cursor:pointer}
+.ai-ex{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+.ai-ex::-webkit-scrollbar{display:none}
+.ai-ex button{flex:0 0 auto;border:1px dashed var(--line);background:none;border-radius:999px;padding:3px 10px;font-size:.78rem;color:var(--muted);cursor:pointer}
+.ai-note{font-size:.74rem;color:var(--muted);display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.ai-note a{color:inherit}
+.ai-badge{display:inline-block;font:600 .64rem var(--f-body);letter-spacing:.1em;text-transform:uppercase;color:#f38020;border:1px solid #f38020;border-radius:999px;padding:1px 7px}
+.ai-out{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 10px;align-items:start;position:relative}
+.ai-out .ai-thumb{display:none}
+.ai-out .ai-body{grid-column:1 / -1;display:grid;gap:6px;min-width:0}
+.ai-out .x{position:absolute;top:-4px;right:-4px;border:0;background:none;color:var(--muted);font-size:1rem;cursor:pointer;padding:4px 6px;line-height:1}
+.ai-dock > *{min-width:0}
+.ai-meta{font:500 .7rem var(--f-mono);color:var(--muted);overflow-wrap:anywhere}
+.ai-msg{font-size:.86rem;padding-right:20px}
+.ai-msg.err{color:var(--accent)}
+.ai-sum{color:var(--muted)}
+.ai-more{display:none;justify-self:start;border:0;background:none;padding:0;font-size:.8rem;color:var(--muted);text-decoration:underline;cursor:pointer}
+.ai-details{display:grid;gap:6px}
+.ai-msg + .ai-details, .ai-more + .ai-details{min-width:0}
+/* desktop: details always visible, so no summary list or toggle */
+@media (min-width:901px){ .ai-sum{display:none} }
+.dec{display:flex;flex-wrap:wrap;gap:5px;max-height:120px;overflow:auto}
+.dec span{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:2px 9px 2px 7px;font-size:.76rem}
+.dec i{display:inline-block;width:28px;height:4px;border-radius:3px;background:var(--line);position:relative;overflow:hidden}
+.dec i b{position:absolute;inset:0 auto 0 0;background:var(--accent)}
+.dec em{font-style:normal;color:var(--muted);font-variant-numeric:tabular-nums}
+.btn[aria-busy="true"]{opacity:.6;pointer-events:none}
+body.drop::after{content:"Drop the photo to create your avatar";position:fixed;inset:12px;border:3px dashed var(--accent);border-radius:20px;display:grid;place-items:center;font:700 1.2rem var(--f-display);color:var(--accent);background:color-mix(in srgb, var(--bg) 80%, transparent);z-index:50;pointer-events:none}
+.how{margin-top:28px;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;display:grid;gap:8px;scroll-margin-top:16px}
+.how h2{font-size:1.15rem}
+.how-body{display:grid;gap:8px;font-size:.92rem}
+.how-body p{margin:0;max-width:72ch}
+@media (max-width:900px){
+  body{padding-bottom:calc(150px + env(safe-area-inset-bottom, 0px))}
+  .ai-dock{position:fixed;left:0;right:0;bottom:0;z-index:40;border-radius:16px 16px 0 0;border-width:1px 0 0;background:var(--surface);
+    box-shadow:0 -6px 24px rgba(20,20,40,.12);padding:8px max(12px, env(safe-area-inset-right, 0px)) calc(8px + env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px))}
+  .ai-mini{display:block;flex:0 0 auto;width:40px;height:40px;border-radius:10px;overflow:hidden;background:var(--surface-2)}
+  .ai-mini svg{width:100%;height:100%;display:block}
+  .ai-note{display:none}
+  .ai-top h2{font-size:.95rem}
+  .ai-top .sparkles{width:18px;height:18px}
+  .ai-out{max-height:46vh;overflow:auto;padding-bottom:4px;border-bottom:1px solid var(--line)}
+  .ai-more{display:inline}
+  .ai-out:not(.open) .ai-details{display:none}
+  .ai-msg{font-size:.84rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .ai-out.open .ai-msg{display:block}
+  .ai-out .ai-thumb{display:none}
+  .ai-out .ai-body{grid-column:1 / -1}
+  .ai-out:not(.open){max-height:none;overflow:visible}
+  .ai-ex{display:none}
+  .ai-dock:focus-within .ai-ex{display:flex}
+  #aiGo{padding-inline:12px}
+  .dec{max-height:none}
+}
+.start{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:14px;display:grid;gap:10px}
+.start-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.start-h h2{font-size:1.15rem}
+.start-h p{margin:0;color:var(--muted);font-size:.88rem}
+.presets{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}
+.preset{flex:0 0 auto;border:1px solid var(--line);background:var(--surface-2);border-radius:14px;padding:6px 6px 4px;cursor:pointer;display:grid;gap:2px;justify-items:center;width:84px}
+.preset svg{width:68px;height:68px;display:block}
+.preset span{font-size:.76rem;color:var(--muted)}
+.item .preset span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.25}
+.item .preset .nm{color:var(--ink);font-weight:600;white-space:normal;text-align:center;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow-wrap:anywhere}
+.preset[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.preset.dice{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.mine{margin-top:12px}
+.item{position:relative;flex:0 0 auto}
+.item .preset{width:84px}
+.item .mini{position:absolute;top:4px;right:4px;width:24px;height:24px;border-radius:50%;border:1px solid var(--line);background:var(--surface);cursor:pointer;display:grid;place-items:center;font-size:.85rem;line-height:1;padding:0}
+.item .mini[aria-pressed="true"]{color:var(--accent);border-color:var(--accent)}
+.item .mini.rm{color:var(--muted)}
+.rowlabel{display:flex;align-items:center;gap:10px}
+.linkbtn{border:0;background:none;color:var(--muted);font-size:.78rem;text-decoration:underline;cursor:pointer;padding:0}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.namerow{display:flex;align-items:center;gap:8px;margin:0}
+.namerow input{flex:1;min-width:0;font:600 1rem var(--f-display);border:1px solid transparent;border-bottom-color:var(--line);background:none;color:var(--ink);padding:6px 2px;border-radius:0}
+.namerow input:focus{outline:none;border-bottom-color:var(--accent)}
+.namestat{font-size:.78rem;color:var(--muted);white-space:nowrap}
+.namestat.ok{color:var(--ok)}
+.namestat.bad{color:var(--accent);white-space:normal}
+.editbar{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.editbar .grow{flex:1}
+.btn:disabled{opacity:.45;cursor:default}
+.btn.linkish{background:none;border-color:transparent;color:var(--muted);text-decoration:underline;padding-inline:4px}
+.btn.saved{background:var(--surface-2);border-color:var(--line);color:var(--ok)}
+.btn.saved:disabled{opacity:1}
+.item .mini.star{left:4px;right:auto}
+.msg button{border:0;background:none;color:inherit;text-decoration:underline;cursor:pointer;font:inherit;padding:0;margin-left:6px}
+.cf-badge{display:inline-flex;align-items:center;gap:6px;font:600 .72rem var(--f-body);letter-spacing:.04em;color:#fff;background:#f38020;border-radius:999px;padding:3px 10px}
+.cf-badge::before{content:"";width:7px;height:7px;border-radius:50%;background:#fff;opacity:.85}
+.preset.ai-tile{border:1.5px solid transparent;background:linear-gradient(var(--surface-2),var(--surface-2)) padding-box, var(--ai-grad) border-box}
+.preset.ai-tile span{font-weight:600;background:var(--ai-grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.start-ai{display:grid;gap:6px;margin:0;padding:10px;border-radius:14px;border:1.5px solid transparent;background:linear-gradient(var(--surface-2),var(--surface-2)) padding-box, var(--ai-grad) border-box}
+.ai-row-start{display:flex;gap:8px;flex-wrap:wrap}
+.ai-row-start input{flex:1 1 220px;min-width:0;font:inherit;border:1px solid var(--line);border-radius:10px;padding:9px 12px;background:var(--surface);color:var(--ink)}
+#startAiGo{background:var(--ai-grad);border-color:transparent;color:#fff}
+.preset.dice .die{width:68px;height:68px;display:grid;place-items:center;font:800 2.2rem var(--f-display)}
+.preset.dice span{color:var(--accent-ink);font-weight:600}
+
+main.grid{display:grid;grid-template-columns:minmax(300px,420px) minmax(0,1fr);gap:18px;margin-top:16px;align-items:start}
+@media (max-width:900px){ main.grid{grid-template-columns:1fr} }
+
+/* preview */
+.preview{position:sticky;top:max(12px, env(safe-area-inset-top,0px));display:grid;gap:12px;max-height:calc(100vh - 24px);overflow:auto;scrollbar-width:thin}
+@media (max-width:900px){ .preview{position:static;max-height:none;overflow:visible} }
+.stage{background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:14px;display:grid;gap:12px}
+.big{width:100%;max-width:100%;aspect-ratio:1}
+.big svg{width:100%;height:100%;display:block}
+.bigwrap{display:grid;grid-template-columns:minmax(0,1fr) 62px;gap:8px;align-items:start}
+.styles{display:grid;grid-template-columns:1fr;gap:6px}
+.sbtn span{line-height:1.1;text-align:center}
+@media (max-width:900px){ .bigwrap{grid-template-columns:1fr} .styles{grid-template-columns:repeat(5,minmax(0,1fr))} }
+.editor{display:grid;gap:0}
+.acc{border-top:1px solid var(--line)}
+.acc:first-child{border-top:0}
+.acc > summary{list-style:none;display:flex;align-items:center;gap:10px;padding:13px 16px;cursor:pointer;font:700 1rem var(--f-display)}
+.acc > summary::-webkit-details-marker{display:none}
+.acc > summary::after{content:"";margin-left:auto;width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);transition:transform .15s}
+.acc[open] > summary::after{transform:rotate(-135deg)}
+.acc > summary:hover{background:var(--surface-2)}
+.acc-sub{font:400 .82rem var(--f-body);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.acc-body{padding:4px 16px 18px;display:grid;gap:20px}
+.acc-body .variants{grid-template-columns:repeat(auto-fill,minmax(70px,1fr))}
+@media (prefers-reduced-motion: reduce){ .acc > summary::after{transition:none} }
+.sbtn{border:1px solid var(--line);background:var(--surface-2);border-radius:12px;padding:4px 4px 3px;cursor:pointer;display:grid;gap:2px;justify-items:center}
+.sbtn svg{width:100%;height:auto;display:block}
+.sbtn span{font-size:.7rem;color:var(--muted)}
+.sbtn[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.label{font:600 .7rem var(--f-body);text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+.variants{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.vbtn{border:1px solid transparent;background:none;border-radius:12px;padding:2px;cursor:pointer;display:grid;gap:1px;justify-items:center}
+.vbtn svg{width:100%;height:auto;display:block}
+.vbtn span{font-size:.66rem;color:var(--muted)}
+.vbtn[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+.sec-note{margin:0 0 10px;font-size:.8rem;color:var(--muted)}
+.bgrow{display:grid;gap:6px}
+.bgrow .chip{padding:4px 10px;font-size:.8rem}
+.btn{border:1px solid var(--line);background:var(--surface-2);border-radius:10px;padding:8px 12px;font-size:.88rem;font-weight:500;cursor:pointer}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.code{display:grid;gap:6px}
+.codebox{font:500 .76rem var(--f-mono);word-break:break-all;background:var(--surface-2);border:1px dashed var(--line);border-radius:10px;padding:8px 10px;user-select:all}
+.loadrow{display:flex;gap:6px}
+.loadrow input{flex:1;min-width:0;font:500 .8rem var(--f-mono);border:1px solid var(--line);border-radius:10px;padding:7px 10px;background:var(--surface);color:var(--ink)}
+.msg{font-size:.82rem;color:var(--ok);min-height:1.2em}
+.msg.err{color:var(--accent)}
+
+/* editor */
+.editor{background:var(--surface);border:1px solid var(--line);border-radius:22px;overflow:hidden}
+.tabs{display:flex;gap:4px;overflow-x:auto;padding:10px;border-bottom:1px solid var(--line);background:var(--surface-2);scrollbar-width:thin}
+.tab{flex:0 0 auto;border:0;background:none;border-radius:999px;padding:7px 13px;font-size:.88rem;font-weight:500;cursor:pointer;color:var(--muted)}
+.tab[aria-selected="true"]{background:var(--ink);color:var(--bg)}
+.panel{padding:16px;display:grid;gap:20px}
+.field{display:grid;gap:8px}
+.field h3{font-size:.98rem}
+.field .sub{font-size:.8rem;color:var(--muted);font-weight:400;font-family:var(--f-body)}
+.thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px}
+.thumb{border:1px solid var(--line);background:var(--surface-2);border-radius:14px;padding:4px 4px 3px;cursor:pointer;display:grid;gap:1px;justify-items:center}
+.thumb svg{width:100%;height:auto;display:block}
+.thumb span{font-size:.72rem;color:var(--muted);text-align:center;line-height:1.2}
+.thumb[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:var(--surface-2);border-radius:999px;padding:5px 12px;font-size:.84rem;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.swatches{display:flex;flex-wrap:wrap;gap:7px;align-items:center}
+.sw{width:30px;height:30px;border-radius:50%;border:2px solid var(--surface);box-shadow:0 0 0 1px var(--line);cursor:pointer;padding:0}
+.sw[aria-pressed="true"]{box-shadow:0 0 0 2px var(--accent)}
+.custom{display:inline-flex;align-items:center;gap:6px;font-size:.8rem;color:var(--muted)}
+.custom input{width:34px;height:30px;border:1px solid var(--line);border-radius:8px;padding:0;background:none;cursor:pointer}
+.sliders{display:grid;gap:8px}
+.srow{display:grid;grid-template-columns:90px minmax(0,1fr) 34px;gap:10px;align-items:center;font-size:.86rem}
+.srow input{width:100%;accent-color:var(--accent)}
+.srow output{font:500 .8rem var(--f-mono);text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
+.toggle{display:inline-flex;align-items:center;gap:8px;font-size:.88rem;cursor:pointer}
+.toggle input{accent-color:var(--accent);width:16px;height:16px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:560px){ .two{grid-template-columns:1fr} .styles{grid-template-columns:repeat(5,minmax(0,1fr))} }
+footer{margin-top:28px;color:var(--muted);font-size:.84rem;display:flex;gap:14px;flex-wrap:wrap}
+footer a{color:inherit}
+footer .legal{display:contents}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="/" aria-label="anytars home">
+      <svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#d6246e"/><circle cx="32" cy="30" r="17" fill="#f2cfae"/><path d="M15 28 Q16 11 32 11 Q48 11 49 28 Q42 19 32 20 Q22 19 15 28Z" fill="#1d1a1f"/><circle cx="26" cy="31" r="2.6" fill="#1d1a1f"/><circle cx="38" cy="31" r="2.6" fill="#1d1a1f"/><path d="M26 38 Q32 43 38 38" fill="none" stroke="#1d1a1f" stroke-width="2.4" stroke-linecap="round"/></svg>
+      <b>anytars</b>
+    </a>
+    <nav>
+      <a class="link" href="/lab/">Style lab</a>
+      <a class="gh" href="https://github.com/witscher/anytars" aria-label="anytars on GitHub" title="anytars on GitHub (open source, MIT)"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg><span>GitHub</span></a>
+      <button class="ghost" id="themeBtn" type="button">Dark</button>
+    </nav>
+  </header>
+
+  <section class="start" aria-labelledby="startH">
+    <div class="start-h"><h2 id="startH">Start from a photo, describe your character, roll the dice or pick someone</h2><span class="cf-badge">Runs on Cloudflare Workers AI</span><p>Then change anything you like. Your work is saved in this browser and in the link.</p></div>
+    <div class="presets" id="presets"></div>
+    <form class="start-ai" id="startAi" hidden>
+      <label for="startAiText" class="label">Describe your character</label>
+      <div class="ai-row-start">
+        <input id="startAiText" type="text" maxlength="400" placeholder="e.g. a kid with freckles and a red beanie" autocomplete="off" enterkeyhint="go">
+        <button class="btn" id="startAiGo" type="submit">Create</button>
+        <button class="btn linkish" id="startAiCancel" type="button">Cancel</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="start mine" id="mine" aria-labelledby="mineH" hidden>
+    <div class="start-h"><h2 id="mineH">Your avatars</h2><p>Saved in this browser. Star one to keep it at the front.</p></div>
+    <div class="presets" id="saved"></div>
+  </section>
+
+  <main class="grid">
+    <aside class="preview" aria-label="Preview">
+      <div class="stage">
+        <div class="editbar">
+          <button class="btn icon" id="undoBtn" type="button" title="Undo (Ctrl+Z)" aria-label="Undo">↶ Undo</button>
+          <button class="btn icon" id="redoBtn" type="button" title="Redo (Ctrl+Shift+Z)" aria-label="Redo">↷ Redo</button>
+          <span class="grow"></span>
+          <button class="btn linkish" id="saveNewBtn" type="button" hidden>Save as new</button>
+          <button class="btn primary" id="saveBtn" type="button">Save</button>
+        </div>
+        <div class="bigwrap">
+          <div class="big" id="big" role="img" aria-label="Your avatar"></div>
+          <div class="styles" id="styles" role="group" aria-label="Style"></div>
+        </div>
+        <form class="namerow" id="nameForm" autocomplete="off">
+          <label for="avName" class="sr">Avatar name</label>
+          <input id="avName" type="text" maxlength="40" placeholder="Name your avatar" enterkeyhint="done" spellcheck="false">
+          <span class="namestat" id="nameStat" aria-live="polite"></span>
+        </form>
+        <div class="msg" id="msg" aria-live="polite"></div>
+        <div class="ai-dock" id="aiDock" role="region" aria-labelledby="aiTitle">
+          <div class="ai-top">
+            <svg class="sparkles" viewBox="0 0 32 32" width="22" height="22" aria-hidden="true">
+              <defs><linearGradient id="spk" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f38020"/><stop offset=".55" stop-color="#d6246e"/><stop offset="1" stop-color="#7b4fc9"/></linearGradient></defs>
+              <path class="s1" d="M13 3 Q14.6 11.4 23 13 Q14.6 14.6 13 23 Q11.4 14.6 3 13 Q11.4 11.4 13 3Z" fill="url(#spk)"/>
+              <path class="s2" d="M25 17 Q25.8 21.2 30 22 Q25.8 22.8 25 27 Q24.2 22.8 20 22 Q24.2 21.2 25 17Z" fill="url(#spk)"/>
+              <path class="s3" d="M25 2 Q25.5 4.5 28 5 Q25.5 5.5 25 8 Q24.5 5.5 22 5 Q24.5 4.5 25 2Z" fill="url(#spk)"/>
+            </svg>
+            <h2 id="aiTitle">Build with AI</h2>
+            <span class="ai-badge">Cloudflare Workers AI</span>
+          </div>
+          <div class="ai-out" id="aiOut" hidden aria-live="polite"></div>
+          <div class="ai-ex" id="aiEx"></div>
+          <form class="ai-form" id="aiForm">
+            <span class="ai-mini" id="aiMini" aria-hidden="true"></span>
+            <input id="aiText" type="text" maxlength="400" placeholder="Describe a change, e.g. long blonde hair" autocomplete="off" enterkeyhint="send" aria-label="Describe a change">
+            <button class="btn primary" id="aiGo" type="submit">Apply</button>
+            <label class="btn icon cam" for="aiFile" id="aiFileLbl" title="New avatar from a photo (you can also paste or drop one)" aria-label="New avatar from a photo">
+              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 8h3l1.6-2.2h6.8L17 8h3v11H4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="13.2" r="3.4" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+            </label>
+            <input type="file" id="aiFile" accept="image/*" hidden>
+          </form>
+          <div class="ai-note">Describe a change or a whole new character, or paste a photo. Photos are analysed once and not stored. <a href="#how">How it works</a></div>
+        </div>
+      </div>
+    </aside>
+
+    <section class="editor" aria-label="Customize">
+      <details class="acc" data-sec="expression" open>
+        <summary data-tab="expression"><span>Expression</span><span class="acc-sub" id="sub-expression"></span></summary>
+        <div class="acc-body"><p class="sec-note">Expressions don't change your avatar. They only set the mood for the preview and the download; the avatar code and your saved avatars stay the same.</p><div class="variants" id="variants"></div></div>
+      </details>
+      <div id="partSections"></div>
+      <details class="acc" data-sec="background">
+        <summary data-tab="background"><span>Background</span><span class="acc-sub" id="sub-background"></span></summary>
+        <div class="acc-body bgrow">
+          <div id="bgColors"></div>
+          <div class="chips" id="bgShapes"></div>
+          <label class="toggle"><input type="checkbox" id="bgClear"> Transparent</label>
+        </div>
+      </details>
+      <details class="acc" data-sec="export">
+        <summary data-tab="export"><span>Download &amp; share</span></summary>
+        <div class="acc-body">
+          <div class="actions">
+            <button class="btn" id="dlPng" type="button">Download PNG</button>
+            <button class="btn" id="dlSvg" type="button">Download SVG</button>
+            <button class="btn" id="dlZip" type="button">All expressions (ZIP)</button>
+            <button class="btn" id="copyLink" type="button">Copy link</button>
+          </div>
+          <div class="code">
+            <div class="label">Avatar code</div>
+            <div class="codebox" id="code"></div>
+            <div class="loadrow"><input id="loadIn" type="text" placeholder="Paste a code (v1.…)" aria-label="Avatar code to load" spellcheck="false" autocomplete="off"><button class="btn" id="loadBtn" type="button">Load</button></div>
+          </div>
+        </div>
+      </details>
+    </section>
+  </main>
+
+  <section class="how" id="how" aria-labelledby="howH">
+    <span class="ai-badge">Workers AI</span>
+    <h2 id="howH">How the AI works on Cloudflare Workers AI</h2>
+    <div class="how-body">
+          <p>Each request goes to a Cloudflare Worker, which asks a <b>Clef</b> decision model on Workers AI. Clef doesn't write text. It answers typed questions with a probability for every allowed option.</p>
+          <p>Every part of your avatar is one question: hair length, hair colour, glasses, beard and so on, each with the exact values this library can draw. One call answers all of them in a few hundred milliseconds, so the result can only ever contain valid traits.</p>
+          <p><b>Text</b> uses Clef flash. Each question also has a "keep" option, and a part only changes when the model is confident the request is about it (keep under 20%). <b>Photos</b> use Clef omni, which reads the image and answers the same questions. Skin tone is a score question, so it can land between palette steps.</p>
+          <p><b>Your photo</b> is resized in your browser (which also removes location and camera data), sent once to the Worker, analysed, and discarded. This site doesn't store or log it, and Workers AI lists Clef as zero data retention. Only the resulting traits come back.</p>
+        </div>
+  </section>
+
+  <footer>
+    <span>anytars is an open-source avatar library in progress.</span>
+    <a href="/lab/">Compare styles in the lab</a>
+    <a href="https://github.com/witscher/anytars">Source on GitHub</a>
+    <span class="legal" data-legal></span>
+  </footer>
+</div>
+
+<script src="/anytars.js"></script>
+<script src="/cast.js"></script>
+<script>
+"use strict";
+// ---------- palettes ----------
+const PAL = {
+  skin: ['#fbe3d3','#f5d6c4','#f2cfae','#efc2a4','#e2ad84','#d0a27a','#c98d5b','#a8703f','#8a5530','#6b4128','#4a2b1a'],
+  hair: ['#1d1a1f','#2b1d16','#4a3222','#6e5038','#8a6440','#cfac72','#e6cf98','#b5441f','#d06a2c','#d4cfc8','#f4f1ec','#3d6fd8','#d65a9c','#4caf7a','#7b4fc9'],
+  eyes: ['#2e1c12','#5b3b22','#8a6a2f','#3f8f5a','#4c86c9','#7a93a8','#6f8a7e','#a77a2e','#6a4a9a'],
+  frame:['#16161a','#2b2b33','#7a2f2f','#8a5a3c','#c79a2b','#c0c4cc','#d0457a','#2f6bd8'],
+  lens: ['#ffffff','#26303c','#1d2229','#e86a8a','#e7a33a','#3a8fd8','#6a5cff','#7bc96f'],
+  cloth:['#202027','#3a3f4a','#f0ede6','#e3554a','#d9682b','#e8c35a','#6b8f3a','#2d7d6e','#3d5a80','#2e4a8c','#7a3b69','#b88d6c','#d6246e'],
+  bg:   ['#cfe0ee','#bfe0f2','#cde6e1','#d6e8c4','#f3d27a','#ffd9b0','#ffc8b8','#f2c6d4','#e3d9ef','#e6e7ec','#2b2d3a'],
+};
+const LABEL = s => s.replace(/([A-Z])/g,' $1').replace(/^./, c=>c.toUpperCase());
+const NICE = {
+  hardHat:'Hard hat', light:'Light', medium:'Medium', strong:'Strong', auto:'Auto',
+  afroCurly:'Afro (curly)', spaceBuns:'Space buns', locsTop:'Locs', locs:'Locs', braids:'Box braids', slicked:'Slicked back', bowl:'Bowl cut',
+  short:'Short', long:'Long', circle:'Circle', chinStrap:'Chin strap', soulPatch:'Soul patch', muttonChops:'Mutton chops', semiRim:'Semi-rimless', roundSmall:'Small round', softSquare:'Soft square', thickRound:'Thick round',
+  afroTop:'Afro', centerPart:'Centre part', sidePart:'Side part', longWavy:'Long wavy', baseballCap:'Baseball cap', witchHat:'Witch hat', elfCap:'Elf cap', devilHorns:'Devil horns',
+  turban:'Dastar', hijabLoose:'Hijab (loose)', partyHat:'Party hat', pinceNez:'Pince-nez', cateye:'Cat-eye', rect:'Rectangular', half:'Half-rim', none:'None', fringe:'Fringe',
+};
+const nice = v => NICE[v] || LABEL(v);
+
+// ---------- state ----------
+const clone = o => JSON.parse(JSON.stringify(o));
+const strip = c => { const t = clone(c); delete t.id; delete t.name; delete t.blurb; return t; };
+let t = null, style = 'chibi', variant = {expression:'happy'}, tab = 'face', presetId = null;
+let bgCfg = { shape: 'style', clear: false };
+let avName = '';   // accepted (moderated) name of the current avatar; not part of the avatar code
+const applyBg = () => { ANYTARS_CONFIG.background = bgCfg.clear ? 'none' : 'avatar'; ANYTARS_CONFIG.backgroundShape = bgCfg.shape; };
+
+function load(){
+  const h = decodeURIComponent(location.hash.slice(1));
+  if (h.startsWith('v1.')) { try { t = decode(h); return; } catch(e){} }
+  try { const s = JSON.parse(localStorage.getItem('anytars-maker')||'null'); if (s && s.bg && BG_SHAPES.includes(s.bg.shape)) bgCfg = {shape:s.bg.shape, clear:!!s.bg.clear}; if (s && s.t) { t = s.t; if (STYLES[s.style]) style = s.style; presetId = s.presetId||null; currentId = s.currentId||null; avName = typeof s.name === 'string' ? s.name : ''; return; } } catch(e){}
+  t = randomTraits();
+}
+// ---------- saved avatars (localStorage) ----------
+const LIB_KEY = 'anytars-maker-saved';
+let saved = [];            // {id, code, ts, star}
+let currentId = null;      // the saved entry being edited, if any
+const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+try {
+  const l = JSON.parse(localStorage.getItem(LIB_KEY)||'null');
+  if (Array.isArray(l)) saved = l;
+  else {   // carry over favourites from the earlier history/favourites version
+    const old = JSON.parse(localStorage.getItem('anytars-maker-library')||'null');
+    if (old && Array.isArray(old.favs)) saved = old.favs.map(f => ({id:newId(), code:f.code, ts:f.ts, star:true}));
+  }
+} catch(e){}
+const saveLib = () => { try { localStorage.setItem(LIB_KEY, JSON.stringify(saved)); } catch(e){} };
+const entry = id => saved.find(x => x.id === id);
+const isDirty = () => !currentId || !entry(currentId) || entry(currentId).code !== encode(t) || (entry(currentId).name || '') !== avName;
+// "Save as new" gives the copy a random adjective ("Curious Abena"), so saved versions are easy to tell apart.
+const ADJECTIVES = ['Beautiful','Curious','Furious','Dazzling','Brave','Cheerful','Clever','Cosmic','Dreamy','Fearless','Fluffy','Gentle','Gleeful','Glorious','Groovy','Jolly','Lucky','Magical','Mighty','Mysterious','Noble','Playful','Quirky','Radiant','Sleepy','Sparkly','Spicy','Sunny','Swift','Witty','Zesty','Breezy','Bold','Daring','Fancy','Fuzzy','Jazzy','Nimble','Stellar','Wild'];
+function copyName(name){
+  const words = name.split(' '), base = (ADJECTIVES.includes(words[0]) ? words.slice(1).join(' ') : name) || 'Avatar';
+  const taken = new Set(saved.map(x => x.name)), fresh = ADJECTIVES.filter(a => !taken.has(a + ' ' + base));
+  const adj = (fresh.length ? fresh : ADJECTIVES)[Math.floor(Math.random() * (fresh.length || ADJECTIVES.length))];
+  return (adj + ' ' + base).slice(0, 40).trim();
+}
+function saveCurrent(asNew){
+  if (asNew){ avName = copyName(avName); okNames.add(avName); $('avName').value = avName; nameStat('', ''); }
+  const code = encode(t), e = !asNew && currentId && entry(currentId);
+  if (e){ e.code = code; e.ts = Date.now(); e.name = avName; }
+  else { const id = newId(); saved.unshift({id, code, ts: Date.now(), star:false, name: avName}); currentId = id; }
+  saveLib(); drawLibrary(); syncSave(); persist(); flash(e ? 'Changes saved' : 'Saved to your avatars');
+}
+let lastRemoved = null;
+function removeSaved(id){
+  const i = saved.findIndex(x => x.id === id); if (i < 0) return;
+  lastRemoved = {item: saved[i], index: i};
+  saved.splice(i, 1); if (currentId === id) currentId = null;
+  saveLib(); drawLibrary(); syncSave();
+  flashHtml('Removed. <button type="button" id="restoreBtn">Restore</button>');
+}
+function restoreSaved(){ if (!lastRemoved) return; saved.splice(lastRemoved.index, 0, lastRemoved.item); lastRemoved = null; saveLib(); drawLibrary(); syncSave(); flash('Restored'); }
+function ago(ts){
+  const m = Math.round((Date.now()-ts)/60000);
+  if (m < 1) return 'just now'; if (m < 60) return m+' min ago';
+  const h = Math.round(m/60); if (h < 24) return h+' h ago';
+  const d = Math.round(h/24); return d === 1 ? 'yesterday' : d+' days ago';
+}
+function drawLibrary(){
+  const list = [...saved].sort((a,b) => (b.star - a.star) || (b.ts - a.ts));
+  $('saved').innerHTML = list.map(e => {
+    let traits; try { traits = decode(e.code); } catch(err){ return ''; }
+    return `<div class="item"><button class="preset" type="button" data-open="${e.id}" aria-pressed="${e.id===currentId}">${render(traits,{expression:'happy'},style)}${e.name ? `<span class="nm" title="${esc(e.name)}">${esc(e.name)}</span>` : ''}<span>${e.id===currentId && isDirty() ? 'editing' : ago(e.ts)}</span></button>
+      <button class="mini star" type="button" data-star="${e.id}" aria-pressed="${!!e.star}" title="${e.star?'Unstar':'Star'}" aria-label="${e.star?'Unstar':'Star'}">${e.star?'★':'☆'}</button>
+      <button class="mini rm" type="button" data-remove="${e.id}" title="Remove" aria-label="Remove">✕</button></div>`;
+  }).join('');
+  $('mine').hidden = !saved.length;
+}
+function syncSave(){
+  const e = currentId && entry(currentId), dirty = isDirty();
+  $('saveBtn').textContent = !e ? 'Save' : dirty ? 'Save changes' : '✓ Saved';
+  $('saveBtn').className = 'btn ' + (e && !dirty ? 'saved' : 'primary');
+  $('saveBtn').disabled = !!e && !dirty;
+  $('saveNewBtn').hidden = !e;
+}
+
+// ---------- undo / redo ----------
+// Each burst of changes (one slider drag, one colour drag, one click) is a single step.
+let undoStack = [], redoStack = [], inBurst = false, burstTimer = 0;
+const snapshot = () => ({ t: clone(t), currentId, presetId });
+function beforeChange(){
+  if (!inBurst){ undoStack.push(snapshot()); if (undoStack.length > 150) undoStack.shift(); redoStack = []; }
+  inBurst = true; clearTimeout(burstTimer); burstTimer = setTimeout(() => { inBurst = false; }, 700);
+}
+const endBurst = () => { inBurst = false; clearTimeout(burstTimer); };
+function restore(snap){ t = snap.t; currentId = snap.currentId; presetId = snap.presetId; endBurst(); redraw({presets:true}); drawLibrary(); }
+function undo(){ if (!undoStack.length) return; redoStack.push(snapshot()); restore(undoStack.pop()); }
+function redo(){ if (!redoStack.length) return; undoStack.push(snapshot()); restore(redoStack.pop()); }
+function syncUndo(){ $('undoBtn').disabled = !undoStack.length; $('redoBtn').disabled = !redoStack.length; }
+
+// Replace the current avatar (dice, character, saved avatar, pasted code). Undoable.
+function switchTo(next, opts={}){ endBurst(); beforeChange(); endBurst(); t = next; presetId = opts.presetId || null; currentId = opts.savedId || null; setName(opts.name || ''); if (opts.variant) variant = opts.variant; redraw({presets:true}); drawLibrary(); }
+
+let saveTimer = 0;
+function persist(){
+  clearTimeout(saveTimer);
+  syncSave(); syncUndo();
+  saveTimer = setTimeout(() => {
+    try { localStorage.setItem('anytars-maker', JSON.stringify({t, style, presetId, currentId, bg:bgCfg, name:avName})); } catch(e){}
+    try { history.replaceState(null, '', '#' + encode(t)); } catch(e){}
+  }, 250);
+}
+
+// ---------- random ----------
+const pick = a => a[Math.floor(Math.random()*a.length)];
+const chance = p => Math.random() < p;
+const smallStep = () => chance(.55) ? 0 : pick([-1,1,-1,1,-2,2]);
+function randomTraits(){
+  const hairColor = chance(.85) ? pick(PAL.hair.slice(0,11)) : pick(PAL.hair.slice(11));
+  const eye = pick(PAL.eyes);
+  const top = pick(['short','short','undercut','fringe','centerPart','sidePart','afroTop','afroCurly','buzz','curly','receding','none','pixie','mohawk','bowl','slicked','spiky','cornrows','locsTop']);
+  const back = (top==='centerPart' || top==='sidePart') ? pick(['long','longWavy','bob','ponytail']) : top==='afroTop' ? 'afro' : top==='locsTop' ? 'locs'
+    : top==='cornrows' ? pick(['braids','none']) : top==='fringe' ? pick(['bob','long','none','pigtails','spaceBuns']) : top==='slicked' ? pick(['none','ponytail','bun'])
+    : ['mohawk','spiky','bowl','buzz','none','afroCurly','receding'].includes(top) ? 'none' : chance(.15) ? pick(['long','bob','bun']) : 'none';
+  const glassesType = chance(.55) ? 'none' : pick(ENUMS.glasses.filter(g=>g!=='none'));
+  const shades = chance(.25);
+  const hw = chance(.6) ? 'none' : pick(ENUMS.headwear.filter(h=>h!=='none'));
+  const r = {
+    skin: pick(PAL.skin), face: pick(ENUMS.face),
+    hair: {top, back, color: hairColor},
+    eyes: {shape: pick(ENUMS.eyeShape), left: eye, right: chance(.06) ? pick(PAL.eyes) : eye, lashes: pick(ENUMS.lashes)},
+    brows: {type: pick(ENUMS.brows)}, nose: {type: pick(ENUMS.nose.filter(n=>n!=='anime'))},
+    mouth: {width: pick(ENUMS.mouthWidth), lips: pick(ENUMS.lips)},
+    facialHair: chance(.65) ? 'none' : pick(ENUMS.facialHair.filter(f=>f!=='none')),
+    details: ['freckles','wrinkles','mole','vitiligo'].filter(() => chance(.12)),
+    glasses: glassesType==='none' ? {type:'none'} : {type:glassesType, frame:pick(PAL.frame), lens: shades ? pick(PAL.lens.slice(1)) : '#ffffff', lensAlpha: shades ? pick([.4,.6,.85,.9]) : .12},
+    headwear: {type: hw, color: pick(PAL.cloth.slice(3))},
+    shirt: pick(PAL.cloth), bg: pick(PAL.bg.slice(0,10)),
+  };
+  TUNE.forEach(x => { const v = smallStep(); if (v) setK(r, x.key, Math.max(x.min, Math.min(x.max, v))); });
+  if (top !== 'none' && chance(.12)) r.hair.accent = pick(PAL.hair.filter(c => c !== hairColor));
+  return r;
+}
+
+// ---------- rendering helpers ----------
+const $ = id => document.getElementById(id);
+const svg = (traits, v, s) => render(traits, v || {expression:'neutral'}, s || style);
+const variantName = v => v.transform || v.expression;
+const withK = (path, val) => { const c = clone(t); setValueOn(c, path, val); return c; };
+function delPath(o, k){ const ps=k.split('.'); let a=o; for (const p of ps.slice(0,-1)) { a = a?.[p]; if (!a) return; } delete a[ps.at(-1)]; }
+
+function drawPresets(){
+  let h = `<button class="preset ai-tile" type="button" id="aiPhotoTile"><div class="die" aria-hidden="true"><svg viewBox="0 0 24 24" width="34" height="34"><path d="M4 8h3l1.6-2.2h6.8L17 8h3v11H4z" fill="none" stroke="url(#spk)" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="13.2" r="3.4" fill="none" stroke="url(#spk)" stroke-width="1.8"/></svg></div><span>AI photo</span></button>`;
+  h += `<button class="preset ai-tile" type="button" id="aiDescribeTile" aria-controls="startAi"><div class="die" aria-hidden="true"><svg viewBox="0 0 32 32" width="38" height="38"><path d="M13 3 Q14.6 11.4 23 13 Q14.6 14.6 13 23 Q11.4 14.6 3 13 Q11.4 11.4 13 3Z" fill="url(#spk)"/><path d="M25 17 Q25.8 21.2 30 22 Q25.8 22.8 25 27 Q24.2 22.8 20 22 Q24.2 21.2 25 17Z" fill="url(#spk)"/><path d="M25 2 Q25.5 4.5 28 5 Q25.5 5.5 25 8 Q24.5 5.5 22 5 Q24.5 4.5 25 2Z" fill="url(#spk)"/></svg></div><span>Describe with AI</span></button>`;
+  h += `<button class="preset dice" type="button" id="dice"><div class="die" aria-hidden="true">⚄</div><span>Random</span></button>`;
+  h += CAST.map(c => `<button class="preset" type="button" data-preset="${c.id}" aria-pressed="${presetId===c.id}">${render(c,{expression:'happy'},style)}<span>${c.name}</span></button>`).join('');
+  $('presets').innerHTML = h;
+}
+function drawPreview(){
+  $('big').innerHTML = svg(t, variant);
+  $('aiMini').innerHTML = svg(t, variant);
+  $('bgShapes').innerHTML = BG_SHAPES.map(v => `<button class="chip" type="button" data-bgshape="${v}" aria-pressed="${v===bgCfg.shape}">${v==='style'?'Style default':nice(v)}</button>`).join('');
+  $('bgClear').checked = bgCfg.clear;
+  if (!document.activeElement || document.activeElement.id !== 'c-bg') $('bgColors').innerHTML = swatches('bg', PAL.bg);
+  $('styles').innerHTML = Object.values(STYLES).map(S => `<button class="sbtn" type="button" data-style="${S.key}" aria-pressed="${S.key===style}">${render(t,{expression:'neutral'},S.key)}<span>${S.label}</span></button>`).join('');
+  $('variants').innerHTML = VARIANTS.map(v => { const n = variantName(v); return `<button class="vbtn" type="button" data-variant="${n}" aria-pressed="${n===variantName(variant)}" title="${variantLabel(v)}">${svg(t, v)}<span>${variantLabel(v)}</span></button>`; }).join('');
+  $('code').textContent = encode(t);
+  if (typeof drawSummaries === 'function' && $('partSections').children.length) drawSummaries();
+}
+
+// ---------- editor panels ----------
+const TABS = [['face','Face'],['hair','Hair'],['eyes','Eyes'],['brows','Brows'],['nose','Nose & mouth'],['beard','Beard'],['glasses','Glasses'],['headwear','Headwear'],['extras','Details'],['colors','Clothes']];
+function thumbs(path, values, labels, def){
+  const cur = getK(t, path) ?? def;
+  return `<div class="thumbs">${values.map((v,i) => `<button class="thumb" type="button" data-set="${path}" data-val='${JSON.stringify(v)}' aria-pressed="${JSON.stringify(cur)===JSON.stringify(v)}">${svg(withK(path, v))}<span>${labels ? labels[i] : nice(String(v))}</span></button>`).join('')}</div>`;
+}
+function chips(path, values, labels){
+  const cur = getK(t, path);
+  return `<div class="chips">${values.map((v,i) => `<button class="chip" type="button" data-set="${path}" data-val='${JSON.stringify(v)}' aria-pressed="${cur===v}">${labels ? labels[i] : nice(String(v))}</button>`).join('')}</div>`;
+}
+function swatches(path, pal, fallback){
+  const cur = (getK(t, path) || fallback || '').toLowerCase();
+  const id = 'c-' + path.replace(/\./g,'-');
+  return `<div class="swatches">${pal.map(c => `<button class="sw" type="button" style="background:${c}" data-set="${path}" data-val='"${c}"' aria-pressed="${cur===c}" aria-label="Colour ${c}"></button>`).join('')}
+    <label class="custom" for="${id}"><input type="color" id="${id}" data-color="${path}" value="${/^#[0-9a-f]{6}$/i.test(cur)?cur:'#888888'}"> Custom</label></div>`;
+}
+function sliders(group){
+  return `<div class="sliders">${TUNE.filter(x=>x.group===group).map(x => { const v = getK(t,x.key)||0, id='s-'+x.key.replace('.','-');
+    return `<label class="srow" for="${id}"><span>${x.label}</span><input type="range" id="${id}" min="${x.min}" max="${x.max}" step="1" value="${v}" data-slide="${x.key}"><output id="${id}-o">${v>0?'+'+v:v}</output></label>`; }).join('')}</div>`;
+}
+// "Auto" removes an optional colour so the renderer's default is used.
+const autoChip = path => `<div class="chips" style="margin-bottom:6px"><button class="chip" type="button" data-unset="${path}" aria-pressed="${!getK(t, path)}">Auto</button></div>`;
+const field = (title, body, sub) => `<div class="field"><h3>${title}${sub?` <span class="sub">${sub}</span>`:''}</h3>${body}</div>`;
+
+// Accordion: each part is a <details> section; only open sections are rendered.
+const OPEN_KEY = 'anytars-maker-open';
+let openSecs = new Set(['expression', 'face']);
+try { const o = JSON.parse(localStorage.getItem(OPEN_KEY) || 'null'); if (Array.isArray(o)) openSecs = new Set(o); } catch(e){}
+function buildSections(){
+  $('partSections').innerHTML = TABS.map(([k,l]) => `<details class="acc" data-sec="${k}"${openSecs.has(k)?' open':''}><summary data-tab="${k}"><span>${l}</span><span class="acc-sub" id="sub-${k}"></span></summary><div class="acc-body" id="sec-${k}"></div></details>`).join('');
+  document.querySelectorAll('details.acc').forEach(d => {
+    if (openSecs.has(d.dataset.sec)) d.open = true; else if (d.dataset.sec !== 'expression' || !openSecs.size) d.open = openSecs.has(d.dataset.sec);
+    d.addEventListener('toggle', () => {
+      if (d.open) openSecs.add(d.dataset.sec); else openSecs.delete(d.dataset.sec);
+      try { localStorage.setItem(OPEN_KEY, JSON.stringify([...openSecs])); } catch(e){}
+      if (d.open && $('sec-' + d.dataset.sec)) drawSection(d.dataset.sec);
+    });
+  });
+}
+function sectionSummary(k){
+  const g = t.glasses?.type || 'none', hw = t.headwear?.type || 'none';
+  switch(k){
+    case 'expression': return variantLabel(variant);
+    case 'face': return nice(t.face);
+    case 'hair': return [nice(t.hair.top), t.hair.back !== 'none' ? nice(t.hair.back) : ''].filter(Boolean).join(', ');
+    case 'eyes': return nice(t.eyes.shape);
+    case 'brows': return nice(t.brows.type);
+    case 'nose': return `${nice(t.nose.type)} nose, ${nice(t.mouth.width)} mouth`;
+    case 'beard': return nice(t.facialHair || 'none');
+    case 'glasses': return nice(g);
+    case 'headwear': return nice(hw);
+    case 'extras': return (t.details || []).map(nice).join(', ') || 'None';
+    case 'background': return bgCfg.clear ? 'Transparent' : nice(bgCfg.shape === 'style' ? 'style default' : bgCfg.shape);
+    default: return '';
+  }
+}
+function drawSummaries(){ document.querySelectorAll('details.acc').forEach(d => { const el = $('sub-' + d.dataset.sec); if (el) el.textContent = sectionSummary(d.dataset.sec); }); }
+function drawPanel(){ TABS.forEach(([k]) => { const d = document.querySelector(`details.acc[data-sec="${k}"]`); if (d && d.open) drawSection(k); }); drawSummaries(); }
+function drawSection(tab){
+  let h = '';
+  switch(tab){
+    case 'face':
+      h += field('Face shape', thumbs('face', ENUMS.face));
+      h += field('Skin tone', swatches('skin', PAL.skin));
+      h += field('Cheeks', `<div class="chips" style="margin-bottom:6px">${CHEEKS.map(v => `<button class="chip" type="button" data-set="cheeks.amount" data-val='"${v}"' aria-pressed="${(t.cheeks?.amount||'auto')===v}">${nice(v)}</button>`).join('')}</div>` + autoChip('cheeks.color') + swatches('cheeks.color', ['#ff5d82','#ff8a8a','#f2a07b','#e0566f','#d6246e','#c9665a','#b86bd8']), 'blush; happy faces add a little more');
+      break;
+    case 'hair':
+      h += field('Top', thumbs('hair.top', ENUMS.hairTop, ENUMS.hairTop.map(v => v==='none'?'Bald':nice(v))));
+      h += field('Back and length', thumbs('hair.back', ENUMS.hairBack, ENUMS.hairBack.map(v => v==='none'?'Short':nice(v))));
+      h += field('Hair colour', swatches('hair.color', PAL.hair));
+      h += field('Accent colour', autoChip('hair.accent') + swatches('hair.accent', PAL.hair), 'strand lines, curls, highlights');
+      break;
+    case 'eyes': {
+      const het = t.eyes.left !== t.eyes.right;
+      h += field('Eye style', thumbs('eyes.render', EYE_RENDER, EYE_RENDER.map(m=>EYE_RENDER_LABEL[m].replace(/^#\d /,'')), 'auto'), 'how eyes are drawn');
+      h += field('Shape', thumbs('eyes.shape', ENUMS.eyeShape));
+      h += field('Eye colour', `<label class="toggle"><input type="checkbox" id="hetero" ${het?'checked':''}> Two different colours</label>` +
+        (het ? `<div class="two"><div class="field"><span class="sub">Left</span>${swatches('eyes.left', PAL.eyes)}</div><div class="field"><span class="sub">Right</span>${swatches('eyes.right', PAL.eyes)}</div></div>` : swatches('eyes.both', PAL.eyes, t.eyes.left)));
+      h += field('Lashes', chips('eyes.lashes', ENUMS.lashes));
+      h += field('Position and size', sliders('Eyes'));
+      break; }
+    case 'brows':
+      h += field('Shape', thumbs('brows.type', ENUMS.brows));
+      h += field('Colour', swatches('brows.color', PAL.hair, t.hair.color), 'defaults to hair colour');
+      h += field('Position', sliders('Brows'));
+      break;
+    case 'nose':
+      h += field('Nose', thumbs('nose.type', ENUMS.nose.filter(n=>n!=='anime')));
+      h += field('Nose position', sliders('Nose'));
+      h += field('Mouth width', chips('mouth.width', ENUMS.mouthWidth));
+      h += field('Lips', chips('mouth.lips', ENUMS.lips));
+      h += field('Mouth position', sliders('Mouth'));
+      break;
+    case 'beard':
+      h += field('Facial hair', thumbs('facialHair', ENUMS.facialHair));
+      h += field('Colour', swatches('facialHairColor', PAL.hair, t.hair.color), 'defaults to hair colour');
+      if ((t.facialHair||'none') !== 'none') h += field('Size', sliders('Beard'));
+      break;
+    case 'glasses': {
+      const g = t.glasses || {type:'none'};
+      h += field('Frame', thumbs('glasses.type', ENUMS.glasses));
+      if (g.type !== 'none'){
+        h += field('Frame colour', swatches('glasses.frame', PAL.frame));
+        h += field('Lens colour', swatches('glasses.lens', PAL.lens));
+        const a = Math.round((g.lensAlpha ?? .12)*100);
+        h += field('Position', sliders('Glasses'));
+        h += field('Lens tint', `<label class="srow" for="tint"><span>Clear to dark</span><input type="range" id="tint" min="0" max="95" step="5" value="${a}" data-tint="1"><output id="tint-o">${a}%</output></label>`);
+      }
+      break; }
+    case 'headwear':
+      h += field('Headwear', thumbs('headwear.type', ENUMS.headwear));
+      if ((t.headwear?.type||'none') !== 'none') h += field('Colour', swatches('headwear.color', PAL.cloth));
+      { const HWd = HEADWEAR[t.headwear?.type||'none']; if (HWd && HWd.accent) h += field('Accent colour', autoChip('headwear.accent') + swatches('headwear.accent', [...PAL.cloth, '#f2c230', '#fbf6ea']), HWd.accentLabel); }
+      break;
+    case 'extras':
+      h += field('Face details', `<div class="chips">${['freckles','wrinkles','mole','vitiligo'].map(d => `<button class="chip" type="button" data-detail="${d}" aria-pressed="${(t.details||[]).includes(d)}">${nice(d)}</button>`).join('')}</div>`);
+      break;
+    case 'colors':
+      h += field('Top', swatches('shirt', PAL.cloth));
+      break;
+  }
+  const el = $('sec-' + tab); if (el) el.innerHTML = h;
+}
+function drawTabs(){}
+function redraw(opts={}){
+  if (currentId && !entry(currentId)) currentId = null;
+  drawPreview();
+  if (!opts.keepPanel) drawPanel();
+  if (opts.presets) drawPresets();
+  persist();
+}
+
+// ---------- events ----------
+function setValueOn(o, path, val){
+  if (path === 'eyes.both'){ o.eyes.left = val; o.eyes.right = val; }
+  else if (path === 'eyes.render' && val === 'auto') delPath(o, 'eyes.render');
+  else if (path === 'cheeks.amount' && val === 'auto') { delPath(o, 'cheeks.amount'); if (o.cheeks && !Object.keys(o.cheeks).length) delete o.cheeks; }
+  else if (path === 'glasses.type'){
+    o.glasses = o.glasses || {};
+    if (!o.glasses.frame) Object.assign(o.glasses, {frame:'#16161a', lens:'#ffffff', lensAlpha:.12});
+    o.glasses.type = val;
+  }
+  else if (path === 'headwear.type'){ o.headwear = o.headwear || {}; o.headwear.type = val; if (!o.headwear.color) o.headwear.color = '#2f6bd8'; }
+  else setK(o, path, val);
+}
+function setValue(path, val){ beforeChange(); setValueOn(t, path, val); presetId = null; if (path === 'bg' && bgCfg.clear){ bgCfg.clear = false; applyBg(); } }
+document.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.id === 'aiDescribeTile'){ $('startAi').hidden = false; $('startAiText').focus(); return; }
+  if (b.id === 'startAiCancel'){ $('startAi').hidden = true; return; }
+  if (b.id === 'aiPhotoTile'){ $('aiFile').click(); return; }
+  if (b.id === 'dice'){ style = pick(Object.keys(STYLES)); switchTo(randomTraits(), {variant:{expression:'happy'}}); return; }
+  if (b.dataset.preset){ const c = CAST.find(c=>c.id===b.dataset.preset); switchTo(strip(c), {presetId:b.dataset.preset, name:c.name}); return; }
+  if (b.dataset.open){ const e = entry(b.dataset.open); if (!e) return; try { switchTo(decode(e.code), {savedId:e.id, name:e.name}); } catch(err){ flash('That saved avatar could not be read.', true); } return; }
+  if (b.dataset.star){ const e = entry(b.dataset.star); if (e){ e.star = !e.star; saveLib(); drawLibrary(); } return; }
+  if (b.dataset.remove){ removeSaved(b.dataset.remove); return; }
+  if (b.id === 'restoreBtn'){ restoreSaved(); return; }
+  if (b.id === 'saveBtn'){ saveCurrent(false); return; }
+  if (b.id === 'saveNewBtn'){ saveCurrent(true); return; }
+  if (b.id === 'undoBtn'){ undo(); return; }
+  if (b.id === 'aiClose'){ $('aiOut').hidden = true; return; }
+  if (b.id === 'aiMore'){ clearTimeout(aiHideTimer); const open = $('aiOut').classList.toggle('open'); b.setAttribute('aria-expanded', open); b.textContent = open ? 'Hide details' : 'Show details'; return; }
+  if (b.id === 'redoBtn'){ redo(); return; }
+  if (b.dataset.bgshape){ bgCfg.shape = b.dataset.bgshape; applyBg(); redraw({presets:true}); drawLibrary(); return; }
+  if (b.dataset.style){ style = b.dataset.style; redraw({presets:true}); drawLibrary(); return; }
+  if (b.dataset.variant){ const n = b.dataset.variant; variant = (n==='zombie'||n==='festive') ? {transform:n} : {expression:n}; drawPreview(); return; }
+  if (b.dataset.set){ setValue(b.dataset.set, JSON.parse(b.dataset.val)); redraw({presets:true}); return; }
+  if (b.dataset.unset){ beforeChange(); delPath(t, b.dataset.unset); presetId = null; redraw({presets:true}); return; }
+  if (b.dataset.detail){ beforeChange(); const d = b.dataset.detail; t.details = t.details || []; t.details = t.details.includes(d) ? t.details.filter(x=>x!==d) : [...t.details, d]; presetId=null; redraw(); return; }
+});
+document.addEventListener('input', e => {
+  const el = e.target;
+  if (el.dataset.slide){ beforeChange(); const v = +el.value; setK(t, el.dataset.slide, v); $(el.id+'-o').textContent = v>0?'+'+v:v; presetId=null; redraw({keepPanel:true}); }
+  else if (el.dataset.tint){ beforeChange(); t.glasses.lensAlpha = +el.value/100; $('tint-o').textContent = el.value+'%'; redraw({keepPanel:true}); }
+  else if (el.dataset.color){ setValue(el.dataset.color, el.value); redraw({keepPanel:true}); }
+});
+document.addEventListener('change', e => {
+  const el = e.target;
+  if (el.id === 'bgClear'){ bgCfg.clear = el.checked; applyBg(); redraw({presets:true}); drawLibrary(); return; }
+  if (el.id === 'hetero'){ beforeChange(); endBurst(); if (!el.checked) t.eyes.right = t.eyes.left; else if (t.eyes.left === t.eyes.right) t.eyes.right = PAL.eyes.find(c=>c!==t.eyes.left); redraw(); }
+  else if (el.dataset.slide || el.dataset.color || el.dataset.tint) { drawPanel(); drawPresets(); }
+});
+
+// ---------- Workers AI ----------
+const AI_EXAMPLES = ['long blonde hair', 'add round glasses', 'make me wink', 'turn into a zombie', 'make it anime with a witch hat', 'add a short grey beard', 'happier, with freckles'];
+$('aiEx').innerHTML = AI_EXAMPLES.map(x => `<button type="button" data-ex="${x}">${x}</button>`).join('');
+const pretty = v => nice(String(v)).replace(/^S(\d)$/, 'level $1');
+function showAi(res, kind){
+  const list = kind === 'photo' ? res.decisions : res.changes;
+  const meta = `Cloudflare Workers AI · ${res.model.replace('@cf/cloudflare/','')} · ${res.questions} questions · ${res.ms} ms · ${res.usage?.input_tokens?.toLocaleString?.() ?? '?'} input tokens`;
+  const chips = list.length ? `<div class="dec">${list.map(c => `<span title="${c.keep != null ? 'keep: '+Math.round(c.keep*100)+'%' : ''}">${c.label}: <b>${pretty(c.choice)}</b> <i><b style="width:${Math.round(c.confidence*100)}%"></b></i><em>${Math.round(c.confidence*100)}%</em></span>`).join('')}</div>` : '';
+  const head = kind === 'photo' ? 'Created from your photo. Describe a change or fine-tune below.'
+    : res.intent === 'none' ? 'Nothing to change. Describe what you would like, for example "long blonde hair" or "a kid with freckles".'
+    : res.intent === 'new' ? 'New character:'
+    : (list.length ? 'Changed:' : 'Nothing changed: the model was not confident the request was about any part of the avatar.');
+  // Short summary first; on phones the decision chips and model details stay behind "Show details".
+  const names = list.filter(c => c.id !== 'intent').map(c => c.label);
+  const summary = kind === 'photo' ? `${list.length} parts read from the photo.` : names.length ? names.slice(0, 4).join(', ') + (names.length > 4 ? ` and ${names.length - 4} more` : '') : '';
+  const more = list.length ? `<button class="ai-more" type="button" id="aiMore" aria-expanded="false">Show details</button>` : '';
+  aiPanel(`<div class="ai-msg">${head}${summary ? ` <span class="ai-sum">${summary}</span>` : ''}</div>${more}<div class="ai-details">${chips}<div class="ai-meta">${meta}</div></div>`, true);
+}
+// Result panel: on phones it also shows the new avatar, since the big preview may be scrolled away.
+function aiPanel(body, thumb){
+  $('aiOut').innerHTML = `${thumb ? `<div class="ai-thumb">${svg(t, variant)}</div>` : ''}<div class="ai-body">${body}</div><button class="x" type="button" id="aiClose" aria-label="Close">✕</button>`;
+  $('aiOut').hidden = false;
+}
+const isPhone = () => matchMedia('(max-width:900px)').matches;
+let aiHideTimer = 0;
+// Phones: close the keyboard, show the change on the big avatar, and let the short result line fade away.
+function afterAiOnPhone(){
+  if (!isPhone()) return;
+  document.activeElement?.blur?.();
+  $('big').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
+  clearTimeout(aiHideTimer);
+  aiHideTimer = setTimeout(() => { if (!$('aiOut').classList.contains('open') && !$('aiOut').contains(document.activeElement)) $('aiOut').hidden = true; }, 6000);
+}
+function aiError(m){ aiPanel(`<div class="ai-msg err">${m}</div>`, false); }
+async function callAi(path, body){
+  const r = await fetch(path, { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify(body) });
+  const d = await r.json().catch(() => ({ error: 'The AI request failed. Try again.' }));
+  if (!r.ok || d.error) throw new Error(d.error || 'The AI request failed. Try again.');
+  return d;
+}
+function applyAi(res){
+  endBurst(); beforeChange(); endBurst();
+  t = res.traits; presetId = null;
+  if (res.style && STYLES[res.style]) style = res.style;
+  if (res.expression) variant = (res.expression === 'zombie' || res.expression === 'festive') ? {transform: res.expression} : {expression: res.expression};
+  redraw({presets:true}); drawLibrary();
+}
+$('aiForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const text = $('aiText').value.trim(); if (!text) { $('aiText').focus(); return; }
+  $('aiGo').setAttribute('aria-busy','true'); $('aiGo').textContent = 'Thinking…';
+  let ok = false;
+  try { const res = await callAi('/api/edit', { text, traits: t }); applyAi(res); showAi(res, 'edit'); $('aiText').value = ''; ok = true; }
+  catch(err){ aiError(err.message); }
+  finally { $('aiGo').removeAttribute('aria-busy'); $('aiGo').textContent = 'Apply'; if (ok && isPhone()) afterAiOnPhone(); else $('aiText').focus({preventScroll:true}); }
+});
+// "Describe your character" in the start row: always a new character.
+$('startAi').addEventListener('submit', async e => {
+  e.preventDefault();
+  const text = $('startAiText').value.trim(); if (!text) { $('startAiText').focus(); return; }
+  $('startAiGo').setAttribute('aria-busy','true'); $('startAiGo').textContent = 'Creating…';
+  try { const res = await callAi('/api/edit', { text, traits: t, mode: 'new' }); applyAi(res); showAi(res, 'edit'); $('startAiText').value = ''; $('startAi').hidden = true; afterAiOnPhone(); }
+  catch(err){ aiError(err.message); }
+  finally { $('startAiGo').removeAttribute('aria-busy'); $('startAiGo').textContent = 'Create'; }
+});
+$('aiEx').addEventListener('click', e => { const b = e.target.closest('[data-ex]'); if (!b) return; $('aiText').value = b.dataset.ex; $('aiForm').requestSubmit(); });
+// Photos are resized and re-encoded in the browser (drops EXIF such as location), then sent once.
+function shrink(file, max = 768){
+  return new Promise((ok, no) => {
+    const url = URL.createObjectURL(file), img = new Image();
+    img.onload = () => { const k = Math.min(1, max / Math.max(img.width, img.height)); const c = document.createElement('canvas');
+      c.width = Math.round(img.width*k); c.height = Math.round(img.height*k); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url); ok(c.toDataURL('image/jpeg', .85)); };
+    img.onerror = () => { URL.revokeObjectURL(url); no(new Error('That file could not be read as an image.')); };
+    img.src = url;
+  });
+}
+let photoBusy = false;
+async function handlePhoto(file){
+  if (!file || photoBusy) return;
+  if (!/^image\//.test(file.type)) { aiError('That is not an image. Use a JPEG, PNG or WebP photo.'); return; }
+  photoBusy = true;
+  const lbl = $('aiFileLbl'); lbl.setAttribute('aria-busy','true');
+  aiPanel('<div class="ai-msg">Analysing your photo with Clef omni…</div>', false);
+  try { let image = await shrink(file); const res = await callAi('/api/photo', { image, traits: t }); image = null; applyAi(res); showAi(res, 'photo'); afterAiOnPhone(); }
+  catch(err){ aiError(err.message); }
+  finally { photoBusy = false; lbl.removeAttribute('aria-busy'); }
+}
+$('aiFile').addEventListener('change', e => { const file = e.target.files[0]; e.target.value = ''; handlePhoto(file); });
+// Paste an image anywhere on the page (text pastes into inputs work as usual).
+document.addEventListener('paste', e => {
+  const item = [...(e.clipboardData?.items || [])].find(i => i.kind === 'file' && i.type.startsWith('image/'));
+  if (!item) return;
+  e.preventDefault(); handlePhoto(item.getAsFile());
+});
+// Drop an image onto the Workers AI card.
+// Drop an image anywhere on the page.
+let dragDepth = 0;
+const hasFiles = e => [...(e.dataTransfer?.types || [])].includes('Files');
+document.addEventListener('dragenter', e => { if (!hasFiles(e)) return; dragDepth++; document.body.classList.add('drop'); });
+document.addEventListener('dragover', e => { if (hasFiles(e)) e.preventDefault(); });
+document.addEventListener('dragleave', e => { if (!hasFiles(e)) return; if (--dragDepth <= 0){ dragDepth = 0; document.body.classList.remove('drop'); } });
+document.addEventListener('drop', e => { dragDepth = 0; document.body.classList.remove('drop'); const f = [...(e.dataTransfer?.files || [])].find(f => f.type.startsWith('image/')); if (f){ e.preventDefault(); handlePhoto(f); } });
+
+// ---------- avatar name (checked by Clef flash on Workers AI) ----------
+const esc = v => String(v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+const okNames = new Set(CAST.map(c => c.name));
+let nameReq = 0;
+function setName(n){ avName = n; $('avName').value = n; nameStat('', ''); syncSave(); persist(); }
+function nameStat(text, cls){ const el = $('nameStat'); el.textContent = text; el.className = 'namestat' + (cls ? ' ' + cls : ''); }
+async function commitName(){
+  const v = $('avName').value.replace(/\s+/g, ' ').trim();
+  if (v === avName) { nameStat(v ? '✓' : '', v ? 'ok' : ''); return; }
+  if (!v){ setName(''); return; }
+  if (okNames.has(v)){ avName = v; nameStat('✓', 'ok'); syncSave(); persist(); return; }
+  const req = ++nameReq; nameStat('Checking…', '');
+  try {
+    const r = await callAi('/api/name', { name: v });
+    if (req !== nameReq) return;
+    if (r.ok){ okNames.add(r.name); avName = r.name; $('avName').value = r.name; nameStat('✓ Checked by Workers AI', 'ok'); syncSave(); persist(); }
+    else { nameStat("That name can't be used. Please choose another one.", 'bad'); $('avName').value = avName; $('avName').focus(); }
+  } catch(err){ if (req === nameReq){ nameStat(err.message, 'bad'); $('avName').value = avName; } }
+}
+$('nameForm').addEventListener('submit', e => { e.preventDefault(); $('avName').blur(); });
+$('avName').addEventListener('change', commitName);
+$('avName').addEventListener('input', () => { if ($('nameStat').classList.contains('bad')) nameStat('', ''); });
+
+// ---------- export ----------
+const flashHtml = (h) => { const el=$('msg'); el.innerHTML = h; el.className = 'msg'; clearTimeout(flash.t); flash.t = setTimeout(()=>{ el.textContent=''; }, 6000); };
+const flash = (m, err) => { const el=$('msg'); el.textContent = m; el.className = 'msg' + (err?' err':''); clearTimeout(flash.t); flash.t = setTimeout(()=>{ el.textContent=''; }, 3500); };
+const slug = v => v.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+function fileBase(){ return `${slug(avName) || 'anytars'}-${style}-${variantName(variant)}`; }
+function download(blob, name){ const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 1000); }
+$('dlSvg').addEventListener('click', () => {
+  download(new Blob([svg(t, variant).replace('<svg ', '<svg width="512" height="512" ')], {type:'image/svg+xml'}), fileBase()+'.svg');
+});
+$('dlPng').addEventListener('click', () => {
+  const img = new Image(), size = 1024;
+  img.onload = () => { const c = document.createElement('canvas'); c.width = c.height = size; c.getContext('2d').drawImage(img, 0, 0, size, size); c.toBlob(b => download(b, fileBase()+'.png'), 'image/png'); };
+  img.onerror = () => flash('Could not create the PNG in this browser. Try SVG.', true);
+  img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg(t, variant).replace('<svg ', `<svg width="${size}" height="${size}" `));
+});
+// All expressions and transforms in the current style as one ZIP (SVG + 1024 px PNG each), built in the browser.
+const svgPng = (src, size) => new Promise((ok, no) => {
+  const img = new Image();
+  img.onload = () => { const c = document.createElement('canvas'); c.width = c.height = size; c.getContext('2d').drawImage(img, 0, 0, size, size); c.toBlob(b => b ? ok(b) : no(new Error('png')), 'image/png'); };
+  img.onerror = () => no(new Error('png'));
+  img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(src.replace('<svg ', `<svg width="${size}" height="${size}" `));
+});
+const CRC = (() => { const tb = new Uint32Array(256); for (let n = 0; n < 256; n++){ let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; tb[n] = c >>> 0; } return tb; })();
+const crc32 = u => { let c = 0xFFFFFFFF; for (let i = 0; i < u.length; i++) c = CRC[(c ^ u[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+// Minimal ZIP writer (stored, no compression): PNGs are already compressed and SVGs are small.
+function makeZip(files){
+  const enc = new TextEncoder(), parts = [], dir = []; let off = 0;
+  const d = new Date(), time = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1), date = ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
+  for (const { name, data } of files){
+    const nm = enc.encode(name), crc = crc32(data), h = new DataView(new ArrayBuffer(30));
+    [[0,0x04034b50,4],[4,20,2],[6,0x800,2],[8,0,2],[10,time,2],[12,date,2],[14,crc,4],[18,data.length,4],[22,data.length,4],[26,nm.length,2],[28,0,2]].forEach(([o,v,n]) => n === 4 ? h.setUint32(o, v, true) : h.setUint16(o, v, true));
+    const c = new DataView(new ArrayBuffer(46));
+    [[0,0x02014b50,4],[4,20,2],[6,20,2],[8,0x800,2],[10,0,2],[12,time,2],[14,date,2],[16,crc,4],[20,data.length,4],[24,data.length,4],[28,nm.length,2],[30,0,2],[32,0,2],[34,0,2],[36,0,2],[38,0,4],[42,off,4]].forEach(([o,v,n]) => n === 4 ? c.setUint32(o, v, true) : c.setUint16(o, v, true));
+    parts.push(h, nm, data); dir.push(c, nm); off += 30 + nm.length + data.length;
+  }
+  const size = dir.reduce((a, x) => a + x.byteLength, 0), e = new DataView(new ArrayBuffer(22));
+  [[0,0x06054b50,4],[4,0,2],[6,0,2],[8,files.length,2],[10,files.length,2],[12,size,4],[16,off,4],[20,0,2]].forEach(([o,v,n]) => n === 4 ? e.setUint32(o, v, true) : e.setUint16(o, v, true));
+  return new Blob([...parts, ...dir, e], { type: 'application/zip' });
+}
+$('dlZip').addEventListener('click', async () => {
+  const btn = $('dlZip'); if (btn.disabled) return;
+  btn.disabled = true; const label = btn.textContent; btn.textContent = 'Creating ZIP…';
+  try {
+    const base = `${slug(avName) || 'anytars'}-${style}`, enc = new TextEncoder(), files = [];
+    for (const v of VARIANTS){
+      const src = svg(t, v), n = variantName(v);
+      files.push({ name: `${base}/svg/${base}-${n}.svg`, data: enc.encode(src.replace('<svg ', '<svg width="512" height="512" ')) });
+      files.push({ name: `${base}/png/${base}-${n}.png`, data: new Uint8Array(await (await svgPng(src, 1024)).arrayBuffer()) });
+    }
+    download(makeZip(files), base + '-all-expressions.zip');
+  } catch(err){ flash('Could not create the ZIP in this browser. Try single downloads.', true); }
+  finally { btn.disabled = false; btn.textContent = label; }
+});
+$('copyLink').addEventListener('click', () => {
+  const url = location.origin + '/#' + encode(t);
+  navigator.clipboard.writeText(url).then(() => flash('Link copied'), () => flash(url));
+});
+function loadCode(){
+  const v = $('loadIn').value.trim().replace(/^.*#/, '');
+  if (!v.startsWith('v1.')) { flash('Codes start with v1.', true); return; }
+  try { switchTo(decode(v)); $('loadIn').value=''; flash('Avatar loaded'); }
+  catch(e){ flash('That code could not be read. Check that it was copied completely.', true); }
+}
+$('loadBtn').addEventListener('click', loadCode);
+$('loadIn').addEventListener('keydown', e => { if (e.key === 'Enter') loadCode(); });
+window.addEventListener('hashchange', () => { const h = decodeURIComponent(location.hash.slice(1)); if (h.startsWith('v1.') && h !== encode(t)) { try { switchTo(decode(h)); } catch(e){} } });
+
+// ---------- theme ----------
+const isDark = () => { const a = document.documentElement.getAttribute('data-theme'); return a ? a==='dark' : matchMedia('(prefers-color-scheme: dark)').matches; };
+const syncTheme = () => { $('themeBtn').textContent = isDark() ? 'Light' : 'Dark'; };
+$('themeBtn').addEventListener('click', () => { document.documentElement.setAttribute('data-theme', isDark() ? 'light' : 'dark'); syncTheme(); });
+
+load(); applyBg(); $('avName').value = avName; buildSections(); drawTabs(); drawPresets(); redraw(); drawLibrary(); syncTheme();
+document.addEventListener('keydown', e => {
+  if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+  const tag = (e.target.tagName||'').toLowerCase(); if (tag === 'input' && e.target.type === 'text') return;
+  const k = e.key.toLowerCase();
+  if (k === 'z' && !e.shiftKey){ e.preventDefault(); undo(); }
+  else if ((k === 'z' && e.shiftKey) || k === 'y'){ e.preventDefault(); redo(); }
+});
+</script>
+</body>
+</html>

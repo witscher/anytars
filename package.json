@@ -1,0 +1,20 @@
+{
+  "name": "anytars-monorepo",
+  "private": true,
+  "description": "Open-source SVG avatar library for humans in their diversity",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "npm run build && node --test packages/core/test/*.test.mjs",
+    "deploy": "npm run build && wrangler deploy",
+    "qa": "npm run build && node qa/run.cjs 2000 4",
+    "eval:ai": "node qa/eval-ai.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "4.156.0"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "license": "MIT"
+}
