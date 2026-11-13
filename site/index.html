@@ -187,7 +187,7 @@ const PAL = {
 };
 const LABEL = s => s.replace(/([A-Z])/g,' $1').replace(/^./, c=>c.toUpperCase());
 const NICE = {
-  afroTop:'Afro', centerPart:'Long, centre part', baseballCap:'Baseball cap', witchHat:'Witch hat', elfCap:'Elf cap', devilHorns:'Devil horns',
+  afroTop:'Afro', centerPart:'Centre part', sidePart:'Side part', longWavy:'Long wavy', baseballCap:'Baseball cap', witchHat:'Witch hat', elfCap:'Elf cap', devilHorns:'Devil horns',
   turban:'Dastar', partyHat:'Party hat', pinceNez:'Pince-nez', cateye:'Cat-eye', rect:'Rectangular', half:'Half-rim', none:'None', fringe:'Fringe',
 };
 const nice = v => NICE[v] || LABEL(v);
@@ -219,8 +219,8 @@ const smallStep = () => chance(.55) ? 0 : pick([-1,1,-1,1,-2,2]);
 function randomTraits(){
   const hairColor = chance(.85) ? pick(PAL.hair.slice(0,11)) : pick(PAL.hair.slice(11));
   const eye = pick(PAL.eyes);
-  const top = pick(['short','short','undercut','fringe','centerPart','afroTop','buzz','curly','receding','none']);
-  const back = top==='centerPart' ? pick(['long','long','bob']) : top==='afroTop' ? 'afro' : top==='fringe' ? pick(['bob','long','none']) : chance(.15) ? pick(['long','bob']) : 'none';
+  const top = pick(['short','short','undercut','fringe','centerPart','sidePart','afroTop','buzz','curly','receding','none']);
+  const back = (top==='centerPart' || top==='sidePart') ? pick(['long','longWavy','bob']) : top==='afroTop' ? 'afro' : top==='fringe' ? pick(['bob','long','none']) : chance(.15) ? pick(['long','bob']) : 'none';
   const glassesType = chance(.55) ? 'none' : pick(ENUMS.glasses.filter(g=>g!=='none'));
   const shades = chance(.25);
   const hw = chance(.6) ? 'none' : pick(ENUMS.headwear.filter(h=>h!=='none'));

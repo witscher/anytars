@@ -342,7 +342,11 @@ function shape(S, d, fill, opts={}){
   let out = '';
   if (opts.under && S.sw>0) out += `<path d="${d}" fill="${lineFor(S,fill)}" stroke="${lineFor(S,fill)}" stroke-width="${n1(S.sw*2*k)}" stroke-linejoin="round"/>`;
   const st = opts.under ? '' : strokeAttr(S, fill, k);
-  if (S.shade==='none' || opts.noShade){ return out + `<path d="${d}" fill="${fill}"${st}${opts.extra||''}/>`; }
+  const stroke = () => !st ? '' : opts.strokeClip ? `<g clip-path="url(#${opts.strokeClip})"><path d="${d}" fill="none"${st}/></g>` : `<path d="${d}" fill="none"${st}/>`;
+  if (S.shade==='none' || opts.noShade){
+    if (opts.strokeClip) return out + `<path d="${d}" fill="${fill}"${opts.extra||''}/>` + (opts.inner||'') + stroke();
+    return out + `<path d="${d}" fill="${fill}"${st}${opts.extra||''}/>`;
+  }
   const id = uid('c');
   out += `<clipPath id="${id}"><path d="${d}"/></clipPath><g clip-path="url(#${id})">`;
   if (S.shade==='hard'){
@@ -352,11 +356,11 @@ function shape(S, d, fill, opts={}){
   }
   if (opts.inner) out += opts.inner;
   out += `</g>`;
-  if (st) out += `<path d="${d}" fill="none"${st}/>`;
-  return out;
+  return out + stroke();
 }
 
 // ---------- hair ----------
+function symm(right){ return [...right, ...mirrorPts(right.slice(1,-1))]; }
 const HAIR_TOP = {
   none: null,
   short: [[55,104],[53,80],[58,60],[72,45],[100,38],[128,45],[142,60],[147,80],[145,104],[140,104],[138,86],[131,74],[116,69],[100,72,'s'],[86,68],[70,73],[62,86],[60,104]],
@@ -366,17 +370,19 @@ const HAIR_TOP = {
   afroTop: [[57,98],[57,76],[68,60],[86,52],[100,50],[114,52],[132,60],[143,76],[143,98],[139,98],[135,82],[122,72],[100,70],[78,72],[65,82],[61,98]],
   buzz: [[56,96],[55,74],[64,55],[82,45],[100,43],[118,45],[136,55],[145,74],[144,96],[141,96],[138,80],[128,72],[100,70],[72,72],[62,80],[59,96]],
   curly: 'curly',
+  sidePart: [[53,126],[51,82],[58,58],[76,43],[100,40],[124,43],[142,58],[149,82],[147,126],[141,126],[140,102],[135,86],[124,76],[108,70],[94,64],[86,56,'s'],[80,64],[70,74],[62,92],[59,126]],
   receding: [[57,96],[56,74],[63,56],[78,45],[94,40],[104,37],[112,40,'s'],[122,42],[137,54],[144,74],[143,96],[139,96],[137,80],[130,66],[121,58,'s'],[111,63],[100,65],[89,63],[79,58,'s'],[70,66],[63,80],[61,96]],
 };
 const HAIR_BACK = {
   none: null,
-  long: { behind: [[100,36],[134,42],[152,64],[157,104],[158,150],[162,192],[134,196],[124,164],[100,166],[76,164],[66,196],[38,192],[42,150],[43,104],[48,64],[66,42]],
-          drape: [[[52,116],[47,150],[45,194],[70,196,'s'],[70,162],[64,134],[60,116]]] },
+  // Long hair is one base silhouette: behind the head, around the neck, over the shoulders.
+  long: { base: symm([[100,36],[130,41],[149,60],[156,96],[157,140],[160,180],[163,208],[133,208,'s'],[121,190],[116,170],[115,150],[100,146]]) },
   bob:  { behind: [[100,38],[134,44],[152,68],[156,106],[155,136],[141,146],[118,141],[100,143],[82,141],[59,146],[45,136],[44,106],[48,68],[66,44]] },
   afro: { behind: 'afro' },
+  longWavy: { base: symm([[100,36],[130,41],[149,60],[157,92],[152,114],[159,136],[153,158],[161,180],[156,208],[132,208,'s'],[124,188],[117,168],[115,150],[100,146]]) },
 };
-const HAIR_TOP_Y = {none:50, short:38, undercut:28, fringe:38, centerPart:40, afroTop:50, buzz:43, curly:29, receding:37};
-const HAIR_BACK_Y = {none:99, long:36, bob:38, afro:11};
+const HAIR_TOP_Y = {none:50, short:38, undercut:28, fringe:38, centerPart:40, afroTop:50, buzz:43, curly:29, receding:37, sidePart:40};
+const HAIR_BACK_Y = {none:99, long:36, bob:38, afro:11, longWavy:36};
 function curlyD(F){
   const C = [[58,92],[57,77],[63,63],[73,51],[87,43],[101,40],[115,43],[128,50],[138,62],[143,77],[143,92],[72,71],[86,65],[100,63],[114,65],[128,71]];
   let d = smooth(F.mp([[60,92],[62,60],[100,44],[138,60],[140,92],[128,74],[100,68],[72,74]]));
@@ -414,8 +420,7 @@ const HEADWEAR = {
   elfCap: { hairMask:[[48,-60],[154,-60],[160,84],[46,84]], front:(S,F,c)=>{
       const cap = smooth(F.mp([[52,82],[52,58],[64,38],[84,28],[106,26],[128,32],[148,48],[164,72],[176,104],[181,130,'s'],[168,112],[156,90],[148,80],[124,76],[100,75],[76,76]]));
       const band = smooth(F.mp([[52,84,'s'],[52,72],[76,66],[100,65],[124,66],[148,72],[149,84,'s'],[124,78],[100,77],[76,78]]));
-      const feather = smooth(F.mp([[132,70,'s'],[146,40],[156,26,'s'],[152,46],[138,72]]));
-      return shape(S,cap,c) + shape(S,feather,'#d8453b',{noShade:true,k:.7}) + shape(S,band,darken(c,.25));
+      return shape(S,cap,c) + shape(S,band,darken(c,.25));
     }, shadow:[[52,84],[148,84],[148,94],[52,94]] },
   mushroom: { hairMask:[[16,-60],[184,-60],[184,82],[16,82]], front:(S,F,c)=>{
       const cap = smooth(F.mp([[20,76],[24,50],[40,25],[68,9],[100,4],[132,9],[160,25],[176,50],[180,76],[150,82],[100,84],[50,82]]));
@@ -886,13 +891,15 @@ function render(traits, variant={}, styleKey='chibi', opts={}){
 
   let L = '';
   // 1. hair behind the head
-  if (back){
+  if (back && back.behind){
     const d = back.behind==='afro' ? afroD(F) : smooth(F.mp(back.behind));
     let bs = shape(S, d, darken(hair,.08), {under: back.behind==='afro'});
     // Big volume gets pressed down under a hat, then hidden above the crown.
     if (HW.hairMask && back.behind==='afro') bs = `<g transform="translate(0,${140+F.dy}) scale(1.04,.72) translate(0,${-140-F.dy})" transform-origin="100 0">${bs}</g>`;
     L += H(HC(bs));
   }
+  // Long hair: shaded hair fill behind the neck so no background shows between neck and hair.
+  if (back && back.base) L += H(HC(`<path d="${smooth(F.mp([[100,138],[118,146],[124,170],[126,210],[74,210],[76,170],[82,146]]))}" fill="${darken(hair,.3)}"/>`));
   const hairTopY = Math.min(topDef ? HAIR_TOP_Y[t.hair.top] : 50, back ? HAIR_BACK_Y[t.hair.back] : 99) + F.dy;
   const hwCtx = { lift: Math.min(0, hairTopY - (38 + F.dy)) };
   // 2. neck + shirt
@@ -905,7 +912,7 @@ function render(traits, variant={}, styleKey='chibi', opts={}){
   L += B(neck + shape(S, shirtD, shirt));
   if (zombie) L += B(`<path d="M60,190 l6,-10 l4,8 l5,-12 l3,14 M132,186 l5,-9 l3,7" fill="none" stroke="${darken(shirt,.5)}" stroke-width="2" stroke-linejoin="round"/>`);
   // 3. drapes (long hair over shoulders, hijab)
-  if (back && back.drape) L += H(back.drape.map(p => shape(S, smooth(F.mp(p)), hair) + shape(S, smooth(F.mp(mirrorPts(p))), hair)).join(''));
+  if (back && back.base) L += H(HC(shape(S, smooth(F.mp(back.base)), darken(hair,.1))));
   if (HW.drape) L += HW.drape(S,F,hwColor);
 
   // 4. the face group
@@ -954,8 +961,9 @@ function render(traits, variant={}, styleKey='chibi', opts={}){
     }
     const hl = S.anime && topDef!=='curly' ? `<path d="M${n1(100-30*F.sx)},${58+F.dy} Q100,${44+F.dy} ${n1(100+30*F.sx)},${58+F.dy}" fill="none" stroke="${lighten(hair,.5)}" stroke-width="4.5" stroke-linecap="round" opacity=".7" transform="translate(-3,0)"/>` + `<path d="M${n1(100-14*F.sx)},${62+F.dy} q4,10 1,20 M${n1(100+10*F.sx)},${60+F.dy} q-3,9 0,17" fill="none" stroke="${darken(hair,.3)}" stroke-width="1.2" opacity=".7"/>` :
       S.shade==='cel' && topDef!=='curly' ? `<path d="M${n1(100-26*F.sx)},${54+F.dy} Q100,${40+F.dy} ${n1(100+22*F.sx)},${52+F.dy}" fill="none" stroke="${lighten(hair,.4)}" stroke-width="4.5" stroke-linecap="round" opacity=".75" transform="translate(-6,4)"/>` : '';
-    const part = t.hair.top==='centerPart' && S.sw ? `<path d="M100,${58+F.dy} Q98,${48+F.dy} 100,${41+F.dy}" fill="none" stroke="${darken(hair,.35)}" stroke-width="1.3"/>` : '';
-    hs += shape(S, topD, t.hair.top==='buzz' ? mix(hair,skin,.25) : hair, {under: topDef==='curly', inner: hl+part});
+    // With back hair present, the top is outlined only where it meets the face, so the two read as one head of hair.
+    const merged = !!back && topDef!=='curly';
+    hs += shape(S, topD, t.hair.top==='buzz' ? mix(hair,skin,.25) : hair, {under: topDef==='curly', inner: hl, strokeClip: merged ? headClip : null, noShade: merged && S.shade==='hard'});
     face += HC(hs);
   }
   if (HW.front) face += HW.front(S,F,hwColor,hwCtx);
@@ -1043,7 +1051,7 @@ const CAST = [
    eyes:{shape:'almond', left:'#2e1c12', right:'#2e1c12', lashes:'none', spacing:-1}, brows:{type:'thick', y:1, tilt:-1}, nose:{type:'pointed', size:1}, mouth:{width:'wide', lips:'medium'},
    facialHair:'full', details:[], glasses:{type:'none'}, headwear:{type:'turban', color:'#d9682b'}, shirt:'#2e4a8c', bg:'#d6e8c4'},
   {id:'wren', name:'Wren', blurb:'Heterochromia, long red hair, witch hat',
-   skin:'#fbe1d1', face:'heart', hair:{top:'centerPart', back:'long', color:'#b5441f'},
+   skin:'#fbe1d1', face:'heart', hair:{top:'centerPart', back:'longWavy', color:'#b5441f'},
    eyes:{shape:'round', left:'#3f8f5a', right:'#4c86c9', lashes:'long', size:1, spacing:1}, brows:{type:'arched'}, nose:{type:'button', size:-1}, mouth:{width:'small', lips:'medium'},
    facialHair:'none', details:['freckles'], glasses:{type:'none'}, headwear:{type:'witchHat', color:'#3b2b5c'}, shirt:'#6b8f3a', bg:'#f2c6d4'},
   {id:'eli', name:'Eli', blurb:'Kippah, monocle, curls, stubble',
@@ -1065,7 +1073,7 @@ const CAST = [
    facialHair:'full', facialHairColor:'#a98559', details:[], glasses:{type:'rect', frame:'#16161a', lens:'#ffffff', lensAlpha:.1},
    headwear:{type:'none'}, shirt:'#202027', bg:'#cfe0ee'},
   {id:'marie', name:'Marie', blurb:'Long straight blonde hair, grey-blue eyes',
-   skin:'#f5d6c4', face:'oval', hair:{top:'centerPart', back:'long', color:'#cfac72'},
+   skin:'#f5d6c4', face:'oval', hair:{top:'sidePart', back:'long', color:'#cfac72'},
    eyes:{shape:'almond', left:'#7a93a8', right:'#7a93a8', lashes:'natural'}, brows:{type:'thin', color:'#c2a170', y:1, tilt:-1},
    nose:{type:'straight', size:-1}, mouth:{width:'medium', lips:'full'},
    facialHair:'none', details:[], glasses:{type:'none'}, headwear:{type:'none'}, shirt:'#b88d6c', bg:'#e3d9ef'},
@@ -1162,7 +1170,7 @@ function buildWardrobe(){
     ['Oversized',{type:'oversized',frame:'#d0457a',lens:'#ffffff',lensAlpha:.12}],['Heart shades',{type:'heart',frame:'#d0457a',lens:'#ff6b9a',lensAlpha:.6}],['Star party',{type:'star',frame:'#e0a23a',lens:'#ffd23f',lensAlpha:.5}],
     ['Shield visor',{type:'shield',frame:'#2b2b33',lens:'#6a5cff',lensAlpha:.7}],['Pince-nez',{type:'pinceNez',frame:'#b8892b',lens:'#ffffff',lensAlpha:.12}]];
   const skins = ['#fbe3d3','#f2cfae','#e2ad84','#d0a27a','#c98d5b','#a8703f','#6b4128','#4a2b1a'];
-  const hairs = [['Bald','none','none'],['Buzz','buzz','none'],['Short','short','none'],['Receding','receding','none'],['Undercut','undercut','none'],['Curly','curly','none'],['Fringe + bob','fringe','bob'],['Long','centerPart','long'],['Afro','afroTop','afro']];
+  const hairs = [['Bald','none','none'],['Buzz','buzz','none'],['Short','short','none'],['Receding','receding','none'],['Undercut','undercut','none'],['Curly','curly','none'],['Fringe + bob','fringe','bob'],['Long','centerPart','long'],['Side part','sidePart','long'],['Wavy','centerPart','longWavy'],['Afro','afroTop','afro']];
   const shapes = Object.keys(FACES);
   $('ward').innerHTML =
     variants('Headwear', hats.map(([cap,type])=>[cap, w(t=>{t.headwear={type, color:hatColors[type]};})])) +
