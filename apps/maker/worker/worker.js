@@ -10,7 +10,7 @@
 // Privacy: photos exist only inside the request. They are never written to storage, cache or logs,
 // and the Clef models are listed by Workers AI as zero data retention.
 
-import { ENUMS, TUNE, getK, setK, encode } from '../build/anytars-core.mjs';
+import { ENUMS, TUNE, getK, setK, encode } from '../../../packages/core/src/anytars.js';
 import * as V from './vocab.js';
 
 const FLASH = '@cf/cloudflare/clef-flash';

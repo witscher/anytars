@@ -6,7 +6,7 @@
 // one of the accepted values (checked on the returned traits, so "already had it" also passes) and no part
 // outside the expected and allowed ones was changed. Results go to qa/eval-results.json.
 import { writeFile } from 'node:fs/promises';
-import { decode } from '../build/anytars-core.mjs';
+import { decode } from '../packages/core/src/anytars.js';
 
 const BASE = process.argv[2] || 'https://anytars.davebuilds.net';
 const MAX = +(process.argv[3] || 1000);
@@ -17,7 +17,7 @@ const BASES = {
   abena: 'v1.AQEFAwABAQEBAgAFAQIAAP8AAP8AAAEAACZrQSjUz8g6IhQ6IhTHmiv___8va9gtfW7z0nrUz8jUz8g',
 };
 const castCodes = async () => {
-  const core = await import('../build/anytars-core.mjs');
+  const core = await import('../packages/core/src/anytars.js');
   // CAST is not exported from the core module; rebuild a few representative bases from traits instead.
   const t = (o) => core.encode(o);
   return {
@@ -31,8 +31,8 @@ const castCodes = async () => {
   };
 };
 
-// Hex values from src/vocab.js, by name, for colour expectations.
-import * as V from '../src/vocab.js';
+// Hex values from apps/maker/worker/vocab.js, by name, for colour expectations.
+import * as V from '../apps/maker/worker/vocab.js';
 const hexOf = (map, names) => names.map(n => map[n][0]);
 const HAIR = n => hexOf(V.HAIR_COLOR, [].concat(n)), CLOTH = n => hexOf(V.CLOTH, [].concat(n)), BG = n => hexOf(V.BG, [].concat(n)), EYE = n => hexOf(V.EYE_COLOR, [].concat(n));
 

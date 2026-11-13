@@ -1,36 +1,52 @@
 # anytars
 
-Open-source SVG avatar library for humans in their diversity. Every person has one recognizable base avatar plus versions of it: expressions (happy, sad, crying, ...) and transforms (zombie, festive, ...).
+Open-source SVG avatar library for humans in their diversity. Every person has one recognizable avatar plus versions of it: 18 expressions (happy, crying, wink, shrug, upside down, …), zombie and festive transforms, in five art styles.
 
-Live: https://anytars.davebuilds.net (avatar maker with Workers AI) and https://anytars.davebuilds.net/lab/ (style lab)
+Live: https://anytars.davebuilds.net (avatar maker with Cloudflare Workers AI) and https://anytars.davebuilds.net/lab/ (style lab).
 
-## Status
+A personal project that showcases Cloudflare technology (Workers, static assets, Workers AI). It is not a Cloudflare product.
 
-Style exploration. `explorations/style-v1/index.html` holds a prototype renderer (traits JSON + variant + style -> SVG), the cast, Mii-style tuning sliders and a reversible avatar code (`v1.` + base64url).
+## Repository layout
 
-## Workers AI
+| Path | What |
+|---|---|
+| `packages/core` | The library (`anytars` on npm, not published yet): renderer, avatar code, types, tests. `CODE-FORMAT.md` is the avatar code spec. |
+| `apps/maker` | The avatar maker: `public/index.html` (the page) and `worker/` (Cloudflare Worker with the Workers AI endpoints). |
+| `apps/lab` | The style lab: every person in every style and version, eye variants, tuning, wardrobe. |
+| `apps/shared/cast.js` | Example characters used by the maker and the lab (not part of the library). |
+| `qa/` | Renderer QA over thousands of random avatars, and the AI evaluation. |
+| `scripts/build.mjs` | Builds `dist/` for deployment. |
 
-The maker at `/` can change an avatar from a sentence ("long blonde hair and round glasses") or create one from a photo. Both run on Workers AI with Cloudflare's **Clef** decision models, from the Worker in `src/worker.js`:
-
-- `POST /api/edit` sends the request and the current avatar to `@cf/cloudflare/clef-flash`. Every trait is one typed `choice` question whose options are the exact values the renderer supports, plus `keep`. One call answers about 34 questions in a few hundred milliseconds. A trait changes only when `keep` is below 20%, so unrelated parts stay put.
-- `POST /api/photo` sends a downscaled JPEG to `@cf/cloudflare/clef-omni` with the same questions (no `keep`). Skin tone is a `score` question, so it can fall between palette steps.
-- `POST /api/name` checks an avatar name with Clef flash before it is accepted: four yes/no questions (profanity, hate or harassment, sexual content, violence or extremism) over the name as typed and a decoded spelling (`sh1t` → `shit`, separators removed). A name is rejected if any probability is 50% or more. Names are stored with saved avatars and used as the download file name, not in the avatar code. Real names that look rude (Dick, Fanny, Randy, Gay, Phuc, Bich, Hung, Cox, ...) are on an allow-list in `src/worker.js`: they are masked for the four checks, and the original name gets two extra questions (used as an insult or sexual reference?) with stricter limits, so "Dick Smith" passes while "Dick Head" or "Phuc Off" do not.
-- Option labels and descriptions live in `src/vocab.js`. The Worker bundles the same renderer core as the browser (`build/anytars-core.mjs`) to validate traits and return an avatar code.
-
-Photos are resized and re-encoded in the browser (removing EXIF data), sent once, analysed and discarded. The Worker never stores or logs request bodies, observability logging is off, and Workers AI lists Clef as zero data retention. A per-IP rate limit protects the AI endpoints.
-
-## Develop and deploy
+## Develop
 
 ```bash
 npm install
 ```
 
 ```bash
-npm run build
+npm test
+```
+
+```bash
+npm run qa
 ```
 
 ```bash
 npm run deploy
 ```
 
-`npm run build` wraps the lab page into `dist/`. `npm run deploy` builds and publishes the `anytars` Cloudflare Worker: static assets, the `/api/*` routes, a Workers AI binding and a rate limit, on the custom domain configured in `wrangler.jsonc`. Deploying needs `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` in the environment.
+- `npm test` builds the library and runs its tests: old avatar codes still decode, codes round-trip, every style and version renders valid SVG.
+- `npm run qa` renders 2,000 random avatars in every style and version (about 360,000 SVGs) and pixel-checks layer overlaps; see `qa/README.md`.
+- `npm run eval:ai` runs about 1,000 natural-language edits against the live AI endpoint and reports the pass rate.
+- `npm run deploy` builds and publishes the `anytars` Worker: static assets, the `/api/*` routes, a Workers AI binding and a rate limit, on the custom domain in `wrangler.jsonc`. Needs `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
+
+## Workers AI
+
+The maker changes an avatar from a sentence ("long blonde hair and round glasses"), creates one from a description or a photo, and checks avatar names. All of it runs on Workers AI with Cloudflare's **Clef** decision models, from `apps/maker/worker/worker.js`:
+
+- `POST /api/edit` sends the request and the current avatar to `@cf/cloudflare/clef-flash`. Every trait is one typed `choice` question whose options are the exact values the renderer supports, plus `keep`; yes/no questions check whether the request mentions each part at all. One call answers about 50 questions in a few hundred milliseconds. A trait changes only when the model is confident, so unrelated parts stay put. It also tells edits from descriptions of a new character, with presentation and age as hints for the random parts.
+- `POST /api/photo` sends a downscaled JPEG to `@cf/cloudflare/clef-omni` with the same questions. Skin tone is a `score` question, so it can fall between palette steps.
+- `POST /api/name` checks an avatar name with Clef flash: four yes/no questions (profanity, hate or harassment, sexual content, violence or extremism) over the name as typed and a decoded spelling (`sh1t` → `shit`, separators removed). Real names that look rude (Dick, Fanny, Randy, Gay, Phuc, Bich, Hung, Cox, …) are on an allow-list: they are masked for those checks, and the original name gets two extra questions with stricter limits, so "Dick Smith" passes while "Dick Head" does not.
+- Option labels and descriptions live in `apps/maker/worker/vocab.js`. The Worker imports the library from `packages/core` to validate traits and return avatar codes.
+
+Photos are resized and re-encoded in the browser (removing EXIF data), sent once, analysed and discarded. The Worker never stores or logs request bodies, observability logging is off, and Workers AI lists Clef as zero data retention. A per-IP rate limit protects the AI endpoints.

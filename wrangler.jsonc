@@ -1,7 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "anytars",
-  "main": "src/worker.js",
+  "main": "apps/maker/worker/worker.js",
   "compatibility_date": "2026-11-01",
   "assets": {
     "directory": "./dist",
