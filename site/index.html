@@ -75,6 +75,12 @@ h1,h2,h3{font-family:var(--f-display);margin:0;letter-spacing:-.01em;text-wrap:b
 .ai-meta{font:500 .7rem var(--f-mono);color:var(--muted);overflow-wrap:anywhere}
 .ai-msg{font-size:.86rem;padding-right:20px}
 .ai-msg.err{color:var(--accent)}
+.ai-sum{color:var(--muted)}
+.ai-more{display:none;justify-self:start;border:0;background:none;padding:0;font-size:.8rem;color:var(--muted);text-decoration:underline;cursor:pointer}
+.ai-details{display:grid;gap:6px}
+.ai-msg + .ai-details, .ai-more + .ai-details{min-width:0}
+/* desktop: details always visible, so no summary list or toggle */
+@media (min-width:901px){ .ai-sum{display:none} }
 .dec{display:flex;flex-wrap:wrap;gap:5px;max-height:120px;overflow:auto}
 .dec span{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:2px 9px 2px 7px;font-size:.76rem}
 .dec i{display:inline-block;width:28px;height:4px;border-radius:3px;background:var(--line);position:relative;overflow:hidden}
@@ -96,6 +102,9 @@ body.drop::after{content:"Drop the photo to create your avatar";position:fixed;i
   .ai-top h2{font-size:.95rem}
   .ai-top .sparkles{width:18px;height:18px}
   .ai-out{max-height:46vh;overflow:auto;padding-bottom:4px;border-bottom:1px solid var(--line)}
+  .ai-more{display:inline}
+  .ai-out:not(.open) .ai-details{display:none}
+  .ai-msg{font-size:.84rem}
   .ai-out .ai-thumb{display:block;width:96px;height:96px;grid-row:1 / span 2}
   .ai-out .ai-thumb svg{width:100%;height:100%;display:block}
   .ai-out .ai-body{grid-column:2}
@@ -618,6 +627,7 @@ document.addEventListener('click', e => {
   if (b.id === 'saveNewBtn'){ saveCurrent(true); return; }
   if (b.id === 'undoBtn'){ undo(); return; }
   if (b.id === 'aiClose'){ $('aiOut').hidden = true; return; }
+  if (b.id === 'aiMore'){ const open = $('aiOut').classList.toggle('open'); b.setAttribute('aria-expanded', open); b.textContent = open ? 'Hide details' : 'Show details'; return; }
   if (b.id === 'redoBtn'){ redo(); return; }
   if (b.dataset.bgshape){ bgCfg.shape = b.dataset.bgshape; applyBg(); redraw({presets:true}); drawLibrary(); return; }
   if (b.dataset.style){ style = b.dataset.style; redraw({presets:true}); drawLibrary(); return; }
@@ -652,7 +662,11 @@ function showAi(res, kind){
     : res.intent === 'none' ? 'Nothing to change. Describe what you would like, for example "long blonde hair" or "a kid with freckles".'
     : res.intent === 'new' ? 'New character:'
     : (list.length ? 'Changed:' : 'Nothing changed: the model was not confident the request was about any part of the avatar.');
-  aiPanel(`<div class="ai-msg">${head}</div>${chips}<div class="ai-meta">${meta}</div>`, true);
+  // Short summary first; on phones the decision chips and model details stay behind "Show details".
+  const names = list.filter(c => c.id !== 'intent').map(c => c.label);
+  const summary = kind === 'photo' ? `${list.length} parts read from the photo.` : names.length ? names.slice(0, 4).join(', ') + (names.length > 4 ? ` and ${names.length - 4} more` : '') : '';
+  const more = list.length ? `<button class="ai-more" type="button" id="aiMore" aria-expanded="false">Show details</button>` : '';
+  aiPanel(`<div class="ai-msg">${head}${summary ? ` <span class="ai-sum">${summary}</span>` : ''}</div>${more}<div class="ai-details">${chips}<div class="ai-meta">${meta}</div></div>`, true);
 }
 // Result panel: on phones it also shows the new avatar, since the big preview may be scrolled away.
 function aiPanel(body, thumb){
