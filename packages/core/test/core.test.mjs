@@ -1,6 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { createRequire } from 'node:module';
 import { render, encode, decode, STYLES, VARIANTS, ENUMS, TUNE, EYE_RENDER, CHEEKS } from '../dist/anytars.mjs';
+import * as esm from '../dist/anytars.mjs';
 
 // Codes created by earlier versions must keep decoding to the same avatar (append-only format).
 const FIXTURES = [
@@ -75,6 +77,14 @@ test('ids are unique across renders on one page', () => {
   const a = render(t), b = render(t);
   const ida = new Set([...a.matchAll(/ id="([^"]+)"/g)].map(m => m[1]));
   for (const m of b.matchAll(/ id="([^"]+)"/g)) assert.ok(!ida.has(m[1]));
+});
+
+test('CommonJS build matches the ES module', () => {
+  const cjs = createRequire(import.meta.url)('../dist/anytars.cjs');
+  assert.deepEqual(Object.keys(cjs).sort(), Object.keys(esm).sort());
+  const t = randomTraits(11);
+  assert.equal(cjs.encode(t), esm.encode(t));
+  assert.equal(cjs.render(t, {}, 'cel').replace(/ id="[^"]+"|url\(#[^)]+\)/g, ''), esm.render(t, {}, 'cel').replace(/ id="[^"]+"|url\(#[^)]+\)/g, ''));
 });
 
 test('background options', () => {

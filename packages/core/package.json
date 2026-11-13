@@ -14,13 +14,19 @@
     "url": "https://github.com/witscher/anytars/issues"
   },
   "type": "module",
-  "main": "./dist/anytars.mjs",
+  "main": "./dist/anytars.cjs",
   "module": "./dist/anytars.mjs",
   "types": "./index.d.ts",
   "exports": {
     ".": {
-      "types": "./index.d.ts",
-      "import": "./dist/anytars.mjs"
+      "import": {
+        "types": "./index.d.ts",
+        "default": "./dist/anytars.mjs"
+      },
+      "require": {
+        "types": "./index.d.cts",
+        "default": "./dist/anytars.cjs"
+      }
     },
     "./global": "./dist/anytars.global.js",
     "./package.json": "./package.json"
@@ -28,6 +34,7 @@
   "files": [
     "dist",
     "index.d.ts",
+    "index.d.cts",
     "README.md",
     "CODE-FORMAT.md",
     "LICENSE"

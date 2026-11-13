@@ -19,6 +19,8 @@ render(person, { transform: 'zombie' }, 'anime');    // same person, as a zombie
 render(person, { expression: 'wink' }, 'sticker', { background: 'none' });
 ```
 
+CommonJS works too: `const { render, decode } = require('anytars');`
+
 `render` returns an SVG string with `viewBox="0 0 200 200"`. Put it in the DOM, write it to a file, or return it from a Worker with `content-type: image/svg+xml`.
 
 In a page without a bundler, load the global build and use `render`, `encode` and `decode` directly:

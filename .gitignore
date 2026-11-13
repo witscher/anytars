@@ -5,3 +5,4 @@ qa/results.json
 qa/*.png
 build/
 qa/eval-results.json
+packages/core/index.d.cts
