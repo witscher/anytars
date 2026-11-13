@@ -39,6 +39,15 @@ test('old codes still decode to the same avatar', () => {
   }
 });
 
+// Enum indices are stored in codes, so existing values must keep their position (append-only).
+test('enum order is append-only', () => {
+  const PREFIX = {
+    hairTop: ['none','short','undercut','fringe','centerPart','afroTop','buzz','curly','afroCurly','sidePart','receding'],
+    hairBack: ['none','long','bob','afro','longWavy'],
+  };
+  for (const [k, list] of Object.entries(PREFIX)) assert.deepEqual(ENUMS[k].slice(0, list.length), list, k);
+});
+
 test('encode/decode round-trips random avatars', () => {
   for (let i = 0; i < 300; i++) {
     const code = encode(randomTraits(i));

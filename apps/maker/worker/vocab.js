@@ -39,6 +39,13 @@ export const HAIR_TOP = {
   curly: 'short curly hair',
   afroCurly: 'big, voluminous curly afro',
   receding: 'short hair with a receding hairline',
+  pixie: 'pixie cut: very short, textured, swept to one side',
+  mohawk: 'mohawk: a strip of spiky hair down the middle, shaved sides',
+  bowl: 'bowl cut: rounded, even fringe all the way around',
+  slicked: 'slicked-back hair, combed straight back off the forehead',
+  spiky: 'spiky, gelled-up short hair',
+  cornrows: 'cornrows: tight braids lying flat against the scalp',
+  locsTop: 'locs (dreadlocks) at the hairline (goes with locs hanging down)',
 };
 
 export const HAIR_BACK = {
@@ -47,6 +54,12 @@ export const HAIR_BACK = {
   long: 'long straight hair to or past the shoulders',
   longWavy: 'long wavy or curly hair past the shoulders',
   afro: 'big, rounded afro',
+  ponytail: 'ponytail tied at the back',
+  bun: 'single bun on top of the head (top knot)',
+  spaceBuns: 'two buns on top of the head (space buns)',
+  pigtails: 'two pigtails hanging at the sides',
+  locs: 'long locs (dreadlocks) hanging past the shoulders',
+  braids: 'long box braids hanging past the shoulders',
 };
 
 export const HAIR_COLOR = {

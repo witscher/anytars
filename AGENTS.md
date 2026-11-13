@@ -81,7 +81,9 @@ Then:
 4. Run `npm test` and `npm run qa`.
 5. Look at it in all five styles on a few characters, including long hair, an afro and glasses.
 
-**A hairstyle.** Use `HAIR_TOP` or `HAIR_BACK`, and add `HAIR_TOP_Y` or `HAIR_BACK_Y`, which the hats and the canvas fitting use. Shapes must be solid: overlapping sub-paths must wind the same direction, or the nonzero fill rule leaves holes where the scalp shows.
+**A hairstyle.** Use `HAIR_TOP` or `HAIR_BACK`, and add `HAIR_TOP_Y` or `HAIR_BACK_Y` (top edge) and, if wider than usual, `HAIR_TOP_W` or `HAIR_BACK_W` (half width). The hats and the canvas fitting use them. Shapes must be solid: overlapping sub-paths must wind the same direction, or the nonzero fill rule leaves holes where the scalp shows.
+
+A back style is either a point list (`base` over the shoulders, `behind` behind the head) or a `draw(F)` function returning `{ behind, base, tie, strands }` for styles with several pieces (ponytail, buns, pigtails, locs, braids). Mark it `small: true` when it doesn't frame the face (buns, ponytail): the top hair then keeps its full outline and hats don't sit on it. `neck: true` fills the gap behind the neck. Add strand lines to `HAIR_ACCENT_TOP` or `HAIR_ACCENT_BACK`, then the vocab description, the Worker's `normalizeHair` and `randomBase`, the maker's `NICE` labels and random list, and the lab's `hairs` list.
 
 **An expression.** Append to `EXPR` and `EXPRESSIONS`. Reuse existing eye and mouth options where possible. Then:
 

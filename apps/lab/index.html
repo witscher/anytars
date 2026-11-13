@@ -362,7 +362,7 @@ function buildWardrobe(){
     ['Narrow',{type:'narrow',frame:'#3d5a80',lens:'#ffffff',lensAlpha:.12}],['Semi-rimless',{type:'semiRim',frame:'#2b2b33',lens:'#ffffff',lensAlpha:.12}],['Small round',{type:'roundSmall',frame:'#c79a2b',lens:'#ffffff',lensAlpha:.12}],
     ['Octagon',{type:'octagon',frame:'#9aa0aa',lens:'#ffffff',lensAlpha:.12}],['Thick round',{type:'thickRound',frame:'#16161a',lens:'#ffffff',lensAlpha:.12}]];
   const skins = ['#fbe3d3','#f2cfae','#e2ad84','#d0a27a','#c98d5b','#a8703f','#6b4128','#4a2b1a'];
-  const hairs = [['Bald','none','none'],['Buzz','buzz','none'],['Short','short','none'],['Receding','receding','none'],['Undercut','undercut','none'],['Afro (curly)','afroCurly','none'],['Curly','curly','none'],['Fringe + bob','fringe','bob'],['Long','centerPart','long'],['Side part','sidePart','long'],['Wavy','centerPart','longWavy'],['Afro','afroTop','afro']];
+  const hairs = [['Bald','none','none'],['Buzz','buzz','none'],['Short','short','none'],['Receding','receding','none'],['Undercut','undercut','none'],['Afro (curly)','afroCurly','none'],['Curly','curly','none'],['Fringe + bob','fringe','bob'],['Long','centerPart','long'],['Side part','sidePart','long'],['Wavy','centerPart','longWavy'],['Afro','afroTop','afro'],['Pixie','pixie','none'],['Mohawk','mohawk','none'],['Spiky','spiky','none'],['Bowl','bowl','none'],['Slicked + bun','slicked','bun'],['Ponytail','centerPart','ponytail'],['Space buns','fringe','spaceBuns'],['Pigtails','centerPart','pigtails'],['Cornrows + braids','cornrows','braids'],['Locs','locsTop','locs']];
   const shapes = Object.keys(FACES);
   $('ward').innerHTML =
     variants('Headwear', hats.map(([cap,type])=>[cap, w(t=>{t.headwear={type, color:hatColors[type]};})])) +

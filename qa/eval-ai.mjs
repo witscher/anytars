@@ -65,7 +65,11 @@ add('give me a buzz cut', { hairTop: ['buzz'] }); add('shave the head completely
 add('add bangs', { hairTop: ['fringe'] }); add('part the hair in the middle', { hairTop: ['centerPart'] }); add('side parting please', { hairTop: ['sidePart'] });
 add('short curly hair', { hairTop: ['curly'] }); add('a big curly afro', { hairTop: ['afroCurly', 'afroTop', 'curly'] }); add('receding hairline', { hairTop: ['receding'] });
 add('a short classic haircut', { hairTop: ['short'] }); add('long hair', { hairBack: ['long', 'longWavy'] }); add('long wavy hair', { hairBack: ['longWavy'] });
-add('give her a bob', { hairBack: ['bob'] }); add('cut the long hair off', { hairBack: ['none'] }, ['hairTop']);
+add('give her a bob', { hairBack: ['bob'] });
+add('put the hair in a ponytail', { hairBack: ['ponytail'] }); add('a top knot', { hairBack: ['bun'] }); add('space buns', { hairBack: ['spaceBuns'] });
+add('pigtails', { hairBack: ['pigtails'] }); add('give them dreadlocks', { hairBack: ['locs'] }, ['hairTop']); add('box braids', { hairBack: ['braids'] }, ['hairTop']);
+add('a mohawk', { hairTop: ['mohawk'] }, ['hairBack']); add('pixie cut', { hairTop: ['pixie'] }, ['hairBack']); add('bowl cut', { hairTop: ['bowl'] }, ['hairBack']);
+add('slick the hair back', { hairTop: ['slicked'] }); add('spiky hair', { hairTop: ['spiky'] }, ['hairBack']); add('cornrows', { hairTop: ['cornrows'] }, ['hairBack']); add('cut the long hair off', { hairBack: ['none'] }, ['hairTop']);
 for (const [w, n] of [['black','black'],['brown',['brown','mediumBrown','darkBrown','lightBrown']],['blonde',['blonde','platinum']],['red',['auburn','ginger']],['ginger',['ginger','auburn']],['grey',['grey']],['white',['white','grey']],['blue','blue'],['pink','pink'],['green','green'],['purple','purple']])
   add(`make the hair ${w}`, { hairColor: HAIR(n) });
 add('she should be a redhead', { hairColor: HAIR(['auburn','ginger']) }); add('dye it platinum', { hairColor: HAIR(['platinum','blonde','white']) });

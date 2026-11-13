@@ -215,7 +215,10 @@ function normalizeHair(t, asked){
   if (h.back === 'afro' && !['afroTop', 'afroCurly', 'curly'].includes(h.top) && !asked.has('hairTop')) h.top = 'afroTop';
   if (h.top === 'afroTop' && h.back !== 'afro' && !asked.has('hairTop')) h.top = longish.includes(h.back) ? 'centerPart' : 'curly';
   if (h.top === 'afroTop' && h.back !== 'afro' && asked.has('hairTop') && !asked.has('hairBack')) h.back = 'afro';
-  if (['none', 'buzz', 'afroCurly'].includes(h.top) && longish.includes(h.back)){
+  // Locs come as a pair: the hairline and the hanging locs.
+  if (h.back === 'locs' && !['locsTop', 'none'].includes(h.top) && !asked.has('hairTop')) h.top = 'locsTop';
+  if (h.top === 'locsTop' && h.back !== 'locs' && !asked.has('hairBack')) h.back = 'locs';
+  if (['none', 'buzz', 'afroCurly', 'mohawk'].includes(h.top) && longish.includes(h.back)){
     if (asked.has('hairTop') && !asked.has('hairBack')) h.back = 'none';
     else if (!asked.has('hairTop')) h.top = 'centerPart';
   }
@@ -273,11 +276,15 @@ function randomBase(pres, age, prev){
   const old = age === 'older' || age === 'senior', kid = age === 'child';
   const hairColors = Object.values(V.HAIR_COLOR).map(x => x[0]);
   const natural = hairColors.slice(0, 10);
-  const top = wpick(fem ? { centerPart: 4, sidePart: 4, fringe: 3, curly: 2, afroCurly: 2, afroTop: 1.5, short: 1, undercut: .5, buzz: .2 }
-               : masc ? { short: 4, undercut: 2, buzz: 2, receding: old ? 4 : .5, curly: 2, afroCurly: 1.5, sidePart: 2, none: old ? 2 : .5, afroTop: 1 }
-               : { short: 2, undercut: 2, fringe: 2, sidePart: 2, centerPart: 2, curly: 2, afroCurly: 1.5, buzz: 1, afroTop: 1 });
-  const back = top === 'afroTop' ? 'afro' : ['afroCurly', 'buzz', 'none', 'receding'].includes(top) ? 'none'
-    : wpick(fem ? { long: 4, longWavy: 3, bob: 2, none: 1 } : masc ? { none: 8, long: 1, bob: .5 } : { none: 3, bob: 2, long: 1.5, longWavy: 1 });
+  const top = wpick(fem ? { centerPart: 4, sidePart: 4, fringe: 3, curly: 2, afroCurly: 2, afroTop: 1.5, short: 1, undercut: .5, buzz: .2, pixie: 1.5, slicked: 1, cornrows: 1, locsTop: .8, bowl: .3 }
+               : masc ? { short: 4, undercut: 2, buzz: 2, receding: old ? 4 : .5, curly: 2, afroCurly: 1.5, sidePart: 2, none: old ? 2 : .5, afroTop: 1, slicked: 1.5, spiky: kid ? 2 : 1, mohawk: old ? .1 : .4, cornrows: 1, locsTop: .8, bowl: kid ? 1.5 : .3 }
+               : { short: 2, undercut: 2, fringe: 2, sidePart: 2, centerPart: 2, curly: 2, afroCurly: 1.5, buzz: 1, afroTop: 1, pixie: 1.5, mohawk: .5, spiky: 1, slicked: 1, cornrows: .8, locsTop: .8, bowl: .5 });
+  // Back hair that suits the top: locs go together, cornrows usually end in braids, tight cuts have none.
+  const back = top === 'afroTop' ? 'afro' : top === 'locsTop' ? 'locs'
+    : top === 'cornrows' ? wpick(fem ? { braids: 3, none: 1, ponytail: 1 } : { none: 3, braids: 1 })
+    : ['afroCurly', 'buzz', 'none', 'receding', 'mohawk', 'spiky', 'bowl'].includes(top) ? 'none'
+    : wpick(fem ? { long: 4, longWavy: 3, bob: 2, none: 1, ponytail: 2, bun: 1.5, braids: 1, pigtails: kid ? 1.5 : .3, spaceBuns: .5 }
+          : masc ? { none: 8, long: 1, bob: .5, bun: .6, ponytail: .4 } : { none: 3, bob: 2, long: 1.5, longWavy: 1, bun: 1, ponytail: 1, spaceBuns: .4 });
   const color = old && Math.random() < .65 ? pick(['#d4cfc8', '#f4f1ec']) : (Math.random() < .9 ? pick(natural) : pick(hairColors.slice(10)));
   const eye = pick(Object.values(V.EYE_COLOR).map(x => x[0]));
   const t = {

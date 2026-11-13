@@ -124,28 +124,76 @@ function shape(S, d, fill, opts={}){
 function symm(right){ return [...right, ...mirrorPts(right.slice(1,-1))]; }
 const HAIR_TOP = {
   none: null,
-  short: [[55,104],[53,80],[58,60],[72,45],[100,38],[128,45],[142,60],[147,80],[145,104],[140,104],[138,86],[131,74],[116,69],[100,72,'s'],[86,68],[70,73],[62,86],[60,104]],
-  undercut: [[60,84],[58,64],[66,46],[84,32],[108,28],[132,34],[146,50],[147,68],[141,76],[130,66],[112,62],[92,66],[74,72],[64,84]],
-  fringe: [[54,112],[52,78],[60,56],[78,42],[100,38],[122,42],[140,56],[148,78],[146,112],[140,112],[138,92],[134,84,'s'],[124,89],[112,83,'s'],[100,89],[88,83,'s'],[76,89],[66,84,'s'],[62,94],[60,112]],
-  centerPart: [[53,124],[51,82],[58,58],[76,43],[100,40],[124,43],[142,58],[149,82],[147,124],[141,124],[139,96],[132,78],[116,66],[100,58,'s'],[84,66],[68,78],[61,96],[59,124]],
+  // Outline broken by a crown tuft and combed locks along the hairline, so it reads as hair, not a helmet.
+  short: [[55,104],[52,84],[55,64],[64,49],[79,40],[95,35],[103,29,'s'],[109,35],[124,39],[138,49],[146,64],[148,84],[145,104],[140,104],[139,88],[133,76],[126,82,'s'],[121,71],[112,79,'s'],[106,69],[96,77,'s'],[90,68],[80,74,'s'],[74,67],[66,77],[61,90],[60,104]],
+  undercut: [[61,82],[59,64],[65,49],[78,37],[95,29],[114,26],[132,30],[145,41],[150,56],[146,68],[139,74],[133,66],[126,73,'s'],[121,62],[106,60],[90,64],[76,71],[66,82]],
+  fringe: [[54,112],[52,78],[60,56],[78,42],[100,38],[122,42],[140,56],[148,78],[146,112],[140,112],[139,94],[136,83],[131,89,'s'],[125,80],[117,88,'s'],[110,79],[101,87,'s'],[94,79],[84,88,'s'],[78,79],[70,86,'s'],[65,82],[62,96],[60,112]],
+  // Two curtains from a clear middle parting; the locks flick out at the cheeks.
+  centerPart: [[53,126],[51,82],[58,58],[76,43],[100,40],[124,43],[142,58],[149,82],[150,108],[147,126],[141,126],[140,108],[137,92],[130,76],[118,63],[106,55],[100,50,'s'],[94,55],[82,63],[70,76],[63,92],[60,108],[59,126]],
   afroTop: [[57,98],[57,76],[68,60],[86,52],[100,50],[114,52],[132,60],[143,76],[143,98],[139,98],[135,82],[122,72],[100,70],[78,72],[65,82],[61,98]],
   buzz: [[56,96],[55,74],[64,55],[82,45],[100,43],[118,45],[136,55],[145,74],[144,96],[141,96],[138,80],[128,72],[100,70],[72,72],[62,80],[59,96]],
   curly: 'curly',
   afroCurly: 'afroCurly',
-  sidePart: [[53,126],[51,82],[58,58],[76,43],[100,40],[124,43],[142,58],[149,82],[147,126],[141,126],[140,102],[135,86],[124,76],[108,70],[94,64],[86,56,'s'],[80,64],[70,74],[62,92],[59,126]],
-  receding: [[57,96],[56,74],[63,56],[78,45],[94,40],[104,37],[112,40,'s'],[122,42],[137,54],[144,74],[143,96],[139,96],[137,80],[130,66],[121,58,'s'],[111,63],[100,65],[89,63],[79,58,'s'],[70,66],[63,80],[61,96]],
+  // Deep side parting on the left; a big swoop crosses the forehead and covers the right temple.
+  sidePart: [[53,126],[51,82],[57,58],[72,44],[92,38],[112,38],[130,43],[144,56],[150,80],[150,104],[147,126],[141,126],[140,104],[134,92],[124,86],[110,82],[96,77],[85,70],[78,60],[76,52,'s'],[71,62],[64,76],[61,94],[59,126]],
+  receding: [[57,96],[55,74],[61,57],[75,45],[92,39],[101,33,'s'],[107,39],[122,42],[137,54],[145,74],[143,96],[139,96],[138,84],[134,78,'s'],[131,68],[121,58,'s'],[112,64],[103,67,'s'],[96,63],[88,66],[79,58,'s'],[70,67],[67,77,'s'],[63,82],[61,96]],
+  // added later (appended: codes keep their indices)
+  pixie: [[56,100],[53,80],[56,62],[66,48],[82,39],[100,35],[119,37],[135,45],[145,58],[149,76],[147,96],[141,96],[140,86],[134,88],[124,94,'s'],[119,84],[106,78],[92,75],[80,74],[72,79,'s'],[69,71],[63,82],[60,100]],
+  mohawk: [[86,72],[85,54],[80,37,'s'],[90,44],[93,24,'s'],[101,38],[109,19,'s'],[114,38],[124,28,'s'],[121,50],[116,72],[100,67]],
+  bowl: [[54,108],[51,84],[55,62],[68,46],[88,37],[112,37],[132,46],[145,62],[149,84],[146,108],[140,108],[139,90],[132,85],[100,84],[68,85],[61,90],[60,108]],
+  slicked: [[57,98],[55,76],[60,56],[72,43],[90,35],[110,35],[128,42],[140,55],[145,76],[143,98],[139,98],[137,82],[129,68],[116,60],[100,58],[86,60],[72,68],[63,82],[61,98]],
+  spiky: [[56,100],[52,86],[44,74,'s'],[55,70],[50,55,'s'],[63,56],[62,39,'s'],[76,45],[82,26,'s'],[95,39],[105,20,'s'],[113,38],[127,27,'s'],[130,45],[144,40,'s'],[142,57],[155,58,'s'],[147,70],[156,80,'s'],[147,86],[145,100],[140,100],[138,86],[131,81,'s'],[125,83],[117,74,'s'],[110,81],[99,73,'s'],[90,81],[81,73,'s'],[73,81],[65,77,'s'],[62,89],[60,100]],
+  cornrows: [[56,96],[55,74],[63,55],[81,44],[100,41],[119,44],[137,55],[145,74],[144,96],[140,96],[138,82],[130,71],[115,66],[100,65],[85,66],[70,71],[62,82],[60,96]],
+  locsTop: [[55,112],[52,82],[58,58],[76,43],[100,38],[124,43],[142,58],[148,82],[146,112],[140,112],[139,92],[134,80],[128,85],[122,74],[115,81],[108,71],[100,78],[92,71],[85,81],[78,74],[72,85],[66,80],[61,92],[60,112]],
 };
 const HAIR_BACK = {
   none: null,
   // Long hair is one base silhouette: behind the head, around the neck, over the shoulders.
-  long: { base: symm([[100,36],[130,41],[149,60],[156,96],[157,140],[160,180],[163,208],[133,208,'s'],[121,190],[116,170],[115,150],[100,146]]) },
+  long: { base: [[100,36],[130,41],[149,60],[157,94],[159,122],[158,148],[161,176],[166,200,'s'],[156,192],[151,208,'s'],[142,196],[133,206,'s'],[124,188],[117,168],[115,150],[100,146],
+                  [85,150],[83,168],[76,186],[69,204,'s'],[61,193],[52,206,'s'],[45,190],[38,197,'s'],[40,174],[42,148],[41,122],[43,94],[51,60],[70,41]] },
   bob:  { behind: [[100,38],[134,44],[152,68],[156,106],[155,136],[141,146],[118,141],[100,143],[82,141],[59,146],[45,136],[44,106],[48,68],[66,44]] },
   afro: { behind: 'afro' },
-  longWavy: { base: symm([[100,36],[130,41],[149,60],[157,92],[152,114],[159,136],[153,158],[161,180],[156,208],[132,208,'s'],[124,188],[117,168],[115,150],[100,146]]) },
+  longWavy: { base: [[100,36],[130,41],[149,60],[158,90],[153,113],[161,136],[155,158],[164,180],[160,198],[163,208,'s'],[150,198],[141,207,'s'],[131,196],[124,184],[117,166],[115,150],[100,146],
+                      [85,150],[83,166],[76,184],[68,197],[58,207,'s'],[50,196],[38,205,'s'],[41,182],[36,160],[44,138],[38,114],[44,92],[51,60],[70,41]] },
+  // added later (appended). draw(F) returns shapes for the layer behind the head and the layer over the shoulders.
+  ponytail: { small: true, draw: F => ({ behind: [[smooth(F.mp([[124,52],[140,41],[155,46],[163,64],[166,92],[164,124],[159,152],[150,178,'s'],[147,152],[150,122],[148,93],[142,72],[132,60]])), {}]],
+                                    tie: [[circ(...F.m([134,50]), 5*F.sx)]] }) },
+  bun: { small: true, draw: F => ({ behind: [[circ(...F.m([100,27]), 16), {}]], tie: [[ell(...F.m([100,41]), 9, 3.2)]] }) },
+  spaceBuns: { small: true, draw: F => ({ behind: [[circ(...F.m([68,36]), 13) + circCW(...F.m([132,36]), 13), {}]] }) },
+  pigtails: { small: true, draw: F => {
+      const L = [[60,98],[50,104],[42,121],[37,147],[39,173],[45,192,'s'],[51,171],[55,146],[59,124],[65,108]];
+      return { base: [[smooth(F.mp(L)), {}], [smooth(F.mp(mirrorPts(L))), {}]], tie: [[circ(...F.m([59,103]), 4.5)], [circ(...F.m([141,103]), 4.5)]] };
+    } },
+  locs: { neck: true, draw: F => ({ behind: [[smooth(F.mp([[100,36],[132,42],[150,60],[157,100],[156,142],[100,148],[44,142],[43,100],[50,60],[68,42]])), {}]], strands: 'locs' }) },
+  braids: { neck: true, draw: F => ({ behind: [[smooth(F.mp([[100,36],[132,42],[150,60],[157,100],[156,146],[100,150],[44,146],[43,100],[50,60],[68,42]])), {}]], strands: 'braids' }) },
 };
-const HAIR_TOP_Y = {none:50, short:38, undercut:28, fringe:38, centerPart:40, afroTop:50, buzz:43, curly:28, receding:37, sidePart:40, afroCurly:7};
-const HAIR_TOP_W = {curly:53, afroCurly:66};   // half width (oval coords) for fit-to-canvas; default 49
-const HAIR_BACK_Y = {none:99, long:36, bob:38, afro:11, longWavy:36};
+// Locs and braids: separate strands hanging beside the face, outermost first so inner ones overlap them.
+// Lengths vary per strand so the ends are uneven.
+function strandGeom(F, kind){
+  const braids = kind === 'braids', n = braids ? 5 : 4, w = braids ? 7.5 : 9.5, out = [];
+  for (let i = n-1; i >= 0; i--) [-1, 1].forEach(side => {
+    const u = i/(n-1), x = 100 + side*(46 + u*12), top = 92 + u*14, len = (braids ? 84 : 74) - u*10 + ((i*7 + (side>0?3:0)) % 5)*3;
+    out.push({ x: F.m([x, 0])[0], y: top + F.dy, w: w*F.sx, len, flare: side*(3 + u*3), i });
+  });
+  return out;
+}
+function strandD({ x, y, w, len, flare }){
+  const h = w/2, ex = x + flare;
+  return `M${n1(x-h)},${n1(y)} Q${n1(x-h)},${n1(y+len*.6)} ${n1(ex-h)},${n1(y+len)} A${n1(h)},${n1(h)} 0 0,0 ${n1(ex+h)},${n1(y+len)} Q${n1(x+h)},${n1(y+len*.6)} ${n1(x+h)},${n1(y)}Z`;
+}
+function strandMarks({ x, y, w, len, flare }, kind){
+  let d = ''; const h = w/2;
+  for (let k = 9; k < len - 3; k += (kind === 'braids' ? 6.5 : 12)){
+    const f = k/len, cx = x + flare*f*f;
+    d += kind === 'braids' ? `M${n1(cx-h+.8)},${n1(y+k-2)} L${n1(cx)},${n1(y+k+1.5)} L${n1(cx+h-.8)},${n1(y+k-2)}` : `M${n1(cx-h+1.2)},${n1(y+k)} Q${n1(cx)},${n1(y+k+3)} ${n1(cx+h-1.2)},${n1(y+k)}`;
+  }
+  return d;
+}
+const HAIR_TOP_Y = {none:50, short:29, undercut:26, fringe:38, centerPart:40, afroTop:50, buzz:43, curly:28, receding:33, sidePart:38, afroCurly:7,
+  pixie:35, mohawk:19, bowl:37, slicked:35, spiky:20, cornrows:41, locsTop:38};
+const HAIR_TOP_W = {curly:53, afroCurly:66, spiky:57, centerPart:50, sidePart:50};   // half width (oval coords) for fit-to-canvas; default 49
+const HAIR_BACK_Y = {none:99, long:36, bob:38, afro:11, longWavy:36, ponytail:41, bun:11, spaceBuns:23, pigtails:96, locs:36, braids:36};
+const HAIR_BACK_W = {afro:75, long:66, longWavy:66, bob:56, ponytail:67, bun:50, spaceBuns:50, pigtails:64, locs:63, braids:65};
 // Curly tops: one solid base shape covering the whole hair area (no scalp shows through),
 // with curls as bumps along the outer edge and the hairline. big = Afro (curly).
 const CURLY = {
@@ -170,12 +218,19 @@ function curlyD(F, big){
 }
 // Accent lines per hairstyle, in oval coordinates (mapped to the face with F).
 const HAIR_ACCENT_TOP = {
-  short: ['M70,52 Q84,45 97,47','M108,45 Q124,47 135,58','M63,68 Q71,58 82,55'],
+  short: ['M71,52 Q84,45 97,46','M110,44 Q125,47 135,58','M64,68 Q71,59 81,56'],
   receding: ['M72,50 Q86,44 98,45','M108,44 Q123,46 133,56'],
   undercut: ['M76,44 Q96,33 119,35','M82,53 Q101,44 125,46','M70,62 Q86,55 101,57'],
   fringe: ['M70,52 Q100,42 130,52','M77,72 L80,86','M92,70 L94,86','M108,70 L106,86','M123,72 L120,86'],
-  centerPart: ['M98,46 Q85,52 71,66','M102,46 Q115,52 129,66','M92,59 Q77,69 65,88','M108,59 Q123,69 135,88'],
-  sidePart: ['M88,58 Q105,62 125,75','M91,49 Q113,51 135,64','M84,60 Q73,71 65,88'],
+  centerPart: ['M100,41 L100,50','M97,47 Q84,53 72,66','M103,47 Q116,53 128,66','M92,59 Q77,69 66,90','M108,59 Q123,69 134,90'],
+  sidePart: ['M77,40 L77,51','M80,55 Q100,64 128,80','M84,47 Q110,52 138,68','M73,58 Q66,70 63,90'],
+  pixie: ['M76,46 Q98,40 122,46','M80,60 Q100,66 118,82','M66,62 Q74,52 86,48'],
+  mohawk: ['M95,62 Q92,46 94,30','M106,62 Q108,46 110,28'],
+  bowl: ['M70,50 Q100,40 130,50','M80,70 L81,83','M100,68 L100,83','M120,70 L119,83'],
+  slicked: ['M80,62 Q74,48 84,40','M93,59 Q90,46 98,38','M107,59 Q110,46 104,38','M120,62 Q126,48 116,40'],
+  spiky: ['M80,60 Q84,48 82,34','M100,58 Q103,44 104,28','M120,60 Q124,46 126,34'],
+  cornrows: ['M74,70 Q66,56 78,46','M85,66 Q80,52 88,43','M96,65 Q94,52 98,42','M104,65 Q106,52 102,42','M115,66 Q120,52 112,43','M126,70 Q134,56 122,46'],
+  locsTop: ['M80,50 L82,60','M100,44 L100,56','M120,50 L118,60','M68,62 L72,70','M132,62 L128,70'],
   afroTop: ['M70,70 a3,3 0 1,1 4,3','M86,62 a3,3 0 1,1 4,3','M108,62 a3,3 0 1,1 4,3','M124,70 a3,3 0 1,1 4,3'],
 };
 const HAIR_ACCENT_BACK = {
@@ -288,7 +343,7 @@ const HEADWEAR = {
       const cone = smooth([[82,44,'s'],[100,4,'s'],[118,44,'s'],[100,48]]);
       const stripes = `<path d="M88,32 L112,26 M92,22 L108,18 M84,42 L116,36" stroke="#fff" stroke-width="3" opacity=".8"/>`;
       // On tall hair the hat perches on the side of the volume instead of poking out of the canvas.
-      const tf = ctx.lift < -8 ? `translate(${n1(30*F.sx)},${n1(ctx.lift*0.55+8)}) rotate(34 100 46) translate(100 46) scale(.82) translate(-100 -46)` : `rotate(12 100 46) translate(0,${F.dy-2})`;
+      const tf = ctx.lift < -8 ? `translate(${n1(30*F.sx)},${n1(ctx.lift*0.55+8)}) rotate(34 100 46) translate(100 46) scale(.82) translate(-100 -46)` : `rotate(12 100 46) translate(0,${n1(F.dy-2+Math.max(0, ctx.seat-10))})`;   // low hair (bald, afroTop): sit down onto the head
       return `<g transform="${tf}">` + shape(S,cone,c,{inner:stripes}) + shape(S,circ(100,6,6),a,{noShade:true,k:.7}) + `</g>`;
     } },
   hardHat: { brimY:93, bandW:62, box:{top:26,x0:38,x1:162}, accent:'#ffffff', accentLabel:'sticker', hairMask:[[38,88],[72,90],[100,89],[128,90],[162,88]], front:(S,F,c,ctx,a)=>{
@@ -875,7 +930,7 @@ function render(traits, variant={}, styleKey='chibi', opts={}){
   let hatW = 1;
   if (HW.bandW && !HW.hideHairTop){
     const topW = HAIR_TOP[t.hair.top] ? (HAIR_TOP_W[t.hair.top] || 49) : 0;
-    const backW = HW.hideHairBack ? 0 : ({ long: 57, longWavy: 59, bob: 57 }[t.hair.back] || 0);
+    const backW = HW.hideHairBack ? 0 : ({ long: 58, longWavy: 60, bob: 57, locs: 58, braids: 58 }[t.hair.back] || 0);
     hatW = Math.min(1.25, Math.max(1, (Math.max(topW, backW) + 1.5) / HW.bandW));
     // ...but never so wide that the hat leaves the canvas (that would shrink the whole avatar).
     if (HW.box){ const h = S.head||1, avail = (S.sticker ? 105 : 96) - (S.sw*1.2 + 2);
@@ -918,6 +973,8 @@ function render(traits, variant={}, styleKey='chibi', opts={}){
 
   let L = '';
   // 1. hair behind the head
+  const backParts = back && back.draw ? back.draw(F) : null;
+  if (backParts?.behind) L += tag('hairBack', H(HC(backParts.behind.map(([d, o]) => shape(S, d, darken(hair,.08), o)).join(''))));
   if (back && back.behind){
     const d = back.behind==='afro' ? afroD(F) : smooth(F.mp(back.behind));
     const bAcc = back.behind==='afro' ? `<path d="${curlMarks(afroCurls(F), .5)}" stroke="${accent}" stroke-width="${aw}" stroke-linecap="round" fill="none" opacity=".85"/>` : accentGroup(F, hairAccent(F, HAIR_ACCENT_BACK[t.hair.back]), accent, aw);
@@ -927,8 +984,9 @@ function render(traits, variant={}, styleKey='chibi', opts={}){
     L += tag('hairBack', H(HC(bs)));
   }
   // Long hair: shaded hair fill behind the neck so no background shows between neck and hair.
-  if (back && back.base) L += tag('hairBack', H(HC(`<path d="${smooth(F.mp([[100,138],[118,146],[124,170],[126,210],[74,210],[76,170],[82,146]]))}" fill="${darken(hair,.3)}"/>`)));
-  const hairTopY = Math.min(topDef ? HAIR_TOP_Y[t.hair.top] : 50, back ? HAIR_BACK_Y[t.hair.back] : 99) + F.dy;
+  if (back && (back.base || back.neck)) L += tag('hairBack', H(HC(`<path d="${smooth(F.mp([[100,138],[118,146],[124,170],[126,210],[74,210],[76,170],[82,146]]))}" fill="${darken(hair,.3)}"/>`)));
+  // Buns and ponytails sit behind or above a hat, so they don't lift it.
+  const hairTopY = Math.min(topDef ? HAIR_TOP_Y[t.hair.top] : 50, back && !back.small ? HAIR_BACK_Y[t.hair.back] : 99) + F.dy;
   const hwCtx = { lift: Math.min(0, hairTopY - (38 + F.dy)), seat: hairTopY - (38 + F.dy) + 1 };
   // 2. neck + shirt
   const nw = 14*F.sx, nTop = F.jawY-8;
@@ -941,6 +999,16 @@ function render(traits, variant={}, styleKey='chibi', opts={}){
   if (zombie) L += tag('body', B(`<path d="M60,190 l6,-10 l4,8 l5,-12 l3,14 M132,186 l5,-9 l3,7" fill="none" stroke="${darken(shirt,.5)}" stroke-width="2" stroke-linejoin="round"/>`));
   // 3. drapes (long hair over shoulders, hijab)
   if (back && back.base) L += tag('hairBack', H(HC(shape(S, smooth(F.mp(back.base)), darken(hair,.1), {inner: accentGroup(F, hairAccent(F, HAIR_ACCENT_BACK[t.hair.back]), accent, aw)}))));
+  if (backParts){
+    const P = backParts; let bs = '';
+    (P.base || []).forEach(([d, o]) => { bs += shape(S, d, darken(hair,.06), o); });
+    if (P.strands) strandGeom(F, P.strands).forEach(g => {
+      const marks = `<path d="${strandMarks(g, P.strands)}" stroke="${accent}" stroke-width="${n1(aw*.8)}" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".8"/>`;
+      bs += shape(S, strandD(g), g.i % 2 ? darken(hair,.1) : hair, { inner: marks, k: .8 });
+    });
+    (P.tie || []).forEach(([d]) => { bs += shape(S, d, t.hair.accent || darken(hair,.45), { noShade: true, k: .6 }); });
+    if (bs) L += tag('hairBack', H(HC(bs)));
+  }
   if (HW.drape) L += tag('headwearBack', HW.drape(S,F,hwColor));
 
   // 4. the face group
@@ -994,15 +1062,16 @@ function render(traits, variant={}, styleKey='chibi', opts={}){
   // hair on top
   if (topD){
     let hs = '';
-    if (t.hair.top==='undercut'){
-      const side = [[55,104],[54,84],[62,72],[67,75],[63,104]];
-      const sc = mix(hair,skin,.55);
-      hs += shape(S, smooth(F.mp(side)), sc, {noShade:true}) + shape(S, smooth(F.mp(mirrorPts(side))), sc, {noShade:true});
+    if (t.hair.top==='undercut' || t.hair.top==='mohawk'){
+      // Shaved sides: a short stubble tone on the scalp, no outline.
+      const side = t.hair.top==='mohawk' ? [[55,100],[55,80],[60,62],[72,50],[86,44],[87,72],[66,78],[60,100]] : [[55,102],[54,84],[59,70],[66,64],[64,82],[61,102]];
+      const sc = mix(hair,skin,.6);
+      hs += `<g clip-path="url(#${headClip})" opacity=".85"><path d="${smooth(F.mp(side))}" fill="${sc}"/><path d="${smooth(F.mp(mirrorPts(side)))}" fill="${sc}"/></g>`;
     }
     const hl = S.anime && !curlyTop ? `<path d="M${n1(100-30*F.sx)},${58+F.dy} Q100,${44+F.dy} ${n1(100+30*F.sx)},${58+F.dy}" fill="none" stroke="${lighten(hair,.5)}" stroke-width="4.5" stroke-linecap="round" opacity=".7" transform="translate(-3,0)"/>` + `<path d="M${n1(100-14*F.sx)},${62+F.dy} q4,10 1,20 M${n1(100+10*F.sx)},${60+F.dy} q-3,9 0,17" fill="none" stroke="${darken(hair,.3)}" stroke-width="1.2" opacity=".7"/>` :
       S.shade==='cel' && !curlyTop ? `<path d="M${n1(100-26*F.sx)},${54+F.dy} Q100,${40+F.dy} ${n1(100+22*F.sx)},${52+F.dy}" fill="none" stroke="${lighten(hair,.4)}" stroke-width="4.5" stroke-linecap="round" opacity=".75" transform="translate(-6,4)"/>` : '';
     // With back hair present, the top is outlined only where it meets the face, so the two read as one head of hair.
-    const merged = !!back && !curlyTop;
+    const merged = !!back && !curlyTop && !back.small;
     const acc = curlyTop ? `<path d="${curlMarks(curlyGeom(F, topDef==='afroCurly').bumps, .55)}" stroke="${accent}" stroke-width="${aw}" stroke-linecap="round" fill="none" opacity=".9"/>` : accentGroup(F, hairAccent(F, HAIR_ACCENT_TOP[t.hair.top]), accent, aw);
     let topShape = shape(S, topD, t.hair.top==='buzz' ? mix(hair,skin,.25) : hair, {under: curlyTop, inner: hl + acc, strokeClip: merged ? headClip : null, noShade: merged && S.shade==='hard'});
     // A big curly top is pressed down under a hat, like the afro.
@@ -1061,7 +1130,7 @@ function render(traits, variant={}, styleKey='chibi', opts={}){
     const ext = [[F.top, 100-F.w-6, 100+F.w+6]];
     if (topDef){ const w = HAIR_TOP_W[t.hair.top] || 49, top = HW.hairMask && topDef==='afroCurly' ? 110+F.dy-(110-HAIR_TOP_Y.afroCurly)*.7 : HAIR_TOP_Y[t.hair.top]+F.dy; ext.push([top, 100-w*F.sx, 100+w*F.sx]); }
     if (back){
-      const bw = {afro:75, long:63, longWavy:63, bob:56}[t.hair.back] || 50;
+      const bw = HAIR_BACK_W[t.hair.back] || 50;
       const top = back.behind==='afro' && HW.hairMask ? 140+F.dy-(140-11)*.72 : HAIR_BACK_Y[t.hair.back]+F.dy;
       ext.push([top, 100-bw*F.sx, 100+bw*F.sx]);
     }

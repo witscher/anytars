@@ -384,7 +384,7 @@ const PAL = {
 const LABEL = s => s.replace(/([A-Z])/g,' $1').replace(/^./, c=>c.toUpperCase());
 const NICE = {
   hardHat:'Hard hat', light:'Light', medium:'Medium', strong:'Strong', auto:'Auto',
-  afroCurly:'Afro (curly)',
+  afroCurly:'Afro (curly)', spaceBuns:'Space buns', locsTop:'Locs', locs:'Locs', braids:'Box braids', slicked:'Slicked back', bowl:'Bowl cut',
   short:'Short', long:'Long', circle:'Circle', chinStrap:'Chin strap', soulPatch:'Soul patch', muttonChops:'Mutton chops', semiRim:'Semi-rimless', roundSmall:'Small round', softSquare:'Soft square', thickRound:'Thick round',
   afroTop:'Afro', centerPart:'Centre part', sidePart:'Side part', longWavy:'Long wavy', baseballCap:'Baseball cap', witchHat:'Witch hat', elfCap:'Elf cap', devilHorns:'Devil horns',
   turban:'Dastar', partyHat:'Party hat', pinceNez:'Pince-nez', cateye:'Cat-eye', rect:'Rectangular', half:'Half-rim', none:'None', fringe:'Fringe',
@@ -494,8 +494,10 @@ const smallStep = () => chance(.55) ? 0 : pick([-1,1,-1,1,-2,2]);
 function randomTraits(){
   const hairColor = chance(.85) ? pick(PAL.hair.slice(0,11)) : pick(PAL.hair.slice(11));
   const eye = pick(PAL.eyes);
-  const top = pick(['short','short','undercut','fringe','centerPart','sidePart','afroTop','afroCurly','buzz','curly','receding','none']);
-  const back = (top==='centerPart' || top==='sidePart') ? pick(['long','longWavy','bob']) : top==='afroTop' ? 'afro' : top==='fringe' ? pick(['bob','long','none']) : chance(.15) ? pick(['long','bob']) : 'none';
+  const top = pick(['short','short','undercut','fringe','centerPart','sidePart','afroTop','afroCurly','buzz','curly','receding','none','pixie','mohawk','bowl','slicked','spiky','cornrows','locsTop']);
+  const back = (top==='centerPart' || top==='sidePart') ? pick(['long','longWavy','bob','ponytail']) : top==='afroTop' ? 'afro' : top==='locsTop' ? 'locs'
+    : top==='cornrows' ? pick(['braids','none']) : top==='fringe' ? pick(['bob','long','none','pigtails','spaceBuns']) : top==='slicked' ? pick(['none','ponytail','bun'])
+    : ['mohawk','spiky','bowl','buzz','none','afroCurly','receding'].includes(top) ? 'none' : chance(.15) ? pick(['long','bob','bun']) : 'none';
   const glassesType = chance(.55) ? 'none' : pick(ENUMS.glasses.filter(g=>g!=='none'));
   const shades = chance(.25);
   const hw = chance(.6) ? 'none' : pick(ENUMS.headwear.filter(h=>h!=='none'));
