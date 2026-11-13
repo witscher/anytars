@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <title>Anytars Avatar Maker</title>
 <meta name="description" content="Make your avatar: pick a character or roll a random one, customize every part, and get it in five styles and ten expressions.">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
@@ -44,36 +44,52 @@ h1,h2,h3{font-family:var(--f-display);margin:0;letter-spacing:-.01em;text-wrap:b
 .ghost{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:.86rem;cursor:pointer}
 
 /* start strip */
-.ai{margin-top:12px;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:14px;display:grid;gap:12px}
-.ai-head{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
-.ai-head h2{font-size:1.15rem;margin-top:4px}
-.ai-badge{display:inline-block;font:600 .68rem var(--f-body);letter-spacing:.1em;text-transform:uppercase;color:#f38020;border:1px solid #f38020;border-radius:999px;padding:2px 8px}
-.how{max-width:640px;font-size:.88rem}
-.how summary{cursor:pointer;color:var(--muted);font-weight:500}
-.how-body{display:grid;gap:8px;margin-top:8px;color:var(--ink)}
-.how-body p{margin:0;max-width:68ch}
-.ai-grid{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:end}
-@media (max-width:700px){ .ai-grid{grid-template-columns:1fr} }
-.ai-text{display:grid;gap:6px;margin:0}
-.ai-row{display:flex;gap:8px}
-.ai-row input{flex:1;min-width:0;font:inherit;border:1px solid var(--line);border-radius:10px;padding:9px 12px;background:var(--surface-2);color:var(--ink)}
-.ai-ex{display:flex;flex-wrap:wrap;gap:6px}
-.ai-ex button{border:1px dashed var(--line);background:none;border-radius:999px;padding:3px 10px;font-size:.8rem;color:var(--muted);cursor:pointer}
-.ai-photo{display:grid;gap:6px;justify-items:start}
-.ai-photo .btn{cursor:pointer}
-.fine{margin:0;font-size:.76rem;color:var(--muted);max-width:30ch}
-.fine kbd{font:500 .7rem var(--f-mono);border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 3px;background:var(--surface-2)}
-.ai.drop{outline:2px dashed var(--accent);outline-offset:-6px}
-.ai-out{display:grid;gap:8px;border-top:1px solid var(--line);padding-top:10px}
-.ai-meta{font:500 .76rem var(--f-mono);color:var(--muted)}
-.ai-msg{font-size:.9rem}
+/* Workers AI dock: under the avatar on desktop, a bottom bar on phones */
+.ai-dock{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;border:1px solid var(--line);border-radius:14px;padding:10px;background:var(--surface-2)}
+.ai-form{display:flex;gap:6px;align-items:center;margin:0}
+.ai-form input[type=text]{flex:1;min-width:0;font:inherit;border:1px solid var(--line);border-radius:10px;padding:9px 12px;background:var(--surface);color:var(--ink)}
+.ai-mini{display:none}
+.btn.icon.cam{display:inline-grid;place-items:center;padding:7px 9px;cursor:pointer}
+.ai-ex{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+.ai-ex::-webkit-scrollbar{display:none}
+.ai-ex button{flex:0 0 auto;border:1px dashed var(--line);background:none;border-radius:999px;padding:3px 10px;font-size:.78rem;color:var(--muted);cursor:pointer}
+.ai-note{font-size:.74rem;color:var(--muted);display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.ai-note a{color:inherit}
+.ai-badge{display:inline-block;font:600 .64rem var(--f-body);letter-spacing:.1em;text-transform:uppercase;color:#f38020;border:1px solid #f38020;border-radius:999px;padding:1px 7px}
+.ai-out{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 10px;align-items:start;position:relative}
+.ai-out .ai-thumb{display:none}
+.ai-out .ai-body{grid-column:1 / -1;display:grid;gap:6px;min-width:0}
+.ai-out .x{position:absolute;top:-4px;right:-4px;border:0;background:none;color:var(--muted);font-size:1rem;cursor:pointer;padding:4px 6px;line-height:1}
+.ai-dock > *{min-width:0}
+.ai-meta{font:500 .7rem var(--f-mono);color:var(--muted);overflow-wrap:anywhere}
+.ai-msg{font-size:.86rem;padding-right:20px}
 .ai-msg.err{color:var(--accent)}
-.dec{display:flex;flex-wrap:wrap;gap:6px}
-.dec span{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface-2);border-radius:999px;padding:3px 10px 3px 8px;font-size:.8rem}
-.dec i{display:inline-block;width:34px;height:5px;border-radius:3px;background:var(--line);position:relative;overflow:hidden}
+.dec{display:flex;flex-wrap:wrap;gap:5px;max-height:120px;overflow:auto}
+.dec span{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:2px 9px 2px 7px;font-size:.76rem}
+.dec i{display:inline-block;width:28px;height:4px;border-radius:3px;background:var(--line);position:relative;overflow:hidden}
 .dec i b{position:absolute;inset:0 auto 0 0;background:var(--accent)}
 .dec em{font-style:normal;color:var(--muted);font-variant-numeric:tabular-nums}
 .btn[aria-busy="true"]{opacity:.6;pointer-events:none}
+body.drop::after{content:"Drop the photo to create your avatar";position:fixed;inset:12px;border:3px dashed var(--accent);border-radius:20px;display:grid;place-items:center;font:700 1.2rem var(--f-display);color:var(--accent);background:color-mix(in srgb, var(--bg) 80%, transparent);z-index:50;pointer-events:none}
+.how{margin-top:28px;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;display:grid;gap:8px;scroll-margin-top:16px}
+.how h2{font-size:1.15rem}
+.how-body{display:grid;gap:8px;font-size:.92rem}
+.how-body p{margin:0;max-width:72ch}
+@media (max-width:900px){
+  body{padding-bottom:calc(150px + env(safe-area-inset-bottom, 0px))}
+  .ai-dock{position:fixed;left:0;right:0;bottom:0;z-index:40;border-radius:16px 16px 0 0;border-width:1px 0 0;background:var(--surface);
+    box-shadow:0 -6px 24px rgba(20,20,40,.12);padding:8px max(12px, env(safe-area-inset-right, 0px)) calc(8px + env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px))}
+  .ai-mini{display:block;flex:0 0 auto;width:40px;height:40px;border-radius:10px;overflow:hidden;background:var(--surface-2)}
+  .ai-mini svg{width:100%;height:100%;display:block}
+  .ai-note{display:none}
+  .ai-out{max-height:46vh;overflow:auto;padding-bottom:4px;border-bottom:1px solid var(--line)}
+  .ai-out .ai-thumb{display:block;width:96px;height:96px;grid-row:1 / span 2}
+  .ai-out .ai-thumb svg{width:100%;height:100%;display:block}
+  .ai-out .ai-body{grid-column:2}
+  .ai-out .ai-thumb{width:84px;height:84px}
+  #aiGo{padding-inline:12px}
+  .dec{max-height:none}
+}
 .start{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:14px;display:grid;gap:10px}
 .start-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
 .start-h h2{font-size:1.15rem}
@@ -192,34 +208,6 @@ footer a{color:inherit}
     <div class="presets" id="saved"></div>
   </section>
 
-  <section class="ai" aria-labelledby="aiH">
-    <div class="ai-head">
-      <div><span class="ai-badge">Workers AI</span><h2 id="aiH">Describe it, or start from a photo</h2></div>
-      <details class="how"><summary>How this works</summary>
-        <div class="how-body">
-          <p>Each request goes to a Cloudflare Worker, which asks a <b>Clef</b> decision model on Workers AI. Clef doesn't write text. It answers typed questions with a probability for every allowed option.</p>
-          <p>Every part of your avatar is one question: hair length, hair colour, glasses, beard and so on, each with the exact values this library can draw. One call answers all of them in a few hundred milliseconds, so the result can only ever contain valid traits.</p>
-          <p><b>Text</b> uses Clef flash. Each question also has a "keep" option, and a part only changes when the model is confident the request is about it (keep under 20%). <b>Photos</b> use Clef omni, which reads the image and answers the same questions. Skin tone is a score question, so it can land between palette steps.</p>
-          <p><b>Your photo</b> is resized in your browser (which also removes location and camera data), sent once to the Worker, analysed, and discarded. This site doesn't store or log it, and Workers AI lists Clef as zero data retention. Only the resulting traits come back.</p>
-        </div>
-      </details>
-    </div>
-    <div class="ai-grid">
-      <form class="ai-text" id="aiForm">
-        <label for="aiText" class="label">Change your avatar</label>
-        <div class="ai-row"><input id="aiText" type="text" maxlength="400" placeholder="e.g. change to long, blonde hair and add round glasses" autocomplete="off"><button class="btn primary" id="aiGo" type="submit">Apply</button></div>
-        <div class="ai-ex" id="aiEx"></div>
-      </form>
-      <div class="ai-photo">
-        <span class="label">New avatar from a photo</span>
-        <label class="btn" for="aiFile" id="aiFileLbl">Choose a photo</label>
-        <input type="file" id="aiFile" accept="image/*" hidden>
-        <p class="fine">Or paste one (<kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>V</kbd>) or drop it here. Analysed once by Clef omni and discarded. Not stored.</p>
-      </div>
-    </div>
-    <div class="ai-out" id="aiOut" hidden></div>
-  </section>
-
   <main class="grid">
     <aside class="preview" aria-label="Preview">
       <div class="stage">
@@ -231,6 +219,20 @@ footer a{color:inherit}
           <button class="btn primary" id="saveBtn" type="button">Save</button>
         </div>
         <div class="big" id="big" role="img" aria-label="Your avatar"></div>
+        <div class="ai-dock" id="aiDock" role="region" aria-label="Change your avatar with Workers AI">
+          <div class="ai-out" id="aiOut" hidden aria-live="polite"></div>
+          <div class="ai-ex" id="aiEx"></div>
+          <form class="ai-form" id="aiForm">
+            <span class="ai-mini" id="aiMini" aria-hidden="true"></span>
+            <input id="aiText" type="text" maxlength="400" placeholder="Describe a change, e.g. long blonde hair" autocomplete="off" enterkeyhint="send" aria-label="Describe a change">
+            <button class="btn primary" id="aiGo" type="submit">Apply</button>
+            <label class="btn icon cam" for="aiFile" id="aiFileLbl" title="New avatar from a photo (you can also paste or drop one)" aria-label="New avatar from a photo">
+              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 8h3l1.6-2.2h6.8L17 8h3v11H4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="13.2" r="3.4" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+            </label>
+            <input type="file" id="aiFile" accept="image/*" hidden>
+          </form>
+          <div class="ai-note"><span class="ai-badge">Workers AI</span> Clef decision models. Paste or drop a photo to start from it; photos are analysed once and not stored. <a href="#how">How it works</a></div>
+        </div>
         <div><div class="label">Style</div><div class="styles" id="styles"></div></div>
         <div class="bgrow"><div class="label">Background</div>
           <div id="bgColors"></div>
@@ -257,6 +259,17 @@ footer a{color:inherit}
       <div class="panel" id="panel" role="tabpanel"></div>
     </section>
   </main>
+
+  <section class="how" id="how" aria-labelledby="howH">
+    <span class="ai-badge">Workers AI</span>
+    <h2 id="howH">How the AI works</h2>
+    <div class="how-body">
+          <p>Each request goes to a Cloudflare Worker, which asks a <b>Clef</b> decision model on Workers AI. Clef doesn't write text. It answers typed questions with a probability for every allowed option.</p>
+          <p>Every part of your avatar is one question: hair length, hair colour, glasses, beard and so on, each with the exact values this library can draw. One call answers all of them in a few hundred milliseconds, so the result can only ever contain valid traits.</p>
+          <p><b>Text</b> uses Clef flash. Each question also has a "keep" option, and a part only changes when the model is confident the request is about it (keep under 20%). <b>Photos</b> use Clef omni, which reads the image and answers the same questions. Skin tone is a score question, so it can land between palette steps.</p>
+          <p><b>Your photo</b> is resized in your browser (which also removes location and camera data), sent once to the Worker, analysed, and discarded. This site doesn't store or log it, and Workers AI lists Clef as zero data retention. Only the resulting traits come back.</p>
+        </div>
+  </section>
 
   <footer>
     <span>anytars is an open-source avatar library in progress.</span>
@@ -423,6 +436,7 @@ function drawPresets(){
 }
 function drawPreview(){
   $('big').innerHTML = svg(t, variant);
+  $('aiMini').innerHTML = svg(t, variant);
   $('bgShapes').innerHTML = BG_SHAPES.map(v => `<button class="chip" type="button" data-bgshape="${v}" aria-pressed="${v===bgCfg.shape}">${v==='style'?'Style default':nice(v)}</button>`).join('');
   $('bgClear').checked = bgCfg.clear;
   if (!document.activeElement || document.activeElement.id !== 'c-bg') $('bgColors').innerHTML = swatches('bg', PAL.bg);
@@ -550,6 +564,7 @@ document.addEventListener('click', e => {
   if (b.id === 'saveBtn'){ saveCurrent(false); return; }
   if (b.id === 'saveNewBtn'){ saveCurrent(true); return; }
   if (b.id === 'undoBtn'){ undo(); return; }
+  if (b.id === 'aiClose'){ $('aiOut').hidden = true; return; }
   if (b.id === 'redoBtn'){ redo(); return; }
   if (b.dataset.bgshape){ bgCfg.shape = b.dataset.bgshape; applyBg(); redraw({presets:true}); drawLibrary(); return; }
   if (b.dataset.style){ style = b.dataset.style; redraw({presets:true}); drawLibrary(); return; }
@@ -579,11 +594,15 @@ function showAi(res, kind){
   const list = kind === 'photo' ? res.decisions : res.changes;
   const meta = `${res.model.replace('@cf/cloudflare/','')} · ${res.questions} questions · ${res.ms} ms · ${res.usage?.input_tokens?.toLocaleString?.() ?? '?'} input tokens`;
   const chips = list.length ? `<div class="dec">${list.map(c => `<span title="${c.keep != null ? 'keep: '+Math.round(c.keep*100)+'%' : ''}">${c.label}: <b>${pretty(c.choice)}</b> <i><b style="width:${Math.round(c.confidence*100)}%"></b></i><em>${Math.round(c.confidence*100)}%</em></span>`).join('')}</div>` : '';
-  const head = kind === 'photo' ? 'Avatar created from your photo. Fine-tune anything below, or describe a change.' : (list.length ? 'Changed:' : 'Nothing to change: the model was not confident the request was about any part of the avatar.');
-  $('aiOut').innerHTML = `<div class="ai-msg">${head}</div>${chips}<div class="ai-meta">${meta}</div>`;
+  const head = kind === 'photo' ? 'Created from your photo. Describe a change or fine-tune below.' : (list.length ? 'Changed:' : 'Nothing changed: the model was not confident the request was about any part of the avatar.');
+  aiPanel(`<div class="ai-msg">${head}</div>${chips}<div class="ai-meta">${meta}</div>`, true);
+}
+// Result panel: on phones it also shows the new avatar, since the big preview may be scrolled away.
+function aiPanel(body, thumb){
+  $('aiOut').innerHTML = `${thumb ? `<div class="ai-thumb">${svg(t, variant)}</div>` : ''}<div class="ai-body">${body}</div><button class="x" type="button" id="aiClose" aria-label="Close">✕</button>`;
   $('aiOut').hidden = false;
 }
-function aiError(m){ $('aiOut').innerHTML = `<div class="ai-msg err">${m}</div>`; $('aiOut').hidden = false; }
+function aiError(m){ aiPanel(`<div class="ai-msg err">${m}</div>`, false); }
 async function callAi(path, body){
   const r = await fetch(path, { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify(body) });
   const d = await r.json().catch(() => ({ error: 'The AI request failed. Try again.' }));
@@ -601,9 +620,9 @@ $('aiForm').addEventListener('submit', async e => {
   e.preventDefault();
   const text = $('aiText').value.trim(); if (!text) { $('aiText').focus(); return; }
   $('aiGo').setAttribute('aria-busy','true'); $('aiGo').textContent = 'Thinking…';
-  try { const res = await callAi('/api/edit', { text, traits: t }); applyAi(res); showAi(res, 'edit'); }
+  try { const res = await callAi('/api/edit', { text, traits: t }); applyAi(res); showAi(res, 'edit'); $('aiText').value = ''; }
   catch(err){ aiError(err.message); }
-  finally { $('aiGo').removeAttribute('aria-busy'); $('aiGo').textContent = 'Apply'; }
+  finally { $('aiGo').removeAttribute('aria-busy'); $('aiGo').textContent = 'Apply'; $('aiText').focus({preventScroll:true}); }
 });
 $('aiEx').addEventListener('click', e => { const b = e.target.closest('[data-ex]'); if (!b) return; $('aiText').value = b.dataset.ex; $('aiForm').requestSubmit(); });
 // Photos are resized and re-encoded in the browser (drops EXIF such as location), then sent once.
@@ -622,11 +641,11 @@ async function handlePhoto(file){
   if (!file || photoBusy) return;
   if (!/^image\//.test(file.type)) { aiError('That is not an image. Use a JPEG, PNG or WebP photo.'); return; }
   photoBusy = true;
-  const lbl = $('aiFileLbl'); lbl.setAttribute('aria-busy','true'); lbl.textContent = 'Analysing…';
-  $('aiOut').innerHTML = '<div class="ai-msg">Analysing your photo with Clef omni…</div>'; $('aiOut').hidden = false;
+  const lbl = $('aiFileLbl'); lbl.setAttribute('aria-busy','true');
+  aiPanel('<div class="ai-msg">Analysing your photo with Clef omni…</div>', false);
   try { let image = await shrink(file); const res = await callAi('/api/photo', { image, traits: t }); image = null; applyAi(res); showAi(res, 'photo'); }
   catch(err){ aiError(err.message); }
-  finally { photoBusy = false; lbl.removeAttribute('aria-busy'); lbl.textContent = 'Choose a photo'; }
+  finally { photoBusy = false; lbl.removeAttribute('aria-busy'); }
 }
 $('aiFile').addEventListener('change', e => { const file = e.target.files[0]; e.target.value = ''; handlePhoto(file); });
 // Paste an image anywhere on the page (text pastes into inputs work as usual).
@@ -636,10 +655,13 @@ document.addEventListener('paste', e => {
   e.preventDefault(); handlePhoto(item.getAsFile());
 });
 // Drop an image onto the Workers AI card.
-const aiCard = document.querySelector('.ai');
-['dragenter','dragover'].forEach(ev => aiCard.addEventListener(ev, e => { if ([...e.dataTransfer.types].includes('Files')) { e.preventDefault(); aiCard.classList.add('drop'); } }));
-['dragleave','drop'].forEach(ev => aiCard.addEventListener(ev, e => { if (ev === 'dragleave' && aiCard.contains(e.relatedTarget)) return; aiCard.classList.remove('drop'); }));
-aiCard.addEventListener('drop', e => { const f = [...(e.dataTransfer?.files || [])].find(f => f.type.startsWith('image/')); if (f){ e.preventDefault(); handlePhoto(f); } });
+// Drop an image anywhere on the page.
+let dragDepth = 0;
+const hasFiles = e => [...(e.dataTransfer?.types || [])].includes('Files');
+document.addEventListener('dragenter', e => { if (!hasFiles(e)) return; dragDepth++; document.body.classList.add('drop'); });
+document.addEventListener('dragover', e => { if (hasFiles(e)) e.preventDefault(); });
+document.addEventListener('dragleave', e => { if (!hasFiles(e)) return; if (--dragDepth <= 0){ dragDepth = 0; document.body.classList.remove('drop'); } });
+document.addEventListener('drop', e => { dragDepth = 0; document.body.classList.remove('drop'); const f = [...(e.dataTransfer?.files || [])].find(f => f.type.startsWith('image/')); if (f){ e.preventDefault(); handlePhoto(f); } });
 
 // ---------- export ----------
 const flashHtml = (h) => { const el=$('msg'); el.innerHTML = h; el.className = 'msg'; clearTimeout(flash.t); flash.t = setTimeout(()=>{ el.textContent=''; }, 6000); };
