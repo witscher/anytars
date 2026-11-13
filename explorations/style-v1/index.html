@@ -258,7 +258,7 @@ table.sheet{border-collapse:separate;border-spacing:0;min-width:880px;width:100%
    ===================================================================== */
 
 // ---------- colour helpers ----------
-const hx = h => { h = h.replace('#',''); return [0,2,4].map(i => parseInt(h.substr(i,2),16)); };
+const hx = h => { h = String(h||'#888888').replace('#',''); if (h.length===3) h = h.split('').map(c=>c+c).join(''); const v = [0,2,4].map(i => parseInt(h.substr(i,2),16)); return v.some(isNaN) ? [136,136,136] : v; };
 const toHex = a => '#' + a.map(v => Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0')).join('');
 const mix = (a,b,t) => { const A=hx(a),B=hx(b); return toHex(A.map((v,i)=>v+(B[i]-v)*t)); };
 const darken = (c,t) => mix(c,'#2a1630',t);
@@ -266,6 +266,8 @@ const lighten = (c,t) => mix(c,'#ffffff',t);
 const desat = (c,t) => { const [r,g,b]=hx(c); const l=.3*r+.59*g+.11*b; return toHex([r,g,b].map(v=>v+(l-v)*t)); };
 const n1 = v => Math.round(v*10)/10;
 
+// Layer tag: every part of an avatar sits in a <g data-l="name"> so tools (QA, editors) can address it.
+const tag = (name, s) => s ? `<g data-l="${name}">${s}</g>` : '';
 let _uid = 0; const uid = p => p + (++_uid).toString(36);
 
 // ---------- path helpers ----------
@@ -321,7 +323,7 @@ const bez = ([p0,p1,p2,p3],u) => { const a=(1-u)**3,b=3*(1-u)**2*u,c=3*(1-u)*u*u
 // ---------- styles ----------
 const STYLES = {
   chibi:   {key:'chibi',   label:'Chibi',       line:'#3a2836', sw:2.8, tinted:false, shade:'hard', bg:'sparkle',  bgShape:'rounded', head:1.12, headY:124, eye:1.56, eyeDY:8, eyeDX:20, body:.56, sticker:false,
-            chibi:true, eyeDefault:'beanLid', noseSmall:true, noseDY:8, noseScale:.9, mouthDY:1, mouthScale:.8, blush:.38,
+            chibi:true, eyeDefault:'beanLid', noseSmall:true, noseDY:6, noseScale:.9, mouthDY:3, mouthScale:.8, blush:.38,
             blurb:'Two-to-one head and body, huge layered eyes, tiny nose and mouth. The most expressive and cutest.'},
   cel:     {key:'cel',     label:'Soft cel',    line:null,      sw:1.7, tinted:true,  shade:'cel',  bg:'circle',   bgShape:'circle', head:1.17, headY:123, eye:1,    eyeDY:0, eyeDX:18, body:.8,   sticker:false, eyeDefault:'flatIris',
             blurb:'Tinted thin lines, two hard-edged shadow tones and hair highlights. The most illustrated.'},
@@ -404,7 +406,7 @@ function afroD(F){
 // Each piece may draw a drape (after the shirt) and a front (over hair). hairMask hides hair inside the hat's column.
 const HEADWEAR = {
   none: {},
-  baseballCap: { hairMask:[[36,-60],[164,-60],[164,86],[36,86]], front:(S,F,c)=>{
+  baseballCap: { brimY:93, box:{top:26,x0:38,x1:162}, hairMask:[[36,-60],[164,-60],[164,86],[36,86]], front:(S,F,c)=>{
       const crown = smooth(F.mp([[54,84],[55,60],[66,42],[84,32],[100,30],[116,32],[134,42],[145,60],[146,84],[124,79,'s'],[100,78],[76,79,'s']]));
       const bill = smooth(F.mp([[38,88,'s'],[60,79],[100,76],[140,79],[162,88,'s'],[156,96],[128,91],[100,90],[72,91],[44,96]]));
       const under = smooth(F.mp([[44,93,'s'],[72,89],[100,88],[128,89],[156,93,'s'],[128,93],[100,92],[72,93]]));
@@ -413,24 +415,24 @@ const HEADWEAR = {
       const logo = shape(S, smooth(F.mp([[90,66,'s'],[110,66,'s'],[110,74,'s'],[90,74,'s']])), '#ffffff', {noShade:true,k:.5});
       return shape(S,crown,c,{inner:seam+eyelets}) + logo + shape(S,circ(100,30+F.dy,3.2),darken(c,.15),{noShade:true,k:.6}) + shape(S,bill,c) + `<path d="${under}" fill="${darken(c,.35)}"/>`;
     }, shadow:[[46,94],[100,90],[154,94],[150,104],[100,100],[50,104]] },
-  witchHat: { hairMask:[[-40,-60],[240,-60],[240,58],[-40,58]], front:(S,F,c)=>{
+  witchHat: { brimY:75, box:{top:3,x0:30,x1:170}, hairMask:[[-40,-60],[240,-60],[240,58],[-40,58]], front:(S,F,c)=>{
       const brim = ell(100,62+F.dy,70*F.sx,13);
       const cone = smooth(F.mp([[66,60,'s'],[76,38],[90,20],[110,7],[130,3,'s'],[120,14],[115,30],[126,50],[134,60,'s']]));
       const band = smooth(F.mp([[69,51,'s'],[131,51,'s'],[134,60,'s'],[66,60,'s']]));
       return shape(S,brim,c) + shape(S,cone,c) + shape(S,band,'#e0a23a',{noShade:true});
     }, shadow:[[46,66],[154,66],[150,80],[50,80]] },
-  elfCap: { hairMask:[[48,-60],[154,-60],[160,84],[46,84]], front:(S,F,c)=>{
+  elfCap: { brimY:84, box:{top:26,x0:52,x1:182}, hairMask:[[48,-60],[154,-60],[160,84],[46,84]], front:(S,F,c)=>{
       const cap = smooth(F.mp([[52,82],[52,58],[64,38],[84,28],[106,26],[128,32],[148,48],[164,72],[176,104],[181,130,'s'],[168,112],[156,90],[148,80],[124,76],[100,75],[76,76]]));
       const band = smooth(F.mp([[52,84,'s'],[52,72],[76,66],[100,65],[124,66],[148,72],[149,84,'s'],[124,78],[100,77],[76,78]]));
       return shape(S,cap,c) + shape(S,band,darken(c,.25));
     }, shadow:[[52,84],[148,84],[148,94],[52,94]] },
-  mushroom: { hairMask:[[16,-60],[184,-60],[184,82],[16,82]], front:(S,F,c)=>{
+  mushroom: { brimY:90, box:{top:4,x0:20,x1:180}, hairMask:[[16,-60],[184,-60],[184,82],[16,82]], front:(S,F,c)=>{
       const cap = smooth(F.mp([[20,76],[24,50],[40,25],[68,9],[100,4],[132,9],[160,25],[176,50],[180,76],[150,82],[100,84],[50,82]]));
       const gills = smooth(F.mp([[32,78,'s'],[100,84],[168,78,'s'],[156,88],[100,91],[44,88]]));
       const spots = [[62,36,10],[100,20,11],[138,36,10],[36,62,6],[164,62,6],[82,60,7],[120,60,7]].map(([x,y,r])=>{const p=F.m([x,y]); return circ(p[0],p[1],r);}).join('');
       return shape(S,gills,'#efe1c2',{noShade:true}) + shape(S,cap,c,{inner:`<path d="${spots}" fill="#fbf6ea"/>`});
     }, shadow:[[40,86],[160,86],[156,96],[44,96]] },
-  jester: { hairMask:[[46,-60],[154,-60],[154,80],[46,80]], front:(S,F,c)=>{
+  jester: { brimY:81, box:{top:1,x0:5,x1:195}, hairMask:[[46,-60],[154,-60],[154,80],[46,80]], front:(S,F,c)=>{
       const L = [[56,70],[46,50],[30,36],[14,38],[10,52,'s'],[22,48],[34,54],[46,68],[52,78]];
       const left = smooth(F.mp(L)), right = smooth(F.mp(mirrorPts(L)));
       const mid = smooth(F.mp([[76,66],[84,40],[95,16],[100,7,'s'],[105,16],[116,40],[124,66]]));
@@ -438,21 +440,21 @@ const HEADWEAR = {
       const bells = [[10,54],[100,6],[190,54]].map(p=>{const q=F.m(p); return shape(S,circ(q[0],q[1],5),'#f2c230',{noShade:true,k:.7});}).join('');
       return shape(S,left,c) + shape(S,right,c) + shape(S,mid,'#f0453f') + shape(S,band,'#f2c230') + bells;
     }, shadow:[[52,84],[148,84],[148,92],[52,92]] },
-  devilHorns: { front:(S,F,c,ctx)=>{
+  devilHorns: { box:{top:24,x0:59,x1:141,perch:.7}, front:(S,F,c,ctx)=>{
       const L = [[72,56],[63,42],[59,24,'s'],[71,36],[83,50]];
       const up = Math.max(ctx.lift*0.7, -20);
       return `<g transform="translate(0,${n1(up)})">` + shape(S,smooth(F.mp(L)),c) + shape(S,smooth(F.mp(mirrorPts(L))),c) + `</g>`;
     } },
-  kippah: { front:(S,F,c,ctx)=>{
+  kippah: { box:{top:34,x0:77,x1:123,seat:1}, front:(S,F,c,ctx)=>{
       const k = smooth(F.mp([[77,47,'s'],[86,38],[100,34],[114,38],[123,47,'s'],[100,43]]));
-      return `<g transform="translate(0,${n1(ctx.lift)})">` + shape(S,k,c,{inner:`<path d="M80,44 Q100,34 120,44" transform="translate(0,${F.dy})" fill="none" stroke="${lighten(c,.55)}" stroke-width="1.6"/>`}) + `</g>`;
+      return `<g transform="translate(0,${n1(ctx.seat)})">` + shape(S,k,c,{inner:`<path d="M80,44 Q100,34 120,44" transform="translate(0,${F.dy})" fill="none" stroke="${lighten(c,.55)}" stroke-width="1.6"/>`}) + `</g>`;
     } },
-  turban: { hideHairTop:true, front:(S,F,c)=>{
+  turban: { brimY:86, box:{top:26,x0:50,x1:150}, hideHairTop:true, front:(S,F,c)=>{
       const t = smooth(F.mp([[52,94],[50,66],[58,46],[74,32],[100,26],[126,32],[142,46],[150,66],[148,94],[138,88],[124,80],[100,84,'s'],[76,80],[62,88]]));
       const folds = ['M56,72 Q100,50 144,70','M61,55 Q100,38 139,53','M100,84 Q96,60 100,30'].map(s=>`<path d="${s}" transform="translate(0,${F.dy})" fill="none" stroke="${darken(c,.3)}" stroke-width="1.6" opacity=".75"/>`).join('');
       return shape(S,t,c,{inner:folds});
     }, shadow:[[56,92],[100,86],[144,92],[144,100],[100,96],[56,100]] },
-  hijab: { hideHairTop:true, hideHairBack:true, hideEars:true,
+  hijab: { glassesOver:true, hideHairTop:true, hideHairBack:true, hideEars:true,
     drape:(S,F,c)=> shape(S, smooth([[100,40],[140,48],[156,84],[157,128],[151,160],[170,178],[186,204],[14,204],[30,178],[49,160],[43,128],[44,84],[60,48]]), c),
     front:(S,F,c)=>{
       const outer = smooth([[100,36],[138,44],[155,80],[155,124],[141,158],[121,171],[100,175],[79,171],[59,158],[45,124],[45,80],[62,44]]);
@@ -465,18 +467,18 @@ const HEADWEAR = {
       s += `<path d="M62,60 Q54,100 64,140" fill="none" stroke="${darken(c,.28)}" stroke-width="1.6" opacity=".7"/>`;
       return s;
     } },
-  beanie: { hairMask:[[48,-60],[152,-60],[152,84],[48,84]], front:(S,F,c)=>{
+  beanie: { brimY:85, box:{top:12,x0:52,x1:148}, hairMask:[[48,-60],[152,-60],[152,84],[48,84]], front:(S,F,c)=>{
       const dome = smooth(F.mp([[54,82],[56,52],[72,32],[100,26],[128,32],[144,52],[146,82],[124,78],[100,77],[76,78]]));
       const band = smooth(F.mp([[52,86,'s'],[52,68],[100,63],[148,68],[148,86,'s'],[100,81]]));
       let ribs=''; for (let x=60;x<=140;x+=8) ribs += `<path d="M${x},${67+Math.abs(x-100)*0.08+F.dy} L${x},${82+F.dy}" stroke="${darken(c,.3)}" stroke-width="1.2" opacity=".6"/>`;
       return shape(S,circ(100,22+F.dy,10),lighten(c,.5)) + shape(S,dome,c) + shape(S,band,darken(c,.12),{inner:ribs});
     }, shadow:[[52,86],[148,86],[148,94],[52,94]] },
-  partyHat: { front:(S,F,c,ctx)=>{
+  partyHat: { box:{top:0,x0:80,x1:126}, front:(S,F,c,ctx)=>{
       const cone = smooth([[82,44,'s'],[100,4,'s'],[118,44,'s'],[100,48]]);
       const stripes = `<path d="M88,32 L112,26 M92,22 L108,18 M84,42 L116,36" stroke="#fff" stroke-width="3" opacity=".8"/>`;
       // On tall hair the hat perches on the side of the volume instead of poking out of the canvas.
-      const tf = ctx.lift < -8 ? `translate(${n1(30*F.sx)},${n1(ctx.lift*0.55+8)}) rotate(34 100 46) scale(.82)` : `rotate(12 100 46) translate(0,${F.dy-2})`;
-      return `<g transform="${tf}" transform-origin="100 46">` + shape(S,cone,c,{inner:stripes}) + shape(S,circ(100,6,6),'#ffd23f',{noShade:true,k:.7}) + `</g>`;
+      const tf = ctx.lift < -8 ? `translate(${n1(30*F.sx)},${n1(ctx.lift*0.55+8)}) rotate(34 100 46) translate(100 46) scale(.82) translate(-100 -46)` : `rotate(12 100 46) translate(0,${F.dy-2})`;
+      return `<g transform="${tf}">` + shape(S,cone,c,{inner:stripes}) + shape(S,circ(100,6,6),'#ffd23f',{noShade:true,k:.7}) + `</g>`;
     } },
 };
 
@@ -622,6 +624,15 @@ function drawEye(S,t,F,ex,side,color,skin,ink,eyeMode){
   return s + `</g>`;
 }
 
+// Nose bottom and mouth centre; the mouth always keeps a small gap below the nose.
+function noseBottomY(S,t,F){ return F.noseY + tv(t,'nose.y') + (S.noseDY||0) + 4.5*(1+tv(t,'nose.size'))*(S.noseScale||1); }
+const MOUSTACHES = ['mustache','goatee','circle','handlebar','pencil','muttonChops','full','short','long'];
+function mouthCenterY(S,t,F){
+  const y = F.mouthY + tv(t,'mouth.y') + (S.mouthDY||0);
+  const gap = MOUSTACHES.includes(t.facialHair) ? 9 + S.sw*1.2 : 4.5*(S.mouthScale||1);   // leave room for a moustache
+  return Math.min(Math.max(y, noseBottomY(S,t,F) + gap), F.chinY - 8*(S.mouthScale||1));
+}
+
 function drawRivers(S,t,F,side){
   const base = EYES[t.eyes.shape], sc = S.eye * (1 + tv(t,'eyes.size'));
   const p = eyePos(S,F,t,side);
@@ -641,12 +652,27 @@ function drawRivers(S,t,F,side){
   return s;
 }
 
+// Neutral brow placement relative to the eye centre, pushed up if a slider would drop it into the eye.
+function browGeom(S,t,F){
+  const b = BROWS[t.brows.type], base = EYES[t.eyes.shape];
+  const bsc = 1 + (S.eye-1)*0.6, esc = S.eye * (1 + tv(t,'eyes.size'));
+  const sizeLift = tv(t,'eyes.size')*8, th = b.th*(S.browK||1);
+  const ys = [-13-sizeLift, -14.5-b.arch-sizeLift, -12+b.drop-sizeLift];
+  const tiltDrop = Math.abs(tv(t,'brows.tilt'))*Math.PI/180*(base.W+3.5)*bsc;
+  const bottom = (Math.max(...ys) + th/2) * bsc + tv(t,'brows.y') + tiltDrop;
+  const eyeTop = -base.Ht * (S.anime ? 1.16 : 1) * 0.75 * esc - Math.abs(tv(t,'eyes.tilt'))*Math.PI/180*base.W*esc;
+  const push = Math.max(0, bottom - (eyeTop - (S.anime ? 4 : 2)));
+  const top = (Math.min(...ys) - th/2) * bsc + tv(t,'brows.y') - push;
+  return { push, top };   // top: brow top edge relative to the eye centre
+}
+function browTopY(S,t,F){ return eyePos(S,F,t,1).y + browGeom(S,t,F).top; }
+
 function drawBrow(S,t,F,ex,side,color){
   const b = BROWS[t.brows.type], base = EYES[t.eyes.shape];
   const off = (side===1 ? ex.browR : ex.browL) || ex.brow || [0,0,0];
   const sc = 1 + (S.eye-1)*0.6;
   const p = eyePos(S,F,t,side);
-  const dx = tv(t,'brows.spacing'), dyy = tv(t,'brows.y'), tilt = -tv(t,'brows.tilt');
+  const dx = tv(t,'brows.spacing'), dyy = tv(t,'brows.y') - browGeom(S,t,F).push, tilt = -tv(t,'brows.tilt');
   const sizeLift = tv(t,'eyes.size')*8;
   const W = base.W;
   const P0=[-(W+2), -13+off[0]-sizeLift], P1=[1, -14.5-b.arch+off[1]-sizeLift], P2=[W+3.5, -12+off[2]+b.drop-sizeLift];
@@ -693,7 +719,7 @@ function drawMouth(S,t,F,ex,skin,ink,zombie){
   const base = {small:6.5, medium:8.5, wide:11}[t.mouth.width] * F.sx;
   const sc = (1 + tv(t,'mouth.size')) * (S.mouthScale||1);
   const w = base;
-  const y = F.mouthY + tv(t,'mouth.y') + (S.mouthDY||0);
+  const y = mouthCenterY(S,t,F);
   const mc = mix(darken(skin,.62),'#5a1424',.4), lc = mix(skin,'#b8475a',.38);
   const lw = n1(Math.max(2.1, S.sw*0.78)/sc);
   const line = (d) => `<path d="${d}" fill="none" stroke="${S.sw?ink:mc}" stroke-width="${lw}" stroke-linecap="round" stroke-linejoin="round"/>`;
@@ -728,9 +754,10 @@ function drawMouth(S,t,F,ex,skin,ink,zombie){
   return s + `</g>`;
 }
 
-function drawGlasses(S,t,F,zombie){
+function drawGlasses(S,t,F,zombie,part){
   const g = t.glasses; if (!g || g.type==='none') return '';
-  const gs = S.eye>1 ? 1+(S.eye-1)*0.55 : 1;
+  const out = (back, front) => part==='back' ? back : part==='front' ? front : back + front;
+  const gs = (S.eye>1 ? 1+(S.eye-1)*0.55 : 1) * (1 + tv(t,'eyes.size')*0.5);
   const gy = tv(t,'glasses.y');
   const P = eyePos(S,F,t,1), PL = eyePos(S,F,t,-1);
   P.y += gy; PL.y += gy;
@@ -776,23 +803,23 @@ function drawGlasses(S,t,F,zombie){
   if (L.single){
     const c = {x:100, y:(P.y+PL.y)/2};
     const ex = 35*gs, hx2 = 100 + (F.w-1);
-    return lens(c,1) + `<path d="M${n1(100+ex)},${n1(c.y+L.ty)} L${n1(Math.max(hx2,100+ex+2))},${n1(c.y+L.ty-1)} M${n1(100-ex)},${n1(c.y+L.ty)} L${n1(Math.min(200-hx2,100-ex-2))},${n1(c.y+L.ty-1)}" stroke="${frame}" stroke-width="${fw}" stroke-linecap="round"/>`;
+    return out(`<path d="M${n1(100+ex)},${n1(c.y+L.ty)} L${n1(Math.max(hx2,100+ex+2))},${n1(c.y+L.ty-1)} M${n1(100-ex)},${n1(c.y+L.ty)} L${n1(Math.min(200-hx2,100-ex-2))},${n1(c.y+L.ty-1)}" stroke="${frame}" stroke-width="${fw}" stroke-linecap="round"/>`, lens(c,1));
   }
   if (g.type==='monocle'){
     const p = PL;
-    return lens(p,-1) + `<path d="M${n1(p.x-4)},${n1(p.y+12*gs)} Q${n1(p.x-10)},${n1(p.y+44)} ${n1(p.x-28)},196" fill="none" stroke="${frame}" stroke-width="1.6" stroke-dasharray="2.4 1.6"/>`;
+    return out('', lens(p,-1) + `<path d="M${n1(p.x-4)},${n1(p.y+12*gs)} Q${n1(p.x-10)},${n1(p.y+44)} ${n1(p.x-28)},196" fill="none" stroke="${frame}" stroke-width="1.6" stroke-dasharray="2.4 1.6"/>`);
   }
   const rIn = P.x + L.inX*gs, lIn = PL.x - L.inX*gs;
   let s = `<path d="M${n1(lIn)},${n1(PL.y+L.by)} Q100,${n1((P.y+PL.y)/2+L.by-4)} ${n1(rIn)},${n1(P.y+L.by)}" fill="none" stroke="${frame}" stroke-width="${fw}" stroke-linecap="round"/>`;
   if (L.noTemples){
     s = `<path d="M${n1(lIn)},${n1(PL.y+L.by)} q${n1((rIn-lIn)/4)},-5 ${n1((rIn-lIn)/2)},-1 q${n1((rIn-lIn)/4)},4 ${n1((rIn-lIn)/2)},1" fill="none" stroke="${frame}" stroke-width="${n1(fw*.8)}" stroke-linecap="round"/>`;
     if (L.chain) s += `<path d="M${n1(PL.x-10*gs)},${n1(PL.y+2)} Q${n1(PL.x-16)},${n1(PL.y+46)} ${n1(PL.x-24)},196" fill="none" stroke="${frame}" stroke-width="1.5" stroke-dasharray="2.4 1.6"/>`;
-    return s + lens(P,1) + lens(PL,-1);
+    return out('', s + lens(P,1) + lens(PL,-1));
   }
   if (g.type==='aviator') s += `<path d="M${n1(lIn+1)},${n1(PL.y-8*gs)} L${n1(rIn-1)},${n1(P.y-8*gs)}" stroke="${frame}" stroke-width="${n1(fw*.8)}" stroke-linecap="round"/>`;
   const hx_ = 100 + (F.w-1);
-  s += `<path d="M${n1(P.x+L.outX*gs)},${n1(P.y+L.ty)} L${n1(Math.max(hx_, P.x+L.outX*gs+2))},${n1(P.y+L.ty-1)} M${n1(PL.x-L.outX*gs)},${n1(PL.y+L.ty)} L${n1(Math.min(200-hx_, PL.x-L.outX*gs-2))},${n1(PL.y+L.ty-1)}" stroke="${frame}" stroke-width="${fw}" stroke-linecap="round"/>`;
-  return s + lens(P,1) + lens(PL,-1);
+  const arms = `<path d="M${n1(P.x+L.outX*gs)},${n1(P.y+L.ty)} L${n1(Math.max(hx_, P.x+L.outX*gs+2))},${n1(P.y+L.ty-1)} M${n1(PL.x-L.outX*gs)},${n1(PL.y+L.ty)} L${n1(Math.min(200-hx_, PL.x-L.outX*gs-2))},${n1(PL.y+L.ty-1)}" stroke="${frame}" stroke-width="${fw}" stroke-linecap="round"/>`;
+  return out(arms, s + lens(P,1) + lens(PL,-1));
 }
 
 function drawDetails(S,t,F,skin,headClip){
@@ -819,36 +846,41 @@ function drawDetails(S,t,F,skin,headClip){
 
 function drawFacialHair(S,t,F,hair,skin,headClip){
   const fh = t.facialHair||'none'; if (fh==='none') return '';
-  const my = F.mouthY + tv(t,'mouth.y'), X=100, sx=F.sx;
+  const my = mouthCenterY(S,t,F), X=100, sx=F.sx;
   const thick = getK(t,'beard.thickness')||0, len = getK(t,'beard.length')||0;
   const mk = 1 + thick*0.14;                                   // moustache weight
-  const M = pts => pts.map(([x,y,f]) => f ? [X+x*sx*(1+thick*.04), my-6+(y+6)*mk, f] : [X+x*sx*(1+thick*.04), my-6+(y+6)*mk]);
+  // The moustache spans y -10..-1 around the mouth; keep its top just under the nose.
+  const noseBottom = noseBottomY(S,t,F) + 1.5 + S.sw*1.1;
+  const mBot = my-6+5*mk, mTop = Math.min(Math.max(my-6-4*mk, noseBottom+0.5), mBot-3);
+  const capY = y => Math.max(y, noseBottom+0.5);
+  const M = pts => pts.map(([x,y,f]) => { const q = [X+x*sx*(1+thick*.04), mTop + (y+10)/9*(mBot-mTop)]; return f ? [q[0],q[1],f] : q; });
   const must = M([[0,-8],[9,-10],[18,-7],[23,-1],[16,-2],[8,-4],[0,-3],[-8,-4],[-16,-2],[-23,-1],[-18,-7],[-9,-10]]);
   // Outer edge from the real head outline (cheek to cheek), pushed outward so skin never peeks past it.
   // base/amp: margin at sideburns and extra at the chin; drop: extra length at the chin.
   const outline = (base, amp, drop) => {
     const segs = headSegs(F).slice(1,5), c = [100, F.cheekY-14], out = [];
-    segs.forEach((sg,si) => { for (let k=0;k<6;k++){ const u=k/6, q=bez(sg,u), g=(si+u)/4, w=Math.sin(Math.PI*g);
-      const m = Math.max(1, base + thick*0.9 + (amp + thick*1.1)*w), dx=q[0]-c[0], dy=q[1]-c[1], L=Math.hypot(dx,dy)||1;
+    segs.forEach((sg,si) => { for (let k=0;k<12;k++){ const u=k/12, q=bez(sg,u), g=(si+u)/4, w=Math.sin(Math.PI*g);
+      const m = Math.max(1.5 + S.sw*0.5, base + S.sw*0.5 + thick*0.9 + (amp + thick*1.1)*w), dx=q[0]-c[0], dy=q[1]-c[1], L=Math.hypot(dx,dy)||1;
       out.push([q[0]+dx/L*m, q[1]+dy/L*m + Math.pow(w,3)*drop]); } });
     out.push([X-F.w-base-thick*.9, F.cheekY]); out[0] = [X+F.w+base+thick*.9, F.cheekY];
     return out;
   };
   const sharpEnds = (pts) => pts.map((q,i)=> i===0||i===pts.length-1 ? [q[0],q[1],'s'] : q);
-  const mouthInner = [[X-F.w+4,F.cheekY],[X-F.w+8,F.cheekY+15],[X-20,my-6],[X-8,my-9],[X,my-8],[X+8,my-9],[X+20,my-6],[X+F.w-8,F.cheekY+15],[X+F.w-4,F.cheekY]];
-  const lengthDrop = len*4;
-  const full = (base, amp, drop) => smooth([...sharpEnds(outline(base, amp, drop + lengthDrop)), ...sharpEnds(mouthInner)]);
+  const mouthInner = [[X-F.w+4,F.cheekY],[X-F.w+8,F.cheekY+15],[X-20,capY(my-6)],[X-8,capY(my-9)],[X,capY(my-8)],[X+8,capY(my-9)],[X+20,capY(my-6)],[X+F.w-8,F.cheekY+15],[X+F.w-4,F.cheekY]];
+  // Positive length hangs the beard lower; negative length trims the chin bulk but never uncovers the chin.
+  const lengthDrop = Math.max(0, len)*4, trim = Math.min(0, len)*1.2;
+  const full = (base, amp, drop) => smooth([...sharpEnds(outline(base, Math.max(0, amp + trim), Math.max(0, drop) + lengthDrop)), ...sharpEnds(mouthInner)]);
   const chin = (extra=0) => smooth([[X-9,my+5],[X,my+4],[X+9,my+5],[X+11+thick,my+16+lengthDrop*.6+extra],[X,my+23+thick+lengthDrop+extra],[X-11-thick,my+16+lengthDrop*.6+extra]]);
   const under = d => shape(S, d, hair, {under:true});
   switch (fh){
     case 'stubble':  return `<g clip-path="url(#${headClip})"><path d="${full(2,6,0)}" fill="${mix(hair,skin,.35)}" opacity="${n1(.32+thick*.05)}"/></g>`;
     case 'full':     return shape(S, full(2,6,0), hair);
-    case 'short':    return shape(S, full(0.5,2.5,-2), hair);
+    case 'short':    return shape(S, full(1.2,2.8,0), hair);
     case 'long':     return shape(S, full(2.5,8,18), hair);
     case 'mustache': return shape(S, smooth(must), hair, {k:.7});
     case 'goatee':   return shape(S, chin(), hair, {k:.7}) + shape(S, smooth(must), hair, {k:.7});
     case 'circle': {
-      const bar = sd => smooth([[X+sd*(18+thick)*sx,my-4],[X+sd*(21+thick)*sx,my+2],[X+sd*13,my+16+lengthDrop*.5],[X+sd*9,my+12],[X+sd*15*sx,my+1],[X+sd*14*sx,my-3]]);
+      const bar = sd => smooth([[X+sd*(18+thick)*sx,capY(my-4)],[X+sd*(21+thick)*sx,my+2],[X+sd*13,my+16+lengthDrop*.5],[X+sd*9,my+12],[X+sd*15*sx,my+1],[X+sd*14*sx,capY(my-3)]]);
       return under(smooth(must) + chin() + bar(1) + bar(-1));
     }
     case 'chinStrap': {
@@ -921,7 +953,7 @@ function render(traits, variant={}, styleKey='chibi', opts={}){
   const cfg = {...ANYTARS_CONFIG, ...opts};
   const bgNone = cfg.background === 'none';
   const bgShape = BG_SHAPES.includes(cfg.backgroundShape) && cfg.backgroundShape!=='style' ? cfg.backgroundShape : S.bgShape;
-  let skin=t.skin, hair=t.hair.color, shirt=t.shirt, bg=(/^#[0-9a-f]{6}$/i.test(cfg.background||'') ? cfg.background : t.bg), hwColor=t.headwear?.color||'#888';
+  let skin=t.skin, hair=t.hair.color, shirt=t.shirt, bg=(/^#[0-9a-f]{6}$/i.test(cfg.background||'') ? cfg.background : t.bg), hwColor=t.headwear?.color||'#888888';
   if (zombie){ skin=mix(desat(skin,.55),'#8db27a',.5); hair=mix(desat(hair,.4),'#5d5a4c',.35); shirt=mix(desat(shirt,.5),'#5d5a4c',.4); bg=mix(bg,'#38423a',.62); hwColor=desat(hwColor,.4); }
   const F = faceGeom(t.face);
   if (S.chibi){ F.chinW += 7; F.chinY -= 3; F.jawY -= 2; }
@@ -929,6 +961,8 @@ function render(traits, variant={}, styleKey='chibi', opts={}){
   let hwType = t.headwear?.type||'none';
   if (festive && hwType==='none') hwType = 'partyHat';
   const HW = HEADWEAR[hwType];
+  // Brim hats sit higher when they would otherwise cover the brows (brows carry the expressions).
+  const hatUp = HW.brimY ? Math.min(20, Math.max(0, HW.brimY + F.dy - (browTopY(S,t,F) - 1.5))) : 0;
   const ink = S.line || mix(darken(skin,.7),'#1b1520',.55);
   const browBase = t.brows.color ? (zombie ? desat(t.brows.color,.4) : t.brows.color) : null;
   const browCol = browBase ? darken(browBase,.12) : (hx(hair).reduce((a,b)=>a+b,0) > 560 ? darken(hair,.35) : mix(hair,'#120e12',.25));
@@ -946,7 +980,7 @@ function render(traits, variant={}, styleKey='chibi', opts={}){
   let defs = `<clipPath id="${headClip}"><path d="${headD}"/></clipPath>`;
   if (HW.hairMask){
     hairClip = uid('hm');
-    const m = F.mp(HW.hairMask);
+    const m = F.mp(HW.hairMask).map(q => [q[0], q[1] - hatUp]);
     defs += `<clipPath id="${hairClip}"><path clip-rule="evenodd" d="M-60,-60H260V260H-60Z M${m.map(q=>n1(q[0])+','+n1(q[1])).join('L')}Z"/></clipPath>`;
   }
   const HC = s => hairClip ? `<g clip-path="url(#${hairClip})">${s}</g>` : s;
@@ -963,12 +997,12 @@ function render(traits, variant={}, styleKey='chibi', opts={}){
     let bs = shape(S, d, darken(hair,.08), {under: back.behind==='afro'});
     // Big volume gets pressed down under a hat, then hidden above the crown.
     if (HW.hairMask && back.behind==='afro') bs = `<g transform="translate(0,${140+F.dy}) scale(1.04,.72) translate(0,${-140-F.dy})" transform-origin="100 0">${bs}</g>`;
-    L += H(HC(bs));
+    L += tag('hairBack', H(HC(bs)));
   }
   // Long hair: shaded hair fill behind the neck so no background shows between neck and hair.
-  if (back && back.base) L += H(HC(`<path d="${smooth(F.mp([[100,138],[118,146],[124,170],[126,210],[74,210],[76,170],[82,146]]))}" fill="${darken(hair,.3)}"/>`));
+  if (back && back.base) L += tag('hairBack', H(HC(`<path d="${smooth(F.mp([[100,138],[118,146],[124,170],[126,210],[74,210],[76,170],[82,146]]))}" fill="${darken(hair,.3)}"/>`)));
   const hairTopY = Math.min(topDef ? HAIR_TOP_Y[t.hair.top] : 50, back ? HAIR_BACK_Y[t.hair.back] : 99) + F.dy;
-  const hwCtx = { lift: Math.min(0, hairTopY - (38 + F.dy)) };
+  const hwCtx = { lift: Math.min(0, hairTopY - (38 + F.dy)), seat: hairTopY - (38 + F.dy) + 1 };
   // 2. neck + shirt
   const nw = 14*F.sx, nTop = F.jawY-8;
   const neckD = `M${n1(100-nw)},${nTop} L${n1(100+nw)},${nTop} L${n1(100+nw+1)},192 L${n1(100-nw-1)},192Z`;
@@ -976,48 +1010,49 @@ function render(traits, variant={}, styleKey='chibi', opts={}){
   let neck = `<clipPath id="${neckClip}"><path d="${neckD}"/></clipPath><path d="${neckD}" fill="${skin}"${strokeAttr(S,skin)}/>`;
   neck += `<g clip-path="url(#${neckClip})"><path d="${headD}" fill="${darken(skin,S.shade==='none'?.14:.26)}" transform="translate(0,${S.shade==='none'?5:8})"/></g>`;
   const shirtD = smooth([[8,206],[12,188],[30,175],[60,166],[86,161,'s'],[100,172],[114,161,'s'],[140,166],[170,175],[188,188],[192,206]]);
-  L += B(neck + shape(S, shirtD, shirt));
-  if (zombie) L += B(`<path d="M60,190 l6,-10 l4,8 l5,-12 l3,14 M132,186 l5,-9 l3,7" fill="none" stroke="${darken(shirt,.5)}" stroke-width="2" stroke-linejoin="round"/>`);
+  L += tag('body', B(neck + shape(S, shirtD, shirt)));
+  if (zombie) L += tag('body', B(`<path d="M60,190 l6,-10 l4,8 l5,-12 l3,14 M132,186 l5,-9 l3,7" fill="none" stroke="${darken(shirt,.5)}" stroke-width="2" stroke-linejoin="round"/>`));
   // 3. drapes (long hair over shoulders, hijab)
-  if (back && back.base) L += H(HC(shape(S, smooth(F.mp(back.base)), darken(hair,.1))));
-  if (HW.drape) L += HW.drape(S,F,hwColor);
+  if (back && back.base) L += tag('hairBack', H(HC(shape(S, smooth(F.mp(back.base)), darken(hair,.1)))));
+  if (HW.drape) L += tag('headwearBack', HW.drape(S,F,hwColor));
 
   // 4. the face group
-  let face = '';
+  let face = '', ears = '';
   if (!HW.hideEars){
     [-1,1].forEach(side=>{
       const x = 100+side*(F.w-1.5), y=F.eyeY+4;
-      face += shape(S, ell(x,y,6.8,10.5), skin, {k:.85});
-      face += `<path d="M${n1(x+side*1.5)},${y-5} Q${n1(x-side*2.5)},${y} ${n1(x+side*1.5)},${y+5}" fill="none" stroke="${darken(skin,.3)}" stroke-width="1.4" stroke-linecap="round"/>`;
+      ears += shape(S, ell(x,y,6.8,10.5), skin, {k:.85});
+      ears += `<path d="M${n1(x+side*1.5)},${y-5} Q${n1(x-side*2.5)},${y} ${n1(x+side*1.5)},${y+5}" fill="none" stroke="${darken(skin,.3)}" stroke-width="1.4" stroke-linecap="round"/>`;
     });
   }
+  face += tag('ears', ears);
   // head with optional forehead shadow under hair / hats
   let inner = '';
   if (S.shade!=='none'){
     const sh = darken(skin,.2);
     if (topD && topDef!=='curly') inner += hairClip ? '' : `<path d="${topD}" fill="${sh}" transform="translate(1.5,4.5)"/>`;
     if (topDef==='curly') inner += `<path d="${topD}" fill="${sh}" transform="translate(1.5,4.5)"/>`;
-    if (HW.shadow) inner += `<path d="${smooth(F.mp(HW.shadow))}" fill="${sh}" opacity=".85"/>`;
+    if (HW.shadow) inner += `<path d="${smooth(F.mp(HW.shadow))}" fill="${sh}" opacity=".85" transform="translate(0,${n1(-hatUp)})"/>`;
   }
   const blush = Math.max(ex.blush||0, S.blush || (S.shade==='cel' ? .18 : 0));
   if (S.anime && blush>=.4 && !zombie) [-1,1].forEach(sd => { const bx=100+sd*27*F.sx, by=F.noseY+4; for (let k=-1;k<=1;k++) inner += `<path d="M${n1(bx+k*3.4-1.4)},${by+2.2} l2.8,-4.4" stroke="#e0566f" stroke-width="1" stroke-linecap="round" opacity=".7"/>`; });
   if (blush && !zombie) inner += `<ellipse cx="${n1(100-27*F.sx)}" cy="${F.noseY+4}" rx="7.5" ry="4.2" fill="#ff5d82" opacity="${n1(blush*.42)}"/><ellipse cx="${n1(100+27*F.sx)}" cy="${F.noseY+4}" rx="7.5" ry="4.2" fill="#ff5d82" opacity="${n1(blush*.42)}"/>`;
-  face += shape(S, headD, skin, {inner});
-  face += drawDetails(S,t,F,skin,headClip);
-  if (zombie){
+  face += tag('head', shape(S, headD, skin, {inner}));
+  face += tag('details', drawDetails(S,t,F,skin,headClip));
+  if (zombie){ let zs = '';
     const sx=100-26*F.sx, sy=F.noseY+6;
-    face += `<path d="M${n1(sx-8)},${sy-6} L${n1(sx+8)},${sy+6}" stroke="${darken(skin,.55)}" stroke-width="1.6" stroke-linecap="round"/>`;
-    for (let i=-2;i<=2;i++) face += `<path d="M${n1(sx+i*3.2-2.2)},${n1(sy+i*2.4+3)} l4.4,-6" stroke="${darken(skin,.55)}" stroke-width="1.3" stroke-linecap="round"/>`;
+    zs += `<path d="M${n1(sx-8)},${sy-6} L${n1(sx+8)},${sy+6}" stroke="${darken(skin,.55)}" stroke-width="1.6" stroke-linecap="round"/>`;
+    for (let i=-2;i<=2;i++) zs += `<path d="M${n1(sx+i*3.2-2.2)},${n1(sy+i*2.4+3)} l4.4,-6" stroke="${darken(skin,.55)}" stroke-width="1.3" stroke-linecap="round"/>`;
+    face += tag('details', zs);
   }
   // eyes
   const eyeMode = cfg.eyeMode || (t.eyes.render && t.eyes.render!=='auto' ? t.eyes.render : S.eyeDefault);
-  face += drawEye(S,t,F,ex,-1,t.eyes.left,skin,ink,eyeMode) + drawEye(S,t,F,ex,1,t.eyes.right,skin,ink,eyeMode);
-  face += drawBrow(S,t,F,ex,-1,browCol) + drawBrow(S,t,F,ex,1,browCol);
-  face += drawNose(S,t,F,skin);
-  face += drawFacialHair(S,t,F,beardCol,skin,headClip);
-  if (ex.rivers) face += drawRivers(S,t,F,-1) + drawRivers(S,t,F,1);
-  face += drawMouth(S,t,F,ex,skin,ink,zombie);
-  face += drawGlasses(S,t,F,zombie);
+  face += tag('eyes', drawEye(S,t,F,ex,-1,t.eyes.left,skin,ink,eyeMode) + drawEye(S,t,F,ex,1,t.eyes.right,skin,ink,eyeMode));
+  face += tag('nose', drawNose(S,t,F,skin));
+  face += tag('beard', drawFacialHair(S,t,F,beardCol,skin,headClip));
+  if (ex.rivers) face += tag('tears', drawRivers(S,t,F,-1) + drawRivers(S,t,F,1));
+  face += tag('mouth', drawMouth(S,t,F,ex,skin,ink,zombie));
+  face += tag('glasses', drawGlasses(S,t,F,zombie,'back'));
   // hair on top
   if (topD){
     let hs = '';
@@ -1031,11 +1066,38 @@ function render(traits, variant={}, styleKey='chibi', opts={}){
     // With back hair present, the top is outlined only where it meets the face, so the two read as one head of hair.
     const merged = !!back && topDef!=='curly';
     hs += shape(S, topD, t.hair.top==='buzz' ? mix(hair,skin,.25) : hair, {under: topDef==='curly', inner: hl, strokeClip: merged ? headClip : null, noShade: merged && S.shade==='hard'});
-    face += HC(hs);
+    face += tag('hairTop', HC(hs));
   }
-  if (HW.front) face += HW.front(S,F,hwColor,hwCtx);
+  // Brows and lenses sit on top of the hair (cartoon convention), glasses arms stay under it.
+  face += tag('brows', drawBrow(S,t,F,ex,-1,browCol) + drawBrow(S,t,F,ex,1,browCol));
+  if (!HW.glassesOver) face += tag('glasses', drawGlasses(S,t,F,zombie,'front'));
+  if (HW.front) face += tag('headwear', hatUp ? `<g transform="translate(0,${n1(-hatUp)})">${HW.front(S,F,hwColor,hwCtx)}</g>` : HW.front(S,F,hwColor,hwCtx));
+  if (HW.glassesOver) face += tag('glasses', drawGlasses(S,t,F,zombie,'front'));
 
   L += H(face);
+
+  // Fit: if hair or headwear would leave the canvas, shrink the whole avatar slightly (anchored at the bottom centre).
+  {
+    const ext = [[F.top, 100-F.w-6, 100+F.w+6]];
+    if (topDef) ext.push([HAIR_TOP_Y[t.hair.top]+F.dy, 100-49*F.sx, 100+49*F.sx]);
+    if (back){
+      const bw = {afro:75, long:63, longWavy:63, bob:56}[t.hair.back] || 50;
+      const top = back.behind==='afro' && HW.hairMask ? 140+F.dy-(140-11)*.72 : HAIR_BACK_Y[t.hair.back]+F.dy;
+      ext.push([top, 100-bw*F.sx*(HW.hairMask?1.04:1), 100+bw*F.sx*(HW.hairMask?1.04:1)]);
+    }
+    if (HW.box){ const b = HW.box, lift = (b.seat ? hwCtx.seat : hwCtx.lift*(b.perch||0)) - hatUp;
+      ext.push([b.top+F.dy+lift, 100+(b.x0-100)*F.sx, 100+(b.x1-100)*F.sx]); }
+    const h = S.head||1, hy = S.headY||120, pad = S.sw*1.2 + 2;
+    const lo = S.sticker ? -5 : 4, hi = S.sticker ? 205 : 196;
+    let fit = 1;
+    ext.forEach(([top, x0, x1]) => {
+      const yc = h!==1 ? hy + (top-112)*h - pad : top - pad, xl = 100 + (x0-100)*h - pad, xr = 100 + (x1-100)*h + pad;
+      if (yc < lo) fit = Math.min(fit, (200-lo)/(200-yc));
+      if (xl < lo) fit = Math.min(fit, (100-lo)/(100-xl));
+      if (xr > hi) fit = Math.min(fit, (hi-100)/(xr-100));
+    });
+    if (fit < 1) L = `<g transform="translate(100,200) scale(${n1(fit*1000)/1000}) translate(-100,-200)">${L}</g>`;
+  }
 
   let content = L;
   if (S.sticker){
