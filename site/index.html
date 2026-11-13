@@ -129,6 +129,12 @@ body.drop::after{content:"Drop the photo to create your avatar";position:fixed;i
 .btn.saved:disabled{opacity:1}
 .item .mini.star{left:4px;right:auto}
 .msg button{border:0;background:none;color:inherit;text-decoration:underline;cursor:pointer;font:inherit;padding:0;margin-left:6px}
+.preset.ai-tile{border:1.5px solid transparent;background:linear-gradient(var(--surface-2),var(--surface-2)) padding-box, var(--ai-grad) border-box}
+.preset.ai-tile span{font-weight:600;background:var(--ai-grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.start-ai{display:grid;gap:6px;margin:0;padding:10px;border-radius:14px;border:1.5px solid transparent;background:linear-gradient(var(--surface-2),var(--surface-2)) padding-box, var(--ai-grad) border-box}
+.ai-row-start{display:flex;gap:8px;flex-wrap:wrap}
+.ai-row-start input{flex:1 1 220px;min-width:0;font:inherit;border:1px solid var(--line);border-radius:10px;padding:9px 12px;background:var(--surface);color:var(--ink)}
+#startAiGo{background:var(--ai-grad);border-color:transparent;color:#fff}
 .preset.dice .die{width:68px;height:68px;display:grid;place-items:center;font:800 2.2rem var(--f-display)}
 .preset.dice span{color:var(--accent-ink);font-weight:600}
 
@@ -212,8 +218,16 @@ footer a{color:inherit}
   </header>
 
   <section class="start" aria-labelledby="startH">
-    <div class="start-h"><h2 id="startH">Start from a character or roll the dice</h2><p>Then change anything you like. Your work is saved in this browser and in the link.</p></div>
+    <div class="start-h"><h2 id="startH">Describe it, start from a photo, pick a character or roll the dice</h2><p>Then change anything you like. Your work is saved in this browser and in the link.</p></div>
     <div class="presets" id="presets"></div>
+    <form class="start-ai" id="startAi" hidden>
+      <label for="startAiText" class="label">Describe your character</label>
+      <div class="ai-row-start">
+        <input id="startAiText" type="text" maxlength="400" placeholder="e.g. a kid with freckles and a red beanie" autocomplete="off" enterkeyhint="go">
+        <button class="btn" id="startAiGo" type="submit">Create</button>
+        <button class="btn linkish" id="startAiCancel" type="button">Cancel</button>
+      </div>
+    </form>
   </section>
 
   <section class="start mine" id="mine" aria-labelledby="mineH" hidden>
@@ -457,6 +471,8 @@ function delPath(o, k){ const ps=k.split('.'); let a=o; for (const p of ps.slice
 
 function drawPresets(){
   let h = `<button class="preset dice" type="button" id="dice"><div class="die" aria-hidden="true">⚄</div><span>Random</span></button>`;
+  h += `<button class="preset ai-tile" type="button" id="aiDescribeTile" aria-controls="startAi"><div class="die" aria-hidden="true"><svg viewBox="0 0 32 32" width="38" height="38"><path d="M13 3 Q14.6 11.4 23 13 Q14.6 14.6 13 23 Q11.4 14.6 3 13 Q11.4 11.4 13 3Z" fill="url(#spk)"/><path d="M25 17 Q25.8 21.2 30 22 Q25.8 22.8 25 27 Q24.2 22.8 20 22 Q24.2 21.2 25 17Z" fill="url(#spk)"/><path d="M25 2 Q25.5 4.5 28 5 Q25.5 5.5 25 8 Q24.5 5.5 22 5 Q24.5 4.5 25 2Z" fill="url(#spk)"/></svg></div><span>Describe</span></button>`;
+  h += `<button class="preset ai-tile" type="button" id="aiPhotoTile"><div class="die" aria-hidden="true"><svg viewBox="0 0 24 24" width="34" height="34"><path d="M4 8h3l1.6-2.2h6.8L17 8h3v11H4z" fill="none" stroke="url(#spk)" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="13.2" r="3.4" fill="none" stroke="url(#spk)" stroke-width="1.8"/></svg></div><span>From photo</span></button>`;
   h += CAST.map(c => `<button class="preset" type="button" data-preset="${c.id}" aria-pressed="${presetId===c.id}">${render(c,{expression:'happy'},style)}<span>${c.name}</span></button>`).join('');
   $('presets').innerHTML = h;
 }
@@ -587,6 +603,9 @@ function setValueOn(o, path, val){
 function setValue(path, val){ beforeChange(); setValueOn(t, path, val); presetId = null; if (path === 'bg' && bgCfg.clear){ bgCfg.clear = false; applyBg(); } }
 document.addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
+  if (b.id === 'aiDescribeTile'){ $('startAi').hidden = false; $('startAiText').focus(); return; }
+  if (b.id === 'startAiCancel'){ $('startAi').hidden = true; return; }
+  if (b.id === 'aiPhotoTile'){ $('aiFile').click(); return; }
   if (b.id === 'dice'){ style = pick(Object.keys(STYLES)); switchTo(randomTraits(), {variant:{expression:'happy'}}); return; }
   if (b.dataset.preset){ switchTo(strip(CAST.find(c=>c.id===b.dataset.preset)), {presetId:b.dataset.preset}); return; }
   if (b.dataset.open){ const e = entry(b.dataset.open); if (!e) return; try { switchTo(decode(e.code), {savedId:e.id}); } catch(err){ flash('That saved avatar could not be read.', true); } return; }
@@ -659,6 +678,15 @@ $('aiForm').addEventListener('submit', async e => {
   try { const res = await callAi('/api/edit', { text, traits: t }); applyAi(res); showAi(res, 'edit'); $('aiText').value = ''; }
   catch(err){ aiError(err.message); }
   finally { $('aiGo').removeAttribute('aria-busy'); $('aiGo').textContent = 'Apply'; $('aiText').focus({preventScroll:true}); }
+});
+// "Describe your character" in the start row: always a new character.
+$('startAi').addEventListener('submit', async e => {
+  e.preventDefault();
+  const text = $('startAiText').value.trim(); if (!text) { $('startAiText').focus(); return; }
+  $('startAiGo').setAttribute('aria-busy','true'); $('startAiGo').textContent = 'Creating…';
+  try { const res = await callAi('/api/edit', { text, traits: t, mode: 'new' }); applyAi(res); showAi(res, 'edit'); $('startAiText').value = ''; $('startAi').hidden = true; }
+  catch(err){ aiError(err.message); }
+  finally { $('startAiGo').removeAttribute('aria-busy'); $('startAiGo').textContent = 'Create'; }
 });
 $('aiEx').addEventListener('click', e => { const b = e.target.closest('[data-ex]'); if (!b) return; $('aiText').value = b.dataset.ex; $('aiForm').requestSubmit(); });
 // Photos are resized and re-encoded in the browser (drops EXIF such as location), then sent once.

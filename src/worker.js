@@ -171,7 +171,8 @@ async function edit(env, body) {
   let age = (A.age?.probabilities?.[A.age.choice] ?? 0) > 0.5 ? A.age.choice : 'unspecified';
   { const ap = A.age?.probabilities || {}; if (age === 'unspecified' && (ap.older ?? 0) + (ap.senior ?? 0) > 0.6) age = (ap.senior ?? 0) > (ap.older ?? 0) ? 'senior' : 'older'; }
   // "an old man with a beard": a person described by presentation or age leans towards a new character.
-  const isNew = !chat && (pNew >= 0.5 || (pNew >= 0.3 && (pres !== 'unspecified' || age !== 'unspecified')));
+  // mode: 'new' comes from the "Describe your character" entry point and always creates a new character.
+  const isNew = !chat && (body?.mode === 'new' || pNew >= 0.5 || (pNew >= 0.3 && (pres !== 'unspecified' || age !== 'unspecified')));
   if (isNew){
     t = randomBase(pres, age, t);
     changes.push({ id: 'intent', label: 'new character', choice: [pres, age].filter(x => x !== 'unspecified').join(', ') || 'random', confidence: r2(A.intent.probabilities.new) });
