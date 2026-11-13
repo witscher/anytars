@@ -294,14 +294,16 @@ function headPath(F){
 
 // ---------- styles ----------
 const STYLES = {
-  comic:   {key:'comic',   label:'Bold comic',  line:'#1b1720', sw:3.4, tinted:false, shade:'hard', bg:'halftone', head:1,   eye:1,    eyeDY:0, eyeDX:18, body:1,   sticker:false,
-            blurb:'Thick ink outlines, flat fills, one hard shadow. The most robust at tiny sizes.'},
+  chibi:   {key:'chibi',   label:'Chibi',       line:'#3a2836', sw:2.8, tinted:false, shade:'hard', bg:'sparkle',  head:1.12, headY:124, eye:1.56, eyeDY:8, eyeDX:20, body:.56, sticker:false,
+            chibi:true, noseSmall:true, noseDY:8, noseScale:.9, mouthDY:1, mouthScale:.8, blush:.38,
+            blurb:'Two-to-one head and body, huge layered eyes, tiny nose and mouth. The most expressive and cutest.'},
   cel:     {key:'cel',     label:'Soft cel',    line:null,      sw:1.7, tinted:true,  shade:'cel',  bg:'circle',   head:1,   eye:1,    eyeDY:0, eyeDX:18, body:1,   sticker:false,
             blurb:'Tinted thin lines, two hard-edged shadow tones and hair highlights. The most illustrated.'},
   flat:    {key:'flat',    label:'Flat',        line:null,      sw:0,   tinted:false, shade:'none', bg:'square',   head:1,   eye:1,    eyeDY:0, eyeDX:18, body:1,   sticker:false,
             blurb:'No outlines, no shading. Clean and UI-friendly, relies on colour contrast.'},
-  sticker: {key:'sticker', label:'Sticker',     line:'#2a2233', sw:2.6, tinted:false, shade:'hard', bg:'none',     head:1.1, eye:1.42, eyeDY:4, eyeDX:19, body:0.8, sticker:true,
-            blurb:'Big head and eyes, die-cut white border. Closest to emoji, most playful.'},
+  sticker: {key:'sticker', label:'Sticker',     line:'#2a2233', sw:2.6, tinted:false, shade:'hard', bg:'none',     head:1.1, headY:120, eye:1.42, eyeDY:4, eyeDX:19, body:0.8, sticker:true,
+            noseSmall:true, noseDY:6, noseScale:1.1, mouthDY:2, mouthScale:.85,
+            blurb:'Slightly enlarged head and eyes, die-cut white border. Closest to emoji.'},
 };
 const lineFor = (S, fill) => S.sw===0 ? null : (S.tinted ? darken(fill,.5) : S.line);
 const strokeAttr = (S, fill, k=1) => { const c = lineFor(S,fill); return c ? ` stroke="${c}" stroke-width="${n1(S.sw*k)}" stroke-linejoin="round" stroke-linecap="round"` : ''; };
@@ -501,15 +503,20 @@ function drawEye(S,t,F,ex,side,color,skin,ink){
   const top = `M${-W},${base.yi} C${n1(-W*.5)},${n1(-Ht+(ex.lidInner||0))} ${n1(W*.5)},${n1(-Ht+(ex.lidOuter||0))} ${W},${base.yo}`;
   const d = top + ` C${n1(W*.5)},${n1(Hb)} ${n1(-W*.5)},${n1(Hb)} ${-W},${base.yi}Z`;
   const id = uid('e');
-  const cy = n1((Hb-Ht)*0.375 + 0.6), r = 4.6*(ex.iris||1);
+  const cy = n1((Hb-Ht)*0.375 + (S.chibi?0.2:0.6)), r = (S.chibi?5.6:4.6)*(ex.iris||1);
   const iris = ex.zombie ? mix(color,'#f4f1d8',.6) : color;
   let s = `<g transform="${tr}"><clipPath id="${id}"><path d="${d}"/></clipPath>`;
   if (ex.zombie) s += `<path d="${ell(0,2,W+3,Hb+3)}" fill="${darken(skin,.35)}" opacity=".55"/>`;
   s += `<path d="${d}" fill="${ex.zombie?'#ece7c4':'#fbfaf7'}"/>`;
   s += `<g clip-path="url(#${id})"><circle cx="0.3" cy="${cy}" r="${n1(r)}" fill="${iris}"/>`;
   if (S.shade!=='none') s += `<circle cx="0.3" cy="${cy}" r="${n1(r)}" fill="none" stroke="${darken(iris,.35)}" stroke-width="1"/>`;
-  s += `<circle cx="0.3" cy="${cy}" r="${ex.zombie?1.1:2.2}" fill="#16121a"/>`;
-  if (!ex.zombie) s += `<circle cx="${n1(0.3+1.7*side)}" cy="${n1(cy-1.7)}" r="1.3" fill="#fff"/>`;
+  if (S.chibi && !ex.zombie){
+    s += `<ellipse cx="0.3" cy="${n1(cy+1.6)}" rx="${n1(r*.78)}" ry="${n1(r*.7)}" fill="${lighten(iris,.28)}"/><path d="M${n1(-r+0.3)},${cy} A${n1(r)},${n1(r)} 0 0,1 ${n1(r+0.3)},${cy}" fill="${darken(iris,.35)}" opacity=".85"/>`;
+    s += `<circle cx="0.3" cy="${n1(+cy+0.4)}" r="1.9" fill="#16121a"/><circle cx="${n1(0.3+1.9*side)}" cy="${n1(cy-2.2)}" r="1.9" fill="#fff"/><circle cx="${n1(0.3-2*side)}" cy="${n1(+cy+2.6)}" r=".9" fill="#fff"/>`;
+  } else {
+    s += `<circle cx="0.3" cy="${cy}" r="${ex.zombie?1.1:2.2}" fill="#16121a"/>`;
+    if (!ex.zombie) s += `<circle cx="${n1(0.3+1.7*side)}" cy="${n1(cy-1.7)}" r="1.3" fill="#fff"/>`;
+  }
   s += `<path d="${top}" fill="none" stroke="#2a1a2a" stroke-opacity=".14" stroke-width="3.2" transform="translate(0,1.2)"/></g>`;
   if (S.sw>0) s += `<path d="${d}" fill="none" stroke="${ink}" stroke-width="${n1(S.sw*0.42/sc)}" stroke-linejoin="round"/>`;
   s += `<path d="${top}" fill="none" stroke="${ink}" stroke-width="${n1(lw)}" stroke-linecap="round"/>`;
@@ -545,6 +552,10 @@ function drawBrow(S,t,F,ex,side,color){
   return `<path d="${d}" fill="${color}" stroke="${color}" stroke-width=".8" stroke-linejoin="round" transform="translate(${n1(p.x+side*dx)},${n1(p.y+dyy)}) scale(${side*sc},${sc}) rotate(${tilt})"/>`;
 }
 
+function starD(R,r){
+  let d=''; for (let i=0;i<10;i++){ const a=-Math.PI/2+i*Math.PI/5, q=i%2?r:R; d += (i?'L':'M')+n1(q*Math.cos(a))+','+n1(q*Math.sin(a)+1.5); }
+  return d+'Z';
+}
 const NOSES = {
   button:  ['M-4,2 Q0,5.5 4,2', 'M-2.5,0.5 l0.1,0.1 M2.5,0.5 l0.1,0.1'],
   broad:   ['M-8.5,-1 Q-10,4.5 -4.5,4.5 Q0,6.5 4.5,4.5 Q10,4.5 8.5,-1'],
@@ -553,9 +564,9 @@ const NOSES = {
   small:   ['M-2.8,2 Q0,3.8 2.8,2'],
 };
 function drawNose(S,t,F,skin){
-  const type = S.key==='sticker' ? 'small' : t.nose.type;
-  const sc = (1 + tv(t,'nose.size')) * (S.key==='sticker'?1.1:1);
-  const y = F.noseY + tv(t,'nose.y') + (S.key==='sticker'?6:0);
+  const type = S.noseSmall ? 'small' : t.nose.type;
+  const sc = (1 + tv(t,'nose.size')) * (S.noseScale||1);
+  const y = F.noseY + tv(t,'nose.y') + (S.noseDY||0);
   const col = darken(skin, S.sw ? .42 : .28);
   const w = S.sw ? Math.max(1.8, S.sw*0.62) : 2.4;
   let s = `<g transform="translate(100,${n1(y)}) scale(${n1(sc*100)/100})">`;
@@ -566,9 +577,9 @@ function drawNose(S,t,F,skin){
 
 function drawMouth(S,t,F,ex,skin,ink,zombie){
   const base = {small:6.5, medium:8.5, wide:11}[t.mouth.width] * F.sx;
-  const sc = (1 + tv(t,'mouth.size')) * (S.key==='sticker' ? .85 : 1);
+  const sc = (1 + tv(t,'mouth.size')) * (S.mouthScale||1);
   const w = base;
-  const y = F.mouthY + tv(t,'mouth.y') + (S.key==='sticker' ? 2 : 0);
+  const y = F.mouthY + tv(t,'mouth.y') + (S.mouthDY||0);
   const mc = mix(darken(skin,.62),'#5a1424',.4), lc = mix(skin,'#b8475a',.38);
   const lw = n1(Math.max(2.1, S.sw*0.78)/sc);
   const line = (d) => `<path d="${d}" fill="none" stroke="${S.sw?ink:mc}" stroke-width="${lw}" stroke-linecap="round" stroke-linejoin="round"/>`;
@@ -611,24 +622,47 @@ function drawGlasses(S,t,F,zombie){
     aviator:{d:'M-11,-8 L12,-8 Q15.5,-7 13.5,2 Q10.5,12 1,11 Q-10,10 -11,0Z', inX:-11, outX:13.5, by:-6, ty:-7},
     half:   {d:'M-12,1.5 L12,1.5 L11,8.5 Q8,11.5 0,11.5 Q-8,11.5 -11,8.5Z', inX:-12, outX:12, by:2.5, ty:2},
     monocle:{d:circ(0,0,12), inX:-12, outX:12, by:0, ty:0},
+    oval:     {d:ell(0,0,13,9.5), inX:-13, outX:13, by:-2, ty:-3},
+    wayfarer: {d:'M-13,-9 L14,-10.5 Q15.5,-10.5 15,-7 L12.5,6.5 Q11.5,9.5 8,9.5 L-9,9.5 Q-12,9.5 -12.5,6.5 L-13.8,-6 Q-14,-9 -13,-9Z', inX:-13.5, outX:15, by:-6, ty:-8, fwK:1.45},
+    browline: {d:'M-12,-8 H12 Q14.5,-8 14,-4.5 Q13,7 6,9 Q0,10 -6,9 Q-13,7 -12.5,-4.5Z', inX:-12.5, outX:14, by:-6, ty:-6, bar:'M-12.8,-7 Q0,-10.5 14.8,-7.5', rimK:.5},
+    hexagon:  {d:'M-12.5,0 L-6.5,-10 L7,-10 L13,0 L7,10 L-6.5,10Z', inX:-12.5, outX:13, by:-3, ty:-4},
+    rimless:  {d:'M-12,-7 Q0,-9 13,-7 Q14,4 9,8 Q0,10 -9,8 Q-13,4 -12,-7Z', inX:-12, outX:13, by:-5, ty:-6, rimK:.3},
+    oversized:{d:ell(0,1.5,15.5,14), inX:-15.5, outX:15.5, by:-3, ty:-5},
+    heart:    {d:'M0,10.5 C-15,0 -14.5,-12.5 -6.5,-11.5 C-3,-11 -1,-8.5 0,-6.5 C1,-8.5 3,-11 6.5,-11.5 C14.5,-12.5 15,0 0,10.5Z', inX:-13, outX:13.5, by:-5, ty:-6},
+    star:     {d:starD(14,6.4), inX:-12.5, outX:12.5, by:-3, ty:-4},
+    shield:   {single:true, d:'M-35,-9.5 Q0,-13 35,-9.5 Q37,6 27,10.5 Q14,12.5 4.5,6 Q0,4 -4.5,6 Q-14,12.5 -27,10.5 Q-37,6 -35,-9.5Z', outX:35, ty:-7},
+    pinceNez: {d:ell(0,0,10.5,9), inX:-10.5, outX:10.5, by:-1, ty:0, noTemples:true, chain:true},
   };
   const L = LENS[g.type];
+  const rimW = fw*(L.rimK||1)*(L.fwK||1);
+  const rimC = L.rimK && L.rimK<1 ? mix(frame,'#c7cbd3',.55) : frame;
   const lens = (p, side) => {
     let s = `<g transform="translate(${n1(p.x)},${n1(p.y)}) scale(${n1(side*gs*100)/100},${n1(gs*100)/100})">`;
     s += `<path d="${L.d}" fill="${g.lens}" fill-opacity="${g.lensAlpha}"/>`;
     s += `<path d="M-6,-2 L-1.5,-6.5" stroke="#fff" stroke-opacity="${g.lensAlpha>.4?.6:.45}" stroke-width="${n1(2/gs)}" stroke-linecap="round"/>`;
     if (zombie && side===1) s += `<path d="M2,-9 L-1,-2 L4,1 L1,8" fill="none" stroke="#fff" stroke-opacity=".8" stroke-width="${n1(1/gs)}"/>`;
-    s += `<path d="${L.d}" fill="none" stroke="${frame}" stroke-width="${n1(fw/gs)}" stroke-linejoin="round"/>`;
+    s += `<path d="${L.d}" fill="none" stroke="${rimC}" stroke-width="${n1(rimW/gs)}" stroke-linejoin="round"/>`;
+    if (L.bar) s += `<path d="${L.bar}" fill="none" stroke="${frame}" stroke-width="${n1(fw*2.1/gs)}" stroke-linecap="round"/>`;
     return s + `</g>`;
   };
+  if (L.single){
+    const c = {x:100, y:(P.y+PL.y)/2};
+    const ex = 35*gs, hx2 = 100 + (F.w-1);
+    return lens(c,1) + `<path d="M${n1(100+ex)},${n1(c.y+L.ty)} L${n1(Math.max(hx2,100+ex+2))},${n1(c.y+L.ty-1)} M${n1(100-ex)},${n1(c.y+L.ty)} L${n1(Math.min(200-hx2,100-ex-2))},${n1(c.y+L.ty-1)}" stroke="${frame}" stroke-width="${fw}" stroke-linecap="round"/>`;
+  }
   if (g.type==='monocle'){
     const p = PL;
     return lens(p,-1) + `<path d="M${n1(p.x-4)},${n1(p.y+12*gs)} Q${n1(p.x-10)},${n1(p.y+44)} ${n1(p.x-28)},196" fill="none" stroke="${frame}" stroke-width="1.6" stroke-dasharray="2.4 1.6"/>`;
   }
   const rIn = P.x + L.inX*gs, lIn = PL.x - L.inX*gs;
   let s = `<path d="M${n1(lIn)},${n1(PL.y+L.by)} Q100,${n1((P.y+PL.y)/2+L.by-4)} ${n1(rIn)},${n1(P.y+L.by)}" fill="none" stroke="${frame}" stroke-width="${fw}" stroke-linecap="round"/>`;
+  if (L.noTemples){
+    s = `<path d="M${n1(lIn)},${n1(PL.y+L.by)} q${n1((rIn-lIn)/4)},-5 ${n1((rIn-lIn)/2)},-1 q${n1((rIn-lIn)/4)},4 ${n1((rIn-lIn)/2)},1" fill="none" stroke="${frame}" stroke-width="${n1(fw*.8)}" stroke-linecap="round"/>`;
+    if (L.chain) s += `<path d="M${n1(PL.x-10*gs)},${n1(PL.y+2)} Q${n1(PL.x-16)},${n1(PL.y+46)} ${n1(PL.x-24)},196" fill="none" stroke="${frame}" stroke-width="1.5" stroke-dasharray="2.4 1.6"/>`;
+    return s + lens(P,1) + lens(PL,-1);
+  }
   if (g.type==='aviator') s += `<path d="M${n1(lIn+1)},${n1(PL.y-8*gs)} L${n1(rIn-1)},${n1(P.y-8*gs)}" stroke="${frame}" stroke-width="${n1(fw*.8)}" stroke-linecap="round"/>`;
-  const hx_ = 100 + (F.w-1)*S.head;
+  const hx_ = 100 + (F.w-1);
   s += `<path d="M${n1(P.x+L.outX*gs)},${n1(P.y+L.ty)} L${n1(Math.max(hx_, P.x+L.outX*gs+2))},${n1(P.y+L.ty-1)} M${n1(PL.x-L.outX*gs)},${n1(PL.y+L.ty)} L${n1(Math.min(200-hx_, PL.x-L.outX*gs-2))},${n1(PL.y+L.ty-1)}" stroke="${frame}" stroke-width="${fw}" stroke-linecap="round"/>`;
   return s + lens(P,1) + lens(PL,-1);
 }
@@ -670,9 +704,9 @@ function drawFacialHair(S,t,F,hair,skin,headClip){
 
 function background(S, bg, festive, zombie){
   let s = '';
-  if (S.bg==='halftone'){
-    const id = uid('p');
-    s += `<rect width="200" height="200" rx="26" fill="${bg}"/><pattern id="${id}" width="7" height="7" patternUnits="userSpaceOnUse"><circle cx="3.5" cy="3.5" r="1.6" fill="${darken(bg,.16)}"/></pattern><circle cx="176" cy="26" r="78" fill="url(#${id})" opacity=".7"/>`;
+  if (S.bg==='sparkle'){
+    const star = (x,y,r) => `<path d="M${x},${y-r} Q${x+r*.18},${y-r*.18} ${x+r},${y} Q${x+r*.18},${y+r*.18} ${x},${y+r} Q${x-r*.18},${y+r*.18} ${x-r},${y} Q${x-r*.18},${y-r*.18} ${x},${y-r}Z" fill="${lighten(bg,.6)}"/>`;
+    s += `<rect width="200" height="200" rx="26" fill="${bg}"/><circle cx="100" cy="104" r="84" fill="${lighten(bg,.2)}"/>` + star(30,38,9) + star(172,64,7) + star(160,24,4.5) + star(24,150,5);
   } else if (S.bg==='circle'){
     s += `<circle cx="100" cy="100" r="100" fill="${bg}"/><circle cx="84" cy="84" r="70" fill="${lighten(bg,.22)}"/>`;
   } else if (S.bg==='none'){
@@ -690,7 +724,7 @@ function background(S, bg, festive, zombie){
 }
 
 // ---------- main renderer ----------
-function render(traits, variant={}, styleKey='comic'){
+function render(traits, variant={}, styleKey='chibi'){
   const S = STYLES[styleKey];
   const t = traits;
   const zombie = variant.transform==='zombie', festive = variant.transform==='festive';
@@ -698,6 +732,7 @@ function render(traits, variant={}, styleKey='comic'){
   let skin=t.skin, hair=t.hair.color, shirt=t.shirt, bg=t.bg, hwColor=t.headwear?.color||'#888';
   if (zombie){ skin=mix(desat(skin,.55),'#8db27a',.5); hair=mix(desat(hair,.4),'#5d5a4c',.35); shirt=mix(desat(shirt,.5),'#5d5a4c',.4); bg=mix(bg,'#38423a',.62); hwColor=desat(hwColor,.4); }
   const F = faceGeom(t.face);
+  if (S.chibi){ F.chinW += 7; F.chinY -= 3; F.jawY -= 2; }
   let hwType = t.headwear?.type||'none';
   if (festive && hwType==='none') hwType = 'partyHat';
   const HW = HEADWEAR[hwType];
@@ -706,7 +741,7 @@ function render(traits, variant={}, styleKey='comic'){
   const browCol = browBase ? darken(browBase,.12) : (hx(hair).reduce((a,b)=>a+b,0) > 560 ? darken(hair,.35) : mix(hair,'#120e12',.25));
   const beardCol = t.facialHairColor ? (zombie ? mix(desat(t.facialHairColor,.4),'#5d5a4c',.35) : t.facialHairColor) : hair;
 
-  const headT = S.head!==1 ? `translate(100,120) scale(${S.head}) translate(-100,-112)` : '';
+  const headT = S.head!==1 ? `translate(100,${S.headY||120}) scale(${S.head}) translate(-100,-112)` : '';
   const bodyT = S.body!==1 ? `translate(100,196) scale(${S.body}) translate(-100,-196)` : '';
   const tiltT = zombie ? 'rotate(-5 100 160)' : '';
   const H = s => `<g transform="${headT} ${tiltT}">${s}</g>`;
@@ -760,7 +795,7 @@ function render(traits, variant={}, styleKey='comic'){
     if (topDef==='curly') inner += `<path d="${topD}" fill="${sh}" transform="translate(1.5,4.5)"/>`;
     if (HW.shadow) inner += `<path d="${smooth(F.mp(HW.shadow))}" fill="${sh}" opacity=".85"/>`;
   }
-  const blush = Math.max(ex.blush||0, S.shade==='cel' ? .18 : 0);
+  const blush = Math.max(ex.blush||0, S.blush || (S.shade==='cel' ? .18 : 0));
   if (blush && !zombie) inner += `<ellipse cx="${n1(100-27*F.sx)}" cy="${F.noseY+4}" rx="7.5" ry="4.2" fill="#ff5d82" opacity="${n1(blush*.42)}"/><ellipse cx="${n1(100+27*F.sx)}" cy="${F.noseY+4}" rx="7.5" ry="4.2" fill="#ff5d82" opacity="${n1(blush*.42)}"/>`;
   face += shape(S, headD, skin, {inner});
   face += drawDetails(S,t,F,skin,headClip);
@@ -803,7 +838,7 @@ function render(traits, variant={}, styleKey='comic'){
     const cc = uid('cc');
     defs += `<clipPath id="${cc}"><circle cx="100" cy="100" r="100"/></clipPath>`;
     content = `<g clip-path="url(#${cc})">${L}</g>`;
-  } else if (S.bg==='halftone'){
+  } else if (S.bg==='sparkle'){
     const cc = uid('cc');
     defs += `<clipPath id="${cc}"><rect width="200" height="200" rx="26"/></clipPath>`;
     content = `<g clip-path="url(#${cc})">${L}</g>`;
@@ -818,7 +853,7 @@ const ENUMS = {
   face:Object.keys(FACES), hairTop:Object.keys(HAIR_TOP), hairBack:Object.keys(HAIR_BACK), eyeShape:Object.keys(EYES),
   lashes:['none','natural','long'], brows:Object.keys(BROWS), nose:Object.keys(NOSES), mouthWidth:['small','medium','wide'],
   lips:['thin','medium','full'], facialHair:['none','stubble','mustache','goatee','full'],
-  glasses:['none','round','rect','cateye','aviator','half','monocle'], headwear:Object.keys(HEADWEAR),
+  glasses:['none','round','rect','cateye','aviator','half','monocle','oval','wayfarer','browline','hexagon','rimless','oversized','heart','star','shield','pinceNez'], headwear:Object.keys(HEADWEAR),
 };
 const DETAILS = ['freckles','wrinkles','mole','vitiligo'];
 const b64u = bytes => btoa(String.fromCharCode(...bytes)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
@@ -899,7 +934,7 @@ const ORIGINAL = JSON.parse(JSON.stringify(CAST));
 // =====================================================================
 // Page
 // =====================================================================
-const state = { style:'comic', person:'david' };
+const state = { style:'chibi', person:'david' };
 try { const s = JSON.parse(localStorage.getItem('anytars-lab')||'{}'); if (STYLES[s.style]) state.style=s.style; if (CAST.find(c=>c.id===s.person)) state.person=s.person; } catch(e){}
 const save = () => { try { localStorage.setItem('anytars-lab', JSON.stringify(state)); } catch(e){} };
 const person = () => CAST.find(c=>c.id===state.person);
@@ -926,7 +961,7 @@ function syncBar(){
 
 function buildHero(){
   const c = CAST[3];
-  $('heroStrip').innerHTML = ['comic','cel','flat','sticker'].map((s,i)=>render(CAST[[3,0,6,4][i]], {expression:['happy','laughing','sincere','surprised'][i]}, s)).join('');
+  $('heroStrip').innerHTML = ['chibi','cel','flat','sticker'].map((s,i)=>render(CAST[[7,0,3,4][i]], {expression:['happy','laughing','sincere','surprised'][i]}, s)).join('');
 }
 
 function buildCompare(){
@@ -966,7 +1001,11 @@ function buildWardrobe(){
   const w = (patch) => { const t = JSON.parse(JSON.stringify(p)); patch(t); return t; };
   const hats = [['None','none'],['Baseball cap','baseballCap'],['Beanie','beanie'],['Witch hat','witchHat'],['Elf cap','elfCap'],['Mushroom','mushroom'],['Jester','jester'],['Devil horns','devilHorns'],['Kippah','kippah'],['Dastar','turban'],['Hijab','hijab'],['Party hat','partyHat']];
   const hatColors = {baseballCap:'#2f6bd8', beanie:'#d8453b', witchHat:'#3b2b5c', elfCap:'#3f9a46', mushroom:'#d93a3a', jester:'#5a3fb0', devilHorns:'#c8232c', kippah:'#2b4c9c', turban:'#d9682b', hijab:'#7a3b69', partyHat:'#3aa7e0'};
-  const glasses = [['None',{type:'none'}],['Round',{type:'round',frame:'#2b2b33',lens:'#ffffff',lensAlpha:.12}],['Rectangular',{type:'rect',frame:'#7a2f2f',lens:'#ffffff',lensAlpha:.12}],['Cat-eye',{type:'cateye',frame:'#1b1b1f',lens:'#ffffff',lensAlpha:.12}],['Aviator',{type:'aviator',frame:'#c0c4cc',lens:'#ffffff',lensAlpha:.12}],['Half-rim',{type:'half',frame:'#c79a2b',lens:'#ffffff',lensAlpha:.12}],['Monocle',{type:'monocle',frame:'#b8892b',lens:'#ffffff',lensAlpha:.12}],['Sunglasses',{type:'aviator',frame:'#1b1b1f',lens:'#1d2229',lensAlpha:.9}],['Rose tint',{type:'round',frame:'#c79a2b',lens:'#e86a8a',lensAlpha:.4}],['Blue mirror',{type:'rect',frame:'#2b2b33',lens:'#3a8fd8',lensAlpha:.75}]];
+  const glasses = [['None',{type:'none'}],['Round',{type:'round',frame:'#2b2b33',lens:'#ffffff',lensAlpha:.12}],['Rectangular',{type:'rect',frame:'#7a2f2f',lens:'#ffffff',lensAlpha:.12}],['Cat-eye',{type:'cateye',frame:'#1b1b1f',lens:'#ffffff',lensAlpha:.12}],['Aviator',{type:'aviator',frame:'#c0c4cc',lens:'#ffffff',lensAlpha:.12}],['Half-rim',{type:'half',frame:'#c79a2b',lens:'#ffffff',lensAlpha:.12}],['Monocle',{type:'monocle',frame:'#b8892b',lens:'#ffffff',lensAlpha:.12}],['Sunglasses',{type:'aviator',frame:'#1b1b1f',lens:'#1d2229',lensAlpha:.9}],['Rose tint',{type:'round',frame:'#c79a2b',lens:'#e86a8a',lensAlpha:.4}],['Blue mirror',{type:'rect',frame:'#2b2b33',lens:'#3a8fd8',lensAlpha:.75}],
+    ['Oval',{type:'oval',frame:'#8a5a3c',lens:'#ffffff',lensAlpha:.12}],['Wayfarer',{type:'wayfarer',frame:'#1b1b1f',lens:'#ffffff',lensAlpha:.12}],['Wayfarer shades',{type:'wayfarer',frame:'#1b1b1f',lens:'#1d2229',lensAlpha:.9}],
+    ['Browline',{type:'browline',frame:'#3a2a22',lens:'#ffffff',lensAlpha:.12}],['Hexagon',{type:'hexagon',frame:'#c79a2b',lens:'#ffffff',lensAlpha:.12}],['Rimless',{type:'rimless',frame:'#9aa0aa',lens:'#ffffff',lensAlpha:.14}],
+    ['Oversized',{type:'oversized',frame:'#d0457a',lens:'#ffffff',lensAlpha:.12}],['Heart shades',{type:'heart',frame:'#d0457a',lens:'#ff6b9a',lensAlpha:.6}],['Star party',{type:'star',frame:'#e0a23a',lens:'#ffd23f',lensAlpha:.5}],
+    ['Shield visor',{type:'shield',frame:'#2b2b33',lens:'#6a5cff',lensAlpha:.7}],['Pince-nez',{type:'pinceNez',frame:'#b8892b',lens:'#ffffff',lensAlpha:.12}]];
   const skins = ['#fbe3d3','#f2cfae','#e2ad84','#d0a27a','#c98d5b','#a8703f','#6b4128','#4a2b1a'];
   const hairs = [['Bald','none','none'],['Buzz','buzz','none'],['Short','short','none'],['Receding','receding','none'],['Undercut','undercut','none'],['Curly','curly','none'],['Fringe + bob','fringe','bob'],['Long','centerPart','long'],['Afro','afroTop','afro']];
   const shapes = Object.keys(FACES);
