@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Anytars Avatar Maker</title>
+<meta name="description" content="Make your avatar: pick a character or roll a random one, customize every part, and get it in five styles and ten expressions.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: sticky preview column on the left, editor with part tabs on the right; stacks on phones. */
+:root{
+  --bg:#eef0f5; --surface:#ffffff; --surface-2:#f5f6fa; --ink:#1b1a22; --muted:#5b5e6e; --line:#d9dce6;
+  --accent:#d6246e; --accent-ink:#ffffff; --accent-soft:#fbe3ee; --focus:#2f6bff; --ok:#1f8a5b;
+  --f-display:"Bricolage Grotesque","Avenir Next","Segoe UI",system-ui,sans-serif;
+  --f-body:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#121319; --surface:#1b1c25; --surface-2:#23242f; --ink:#ecebf3; --muted:#a4a6b8; --line:#2f3140;
+  --accent:#ff5c95; --accent-ink:#1b0a12; --accent-soft:#3a1a29; --focus:#7aa2ff; --ok:#4cc38a; color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#121319; --surface:#1b1c25; --surface-2:#23242f; --ink:#ecebf3; --muted:#a4a6b8; --line:#2f3140;
+  --accent:#ff5c95; --accent-ink:#1b0a12; --accent-soft:#3a1a29; --focus:#7aa2ff; --ok:#4cc38a; color-scheme:dark }
+*{box-sizing:border-box}
+html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 var(--f-body);
+  padding-left:max(16px, env(safe-area-inset-left,0px));padding-right:max(16px, env(safe-area-inset-right,0px));padding-block:0 48px}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.wrap{max-width:1240px;margin:0 auto}
+h1,h2,h3{font-family:var(--f-display);margin:0;letter-spacing:-.01em;text-wrap:balance}
+
+.top{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding-block:18px 14px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit}
+.brand svg{width:34px;height:34px;display:block}
+.brand b{font:800 1.5rem var(--f-display);letter-spacing:-.02em}
+.top nav{margin-left:auto;display:flex;gap:6px;align-items:center}
+.link{color:var(--muted);text-decoration:none;font-size:.9rem;padding:6px 10px;border-radius:8px}
+.link:hover{color:var(--ink);background:var(--surface)}
+.ghost{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:.86rem;cursor:pointer}
+
+/* start strip */
+.start{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:14px;display:grid;gap:10px}
+.start-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.start-h h2{font-size:1.15rem}
+.start-h p{margin:0;color:var(--muted);font-size:.88rem}
+.presets{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}
+.preset{flex:0 0 auto;border:1px solid var(--line);background:var(--surface-2);border-radius:14px;padding:6px 6px 4px;cursor:pointer;display:grid;gap:2px;justify-items:center;width:84px}
+.preset svg{width:68px;height:68px;display:block}
+.preset span{font-size:.76rem;color:var(--muted)}
+.preset[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.preset.dice{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.preset.dice .die{width:68px;height:68px;display:grid;place-items:center;font:800 2.2rem var(--f-display)}
+.preset.dice span{color:var(--accent-ink);font-weight:600}
+
+main.grid{display:grid;grid-template-columns:minmax(300px,420px) minmax(0,1fr);gap:18px;margin-top:16px;align-items:start}
+@media (max-width:900px){ main.grid{grid-template-columns:1fr} }
+
+/* preview */
+.preview{position:sticky;top:max(12px, env(safe-area-inset-top,0px));display:grid;gap:12px}
+@media (max-width:900px){ .preview{position:static} }
+.stage{background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:14px;display:grid;gap:12px}
+.big{width:100%;max-width:100%;aspect-ratio:1}
+.big svg{width:100%;height:100%;display:block}
+.styles{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.sbtn{border:1px solid var(--line);background:var(--surface-2);border-radius:12px;padding:4px 4px 3px;cursor:pointer;display:grid;gap:2px;justify-items:center}
+.sbtn svg{width:100%;height:auto;display:block}
+.sbtn span{font-size:.7rem;color:var(--muted)}
+.sbtn[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.label{font:600 .7rem var(--f-body);text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+.variants{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.vbtn{border:1px solid transparent;background:none;border-radius:12px;padding:2px;cursor:pointer;display:grid;gap:1px;justify-items:center}
+.vbtn svg{width:100%;height:auto;display:block}
+.vbtn span{font-size:.66rem;color:var(--muted)}
+.vbtn[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+.btn{border:1px solid var(--line);background:var(--surface-2);border-radius:10px;padding:8px 12px;font-size:.88rem;font-weight:500;cursor:pointer}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.code{display:grid;gap:6px}
+.codebox{font:500 .76rem var(--f-mono);word-break:break-all;background:var(--surface-2);border:1px dashed var(--line);border-radius:10px;padding:8px 10px;user-select:all}
+.loadrow{display:flex;gap:6px}
+.loadrow input{flex:1;min-width:0;font:500 .8rem var(--f-mono);border:1px solid var(--line);border-radius:10px;padding:7px 10px;background:var(--surface);color:var(--ink)}
+.msg{font-size:.82rem;color:var(--ok);min-height:1.2em}
+.msg.err{color:var(--accent)}
+
+/* editor */
+.editor{background:var(--surface);border:1px solid var(--line);border-radius:22px;overflow:hidden}
+.tabs{display:flex;gap:4px;overflow-x:auto;padding:10px;border-bottom:1px solid var(--line);background:var(--surface-2);scrollbar-width:thin}
+.tab{flex:0 0 auto;border:0;background:none;border-radius:999px;padding:7px 13px;font-size:.88rem;font-weight:500;cursor:pointer;color:var(--muted)}
+.tab[aria-selected="true"]{background:var(--ink);color:var(--bg)}
+.panel{padding:16px;display:grid;gap:20px}
+.field{display:grid;gap:8px}
+.field h3{font-size:.98rem}
+.field .sub{font-size:.8rem;color:var(--muted);font-weight:400;font-family:var(--f-body)}
+.thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px}
+.thumb{border:1px solid var(--line);background:var(--surface-2);border-radius:14px;padding:4px 4px 3px;cursor:pointer;display:grid;gap:1px;justify-items:center}
+.thumb svg{width:100%;height:auto;display:block}
+.thumb span{font-size:.72rem;color:var(--muted);text-align:center;line-height:1.2}
+.thumb[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:var(--surface-2);border-radius:999px;padding:5px 12px;font-size:.84rem;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.swatches{display:flex;flex-wrap:wrap;gap:7px;align-items:center}
+.sw{width:30px;height:30px;border-radius:50%;border:2px solid var(--surface);box-shadow:0 0 0 1px var(--line);cursor:pointer;padding:0}
+.sw[aria-pressed="true"]{box-shadow:0 0 0 2px var(--accent)}
+.custom{display:inline-flex;align-items:center;gap:6px;font-size:.8rem;color:var(--muted)}
+.custom input{width:34px;height:30px;border:1px solid var(--line);border-radius:8px;padding:0;background:none;cursor:pointer}
+.sliders{display:grid;gap:8px}
+.srow{display:grid;grid-template-columns:90px minmax(0,1fr) 34px;gap:10px;align-items:center;font-size:.86rem}
+.srow input{width:100%;accent-color:var(--accent)}
+.srow output{font:500 .8rem var(--f-mono);text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
+.toggle{display:inline-flex;align-items:center;gap:8px;font-size:.88rem;cursor:pointer}
+.toggle input{accent-color:var(--accent);width:16px;height:16px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:560px){ .two{grid-template-columns:1fr} .styles{grid-template-columns:repeat(5,minmax(0,1fr))} }
+footer{margin-top:28px;color:var(--muted);font-size:.84rem;display:flex;gap:14px;flex-wrap:wrap}
+footer a{color:inherit}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="/" aria-label="anytars home">
+      <svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#d6246e"/><circle cx="32" cy="30" r="17" fill="#f2cfae"/><path d="M15 28 Q16 11 32 11 Q48 11 49 28 Q42 19 32 20 Q22 19 15 28Z" fill="#1d1a1f"/><circle cx="26" cy="31" r="2.6" fill="#1d1a1f"/><circle cx="38" cy="31" r="2.6" fill="#1d1a1f"/><path d="M26 38 Q32 43 38 38" fill="none" stroke="#1d1a1f" stroke-width="2.4" stroke-linecap="round"/></svg>
+      <b>anytars</b>
+    </a>
+    <nav>
+      <a class="link" href="/lab/">Style lab</a>
+      <button class="ghost" id="themeBtn" type="button">Dark</button>
+    </nav>
+  </header>
+
+  <section class="start" aria-labelledby="startH">
+    <div class="start-h"><h2 id="startH">Start from a character or roll the dice</h2><p>Then change anything you like. Your avatar is saved in this browser and in the link.</p></div>
+    <div class="presets" id="presets"></div>
+  </section>
+
+  <main class="grid">
+    <aside class="preview" aria-label="Preview">
+      <div class="stage">
+        <div class="big" id="big" role="img" aria-label="Your avatar"></div>
+        <div><div class="label">Style</div><div class="styles" id="styles"></div></div>
+        <div><div class="label">Versions</div><div class="variants" id="variants"></div></div>
+        <div class="actions">
+          <button class="btn primary" id="dlPng" type="button">Download PNG</button>
+          <button class="btn" id="dlSvg" type="button">Download SVG</button>
+          <button class="btn" id="copyLink" type="button">Copy link</button>
+        </div>
+        <div class="code">
+          <div class="label">Avatar code</div>
+          <div class="codebox" id="code"></div>
+          <div class="loadrow"><input id="loadIn" type="text" placeholder="Paste a code (v1.…)" aria-label="Avatar code to load" spellcheck="false" autocomplete="off"><button class="btn" id="loadBtn" type="button">Load</button></div>
+          <div class="msg" id="msg" aria-live="polite"></div>
+        </div>
+      </div>
+    </aside>
+
+    <section class="editor" aria-label="Customize">
+      <div class="tabs" role="tablist" id="tabs"></div>
+      <div class="panel" id="panel" role="tabpanel"></div>
+    </section>
+  </main>
+
+  <footer>
+    <span>anytars is an open-source avatar library in progress.</span>
+    <a href="/lab/">Compare styles in the lab</a>
+    <a href="https://github.com/witscher/anytars">Source</a>
+  </footer>
+</div>
+
+<script src="/anytars.js"></script>
+<script>
+"use strict";
+// ---------- palettes ----------
+const PAL = {
+  skin: ['#fbe3d3','#f5d6c4','#f2cfae','#efc2a4','#e2ad84','#d0a27a','#c98d5b','#a8703f','#8a5530','#6b4128','#4a2b1a'],
+  hair: ['#1d1a1f','#2b1d16','#4a3222','#6e5038','#8a6440','#cfac72','#e6cf98','#b5441f','#d06a2c','#d4cfc8','#f4f1ec','#3d6fd8','#d65a9c','#4caf7a','#7b4fc9'],
+  eyes: ['#2e1c12','#5b3b22','#8a6a2f','#3f8f5a','#4c86c9','#7a93a8','#6f8a7e','#a77a2e','#6a4a9a'],
+  frame:['#16161a','#2b2b33','#7a2f2f','#8a5a3c','#c79a2b','#c0c4cc','#d0457a','#2f6bd8'],
+  lens: ['#ffffff','#26303c','#1d2229','#e86a8a','#e7a33a','#3a8fd8','#6a5cff','#7bc96f'],
+  cloth:['#202027','#3a3f4a','#f0ede6','#e3554a','#d9682b','#e8c35a','#6b8f3a','#2d7d6e','#3d5a80','#2e4a8c','#7a3b69','#b88d6c','#d6246e'],
+  bg:   ['#cfe0ee','#bfe0f2','#cde6e1','#d6e8c4','#f3d27a','#ffd9b0','#ffc8b8','#f2c6d4','#e3d9ef','#e6e7ec','#2b2d3a'],
+};
+const LABEL = s => s.replace(/([A-Z])/g,' $1').replace(/^./, c=>c.toUpperCase());
+const NICE = {
+  afroTop:'Afro', centerPart:'Long, centre part', baseballCap:'Baseball cap', witchHat:'Witch hat', elfCap:'Elf cap', devilHorns:'Devil horns',
+  turban:'Dastar', partyHat:'Party hat', pinceNez:'Pince-nez', cateye:'Cat-eye', rect:'Rectangular', half:'Half-rim', none:'None', fringe:'Fringe',
+};
+const nice = v => NICE[v] || LABEL(v);
+
+// ---------- state ----------
+const clone = o => JSON.parse(JSON.stringify(o));
+const strip = c => { const t = clone(c); delete t.id; delete t.name; delete t.blurb; return t; };
+let t = null, style = 'chibi', variant = {expression:'happy'}, tab = 'face', presetId = null;
+
+function load(){
+  const h = decodeURIComponent(location.hash.slice(1));
+  if (h.startsWith('v1.')) { try { t = decode(h); return; } catch(e){} }
+  try { const s = JSON.parse(localStorage.getItem('anytars-maker')||'null'); if (s && s.t) { t = s.t; if (STYLES[s.style]) style = s.style; presetId = s.presetId||null; return; } } catch(e){}
+  t = randomTraits();
+}
+let saveTimer = 0;
+function persist(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    try { localStorage.setItem('anytars-maker', JSON.stringify({t, style, presetId})); } catch(e){}
+    try { history.replaceState(null, '', '#' + encode(t)); } catch(e){}
+  }, 250);
+}
+
+// ---------- random ----------
+const pick = a => a[Math.floor(Math.random()*a.length)];
+const chance = p => Math.random() < p;
+const smallStep = () => chance(.55) ? 0 : pick([-1,1,-1,1,-2,2]);
+function randomTraits(){
+  const hairColor = chance(.85) ? pick(PAL.hair.slice(0,11)) : pick(PAL.hair.slice(11));
+  const eye = pick(PAL.eyes);
+  const top = pick(['short','short','undercut','fringe','centerPart','afroTop','buzz','curly','receding','none']);
+  const back = top==='centerPart' ? pick(['long','long','bob']) : top==='afroTop' ? 'afro' : top==='fringe' ? pick(['bob','long','none']) : chance(.15) ? pick(['long','bob']) : 'none';
+  const glassesType = chance(.55) ? 'none' : pick(ENUMS.glasses.filter(g=>g!=='none'));
+  const shades = chance(.25);
+  const hw = chance(.6) ? 'none' : pick(ENUMS.headwear.filter(h=>h!=='none'));
+  const r = {
+    skin: pick(PAL.skin), face: pick(ENUMS.face),
+    hair: {top, back, color: hairColor},
+    eyes: {shape: pick(ENUMS.eyeShape), left: eye, right: chance(.06) ? pick(PAL.eyes) : eye, lashes: pick(ENUMS.lashes)},
+    brows: {type: pick(ENUMS.brows)}, nose: {type: pick(ENUMS.nose.filter(n=>n!=='anime'))},
+    mouth: {width: pick(ENUMS.mouthWidth), lips: pick(ENUMS.lips)},
+    facialHair: chance(.65) ? 'none' : pick(ENUMS.facialHair.filter(f=>f!=='none')),
+    details: ['freckles','wrinkles','mole','vitiligo'].filter(() => chance(.12)),
+    glasses: glassesType==='none' ? {type:'none'} : {type:glassesType, frame:pick(PAL.frame), lens: shades ? pick(PAL.lens.slice(1)) : '#ffffff', lensAlpha: shades ? pick([.4,.6,.85,.9]) : .12},
+    headwear: {type: hw, color: pick(PAL.cloth.slice(3))},
+    shirt: pick(PAL.cloth), bg: pick(PAL.bg.slice(0,10)),
+  };
+  TUNE.forEach(x => { const v = smallStep(); if (v) setK(r, x.key, Math.max(x.min, Math.min(x.max, v))); });
+  return r;
+}
+
+// ---------- rendering helpers ----------
+const $ = id => document.getElementById(id);
+const svg = (traits, v, s) => render(traits, v || {expression:'neutral'}, s || style);
+const variantName = v => v.transform || v.expression;
+const withK = (path, val) => { const c = clone(t); setValueOn(c, path, val); return c; };
+function delPath(o, k){ const ps=k.split('.'); let a=o; for (const p of ps.slice(0,-1)) { a = a?.[p]; if (!a) return; } delete a[ps.at(-1)]; }
+
+function drawPresets(){
+  let h = `<button class="preset dice" type="button" id="dice"><div class="die" aria-hidden="true">⚄</div><span>Random</span></button>`;
+  h += CAST.map(c => `<button class="preset" type="button" data-preset="${c.id}" aria-pressed="${presetId===c.id}">${render(c,{expression:'happy'},style)}<span>${c.name}</span></button>`).join('');
+  $('presets').innerHTML = h;
+}
+function drawPreview(){
+  $('big').innerHTML = svg(t, variant);
+  $('styles').innerHTML = Object.values(STYLES).map(S => `<button class="sbtn" type="button" data-style="${S.key}" aria-pressed="${S.key===style}">${render(t,{expression:'neutral'},S.key)}<span>${S.label}</span></button>`).join('');
+  $('variants').innerHTML = VARIANTS.map(v => { const n = variantName(v); return `<button class="vbtn" type="button" data-variant="${n}" aria-pressed="${n===variantName(variant)}" title="${variantLabel(v)}">${svg(t, v)}<span>${variantLabel(v)}</span></button>`; }).join('');
+  $('code').textContent = encode(t);
+}
+
+// ---------- editor panels ----------
+const TABS = [['face','Face'],['hair','Hair'],['eyes','Eyes'],['brows','Brows'],['nose','Nose & mouth'],['beard','Beard'],['glasses','Glasses'],['headwear','Headwear'],['extras','Details'],['colors','Clothes & background']];
+function thumbs(path, values, labels, def){
+  const cur = getK(t, path) ?? def;
+  return `<div class="thumbs">${values.map((v,i) => `<button class="thumb" type="button" data-set="${path}" data-val='${JSON.stringify(v)}' aria-pressed="${JSON.stringify(cur)===JSON.stringify(v)}">${svg(withK(path, v))}<span>${labels ? labels[i] : nice(String(v))}</span></button>`).join('')}</div>`;
+}
+function chips(path, values, labels){
+  const cur = getK(t, path);
+  return `<div class="chips">${values.map((v,i) => `<button class="chip" type="button" data-set="${path}" data-val='${JSON.stringify(v)}' aria-pressed="${cur===v}">${labels ? labels[i] : nice(String(v))}</button>`).join('')}</div>`;
+}
+function swatches(path, pal, fallback){
+  const cur = (getK(t, path) || fallback || '').toLowerCase();
+  const id = 'c-' + path.replace(/\./g,'-');
+  return `<div class="swatches">${pal.map(c => `<button class="sw" type="button" style="background:${c}" data-set="${path}" data-val='"${c}"' aria-pressed="${cur===c}" aria-label="Colour ${c}"></button>`).join('')}
+    <label class="custom" for="${id}"><input type="color" id="${id}" data-color="${path}" value="${/^#[0-9a-f]{6}$/i.test(cur)?cur:'#888888'}"> Custom</label></div>`;
+}
+function sliders(group){
+  return `<div class="sliders">${TUNE.filter(x=>x.group===group).map(x => { const v = getK(t,x.key)||0, id='s-'+x.key.replace('.','-');
+    return `<label class="srow" for="${id}"><span>${x.label}</span><input type="range" id="${id}" min="${x.min}" max="${x.max}" step="1" value="${v}" data-slide="${x.key}"><output id="${id}-o">${v>0?'+'+v:v}</output></label>`; }).join('')}</div>`;
+}
+const field = (title, body, sub) => `<div class="field"><h3>${title}${sub?` <span class="sub">${sub}</span>`:''}</h3>${body}</div>`;
+
+function drawPanel(){
+  let h = '';
+  switch(tab){
+    case 'face':
+      h += field('Face shape', thumbs('face', ENUMS.face));
+      h += field('Skin tone', swatches('skin', PAL.skin));
+      break;
+    case 'hair':
+      h += field('Top', thumbs('hair.top', ENUMS.hairTop, ENUMS.hairTop.map(v => v==='none'?'Bald':nice(v))));
+      h += field('Back and length', thumbs('hair.back', ENUMS.hairBack, ENUMS.hairBack.map(v => v==='none'?'Short':nice(v))));
+      h += field('Hair colour', swatches('hair.color', PAL.hair));
+      break;
+    case 'eyes': {
+      const het = t.eyes.left !== t.eyes.right;
+      h += field('Eye style', thumbs('eyes.render', EYE_RENDER, EYE_RENDER.map(m=>EYE_RENDER_LABEL[m].replace(/^#\d /,'')), 'auto'), 'how eyes are drawn');
+      h += field('Shape', thumbs('eyes.shape', ENUMS.eyeShape));
+      h += field('Eye colour', `<label class="toggle"><input type="checkbox" id="hetero" ${het?'checked':''}> Two different colours</label>` +
+        (het ? `<div class="two"><div class="field"><span class="sub">Left</span>${swatches('eyes.left', PAL.eyes)}</div><div class="field"><span class="sub">Right</span>${swatches('eyes.right', PAL.eyes)}</div></div>` : swatches('eyes.both', PAL.eyes, t.eyes.left)));
+      h += field('Lashes', chips('eyes.lashes', ENUMS.lashes));
+      h += field('Position and size', sliders('Eyes'));
+      break; }
+    case 'brows':
+      h += field('Shape', thumbs('brows.type', ENUMS.brows));
+      h += field('Colour', swatches('brows.color', PAL.hair, t.hair.color), 'defaults to hair colour');
+      h += field('Position', sliders('Brows'));
+      break;
+    case 'nose':
+      h += field('Nose', thumbs('nose.type', ENUMS.nose.filter(n=>n!=='anime')));
+      h += field('Nose position', sliders('Nose'));
+      h += field('Mouth width', chips('mouth.width', ENUMS.mouthWidth));
+      h += field('Lips', chips('mouth.lips', ENUMS.lips));
+      h += field('Mouth position', sliders('Mouth'));
+      break;
+    case 'beard':
+      h += field('Facial hair', thumbs('facialHair', ENUMS.facialHair));
+      h += field('Colour', swatches('facialHairColor', PAL.hair, t.hair.color), 'defaults to hair colour');
+      break;
+    case 'glasses': {
+      const g = t.glasses || {type:'none'};
+      h += field('Frame', thumbs('glasses.type', ENUMS.glasses));
+      if (g.type !== 'none'){
+        h += field('Frame colour', swatches('glasses.frame', PAL.frame));
+        h += field('Lens colour', swatches('glasses.lens', PAL.lens));
+        const a = Math.round((g.lensAlpha ?? .12)*100);
+        h += field('Lens tint', `<label class="srow" for="tint"><span>Clear to dark</span><input type="range" id="tint" min="0" max="95" step="5" value="${a}" data-tint="1"><output id="tint-o">${a}%</output></label>`);
+      }
+      break; }
+    case 'headwear':
+      h += field('Headwear', thumbs('headwear.type', ENUMS.headwear));
+      if ((t.headwear?.type||'none') !== 'none') h += field('Colour', swatches('headwear.color', PAL.cloth));
+      break;
+    case 'extras':
+      h += field('Face details', `<div class="chips">${['freckles','wrinkles','mole','vitiligo'].map(d => `<button class="chip" type="button" data-detail="${d}" aria-pressed="${(t.details||[]).includes(d)}">${nice(d)}</button>`).join('')}</div>`);
+      break;
+    case 'colors':
+      h += field('Top', swatches('shirt', PAL.cloth));
+      h += field('Background', swatches('bg', PAL.bg));
+      break;
+  }
+  $('panel').innerHTML = h;
+}
+function drawTabs(){
+  $('tabs').innerHTML = TABS.map(([k,l]) => `<button class="tab" type="button" role="tab" data-tab="${k}" aria-selected="${k===tab}">${l}</button>`).join('');
+}
+function redraw(opts={}){
+  drawPreview();
+  if (!opts.keepPanel) drawPanel();
+  if (opts.presets) drawPresets();
+  persist();
+}
+
+// ---------- events ----------
+function setValueOn(o, path, val){
+  if (path === 'eyes.both'){ o.eyes.left = val; o.eyes.right = val; }
+  else if (path === 'eyes.render' && val === 'auto') delPath(o, 'eyes.render');
+  else if (path === 'glasses.type'){
+    o.glasses = o.glasses || {};
+    if (!o.glasses.frame) Object.assign(o.glasses, {frame:'#16161a', lens:'#ffffff', lensAlpha:.12});
+    o.glasses.type = val;
+  }
+  else if (path === 'headwear.type'){ o.headwear = o.headwear || {}; o.headwear.type = val; if (!o.headwear.color) o.headwear.color = '#2f6bd8'; }
+  else setK(o, path, val);
+}
+function setValue(path, val){ setValueOn(t, path, val); presetId = null; }
+document.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.id === 'dice'){ t = randomTraits(); presetId = null; variant = {expression:'happy'}; redraw({presets:true}); return; }
+  if (b.dataset.preset){ t = strip(CAST.find(c=>c.id===b.dataset.preset)); presetId = b.dataset.preset; redraw({presets:true}); return; }
+  if (b.dataset.style){ style = b.dataset.style; redraw({presets:true}); return; }
+  if (b.dataset.variant){ const n = b.dataset.variant; variant = (n==='zombie'||n==='festive') ? {transform:n} : {expression:n}; drawPreview(); return; }
+  if (b.dataset.tab){ tab = b.dataset.tab; drawTabs(); drawPanel(); return; }
+  if (b.dataset.set){ setValue(b.dataset.set, JSON.parse(b.dataset.val)); redraw({presets:true}); return; }
+  if (b.dataset.detail){ const d = b.dataset.detail; t.details = t.details || []; t.details = t.details.includes(d) ? t.details.filter(x=>x!==d) : [...t.details, d]; presetId=null; redraw(); return; }
+});
+document.addEventListener('input', e => {
+  const el = e.target;
+  if (el.dataset.slide){ const v = +el.value; setK(t, el.dataset.slide, v); $(el.id+'-o').textContent = v>0?'+'+v:v; presetId=null; redraw({keepPanel:true}); }
+  else if (el.dataset.tint){ t.glasses.lensAlpha = +el.value/100; $('tint-o').textContent = el.value+'%'; redraw({keepPanel:true}); }
+  else if (el.dataset.color){ setValue(el.dataset.color, el.value); redraw({keepPanel:true}); }
+});
+document.addEventListener('change', e => {
+  const el = e.target;
+  if (el.id === 'hetero'){ if (!el.checked) t.eyes.right = t.eyes.left; else if (t.eyes.left === t.eyes.right) t.eyes.right = PAL.eyes.find(c=>c!==t.eyes.left); redraw(); }
+  else if (el.dataset.slide || el.dataset.color || el.dataset.tint) { drawPanel(); drawPresets(); }
+});
+
+// ---------- export ----------
+const flash = (m, err) => { const el=$('msg'); el.textContent = m; el.className = 'msg' + (err?' err':''); clearTimeout(flash.t); flash.t = setTimeout(()=>{ el.textContent=''; }, 3500); };
+function fileBase(){ return `anytars-${style}-${variantName(variant)}`; }
+function download(blob, name){ const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 1000); }
+$('dlSvg').addEventListener('click', () => {
+  download(new Blob([svg(t, variant).replace('<svg ', '<svg width="512" height="512" ')], {type:'image/svg+xml'}), fileBase()+'.svg');
+});
+$('dlPng').addEventListener('click', () => {
+  const img = new Image(), size = 1024;
+  img.onload = () => { const c = document.createElement('canvas'); c.width = c.height = size; c.getContext('2d').drawImage(img, 0, 0, size, size); c.toBlob(b => download(b, fileBase()+'.png'), 'image/png'); };
+  img.onerror = () => flash('Could not create the PNG in this browser. Try SVG.', true);
+  img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg(t, variant).replace('<svg ', `<svg width="${size}" height="${size}" `));
+});
+$('copyLink').addEventListener('click', () => {
+  const url = location.origin + '/#' + encode(t);
+  navigator.clipboard.writeText(url).then(() => flash('Link copied'), () => flash(url));
+});
+function loadCode(){
+  const v = $('loadIn').value.trim().replace(/^.*#/, '');
+  if (!v.startsWith('v1.')) { flash('Codes start with v1.', true); return; }
+  try { t = decode(v); presetId = null; $('loadIn').value=''; redraw({presets:true}); flash('Avatar loaded'); }
+  catch(e){ flash('That code could not be read. Check that it was copied completely.', true); }
+}
+$('loadBtn').addEventListener('click', loadCode);
+$('loadIn').addEventListener('keydown', e => { if (e.key === 'Enter') loadCode(); });
+window.addEventListener('hashchange', () => { const h = decodeURIComponent(location.hash.slice(1)); if (h.startsWith('v1.') && h !== encode(t)) { try { t = decode(h); redraw({presets:true}); } catch(e){} } });
+
+// ---------- theme ----------
+const isDark = () => { const a = document.documentElement.getAttribute('data-theme'); return a ? a==='dark' : matchMedia('(prefers-color-scheme: dark)').matches; };
+const syncTheme = () => { $('themeBtn').textContent = isDark() ? 'Light' : 'Dark'; };
+$('themeBtn').addEventListener('click', () => { document.documentElement.setAttribute('data-theme', isDark() ? 'light' : 'dark'); syncTheme(); });
+
+load(); drawTabs(); drawPresets(); redraw(); syncTheme();
+</script>
+</body>
+</html>
