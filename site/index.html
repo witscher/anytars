@@ -54,6 +54,15 @@ h1,h2,h3{font-family:var(--f-display);margin:0;letter-spacing:-.01em;text-wrap:b
 .preset span{font-size:.76rem;color:var(--muted)}
 .preset[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
 .preset.dice{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.mine{margin-top:12px}
+.item{position:relative;flex:0 0 auto}
+.item .preset{width:84px}
+.item .mini{position:absolute;top:4px;right:4px;width:24px;height:24px;border-radius:50%;border:1px solid var(--line);background:var(--surface);cursor:pointer;display:grid;place-items:center;font-size:.85rem;line-height:1;padding:0}
+.item .mini[aria-pressed="true"]{color:var(--accent);border-color:var(--accent)}
+.item .mini.rm{color:var(--muted)}
+.rowlabel{display:flex;align-items:center;gap:10px}
+.linkbtn{border:0;background:none;color:var(--muted);font-size:.78rem;text-decoration:underline;cursor:pointer;padding:0}
+#favBtn[aria-pressed="true"]{color:var(--accent);border-color:var(--accent)}
 .preset.dice .die{width:68px;height:68px;display:grid;place-items:center;font:800 2.2rem var(--f-display)}
 .preset.dice span{color:var(--accent-ink);font-weight:600}
 
@@ -137,8 +146,14 @@ footer a{color:inherit}
   </header>
 
   <section class="start" aria-labelledby="startH">
-    <div class="start-h"><h2 id="startH">Start from a character or roll the dice</h2><p>Then change anything you like. Your avatar is saved in this browser and in the link.</p></div>
+    <div class="start-h"><h2 id="startH">Start from a character or roll the dice</h2><p>Then change anything you like. Your work is saved in this browser and in the link.</p></div>
     <div class="presets" id="presets"></div>
+  </section>
+
+  <section class="start mine" id="mine" aria-labelledby="mineH" hidden>
+    <div class="start-h"><h2 id="mineH">Your avatars</h2><p>Kept in this browser. Star the ones you want to keep; recent ones are saved automatically as you edit.</p></div>
+    <div id="favWrap" hidden><div class="label">Favourites</div><div class="presets" id="favs"></div></div>
+    <div id="recWrap" hidden><div class="rowlabel"><span class="label">Recent</span><button class="linkbtn" type="button" id="clearRecent">Clear recent</button></div><div class="presets" id="recent"></div></div>
   </section>
 
   <main class="grid">
@@ -155,6 +170,7 @@ footer a{color:inherit}
           <button class="btn primary" id="dlPng" type="button">Download PNG</button>
           <button class="btn" id="dlSvg" type="button">Download SVG</button>
           <button class="btn" id="copyLink" type="button">Copy link</button>
+          <button class="btn" id="favBtn" type="button" aria-pressed="false">☆ Favourite</button>
         </div>
         <div class="code">
           <div class="label">Avatar code</div>
@@ -212,9 +228,53 @@ function load(){
   try { const s = JSON.parse(localStorage.getItem('anytars-maker')||'null'); if (s && s.bg && BG_SHAPES.includes(s.bg.shape)) bgCfg = {shape:s.bg.shape, clear:!!s.bg.clear}; if (s && s.t) { t = s.t; if (STYLES[s.style]) style = s.style; presetId = s.presetId||null; return; } } catch(e){}
   t = randomTraits();
 }
-let saveTimer = 0;
+// ---------- history and favourites (localStorage) ----------
+const LIB_KEY = 'anytars-maker-library', HISTORY_MAX = 40;
+let lib = { history: [], favs: [] };
+try { const l = JSON.parse(localStorage.getItem(LIB_KEY)||'null'); if (l && Array.isArray(l.history) && Array.isArray(l.favs)) lib = l; } catch(e){}
+const saveLib = () => { try { localStorage.setItem(LIB_KEY, JSON.stringify(lib)); } catch(e){} };
+const isFav = code => lib.favs.some(f => f.code === code);
+function pushHistory(){
+  if (!t) return;
+  const code = encode(t);
+  if (lib.history[0]?.code === code) return;
+  lib.history = [{code, ts: Date.now()}, ...lib.history.filter(h => h.code !== code)].slice(0, HISTORY_MAX);
+  saveLib(); drawLibrary();
+}
+function toggleFav(code){
+  if (isFav(code)) lib.favs = lib.favs.filter(f => f.code !== code);
+  else lib.favs = [{code, ts: Date.now()}, ...lib.favs];
+  saveLib(); drawLibrary(); syncFavBtn();
+}
+function ago(ts){
+  const m = Math.round((Date.now()-ts)/60000);
+  if (m < 1) return 'just now'; if (m < 60) return m+' min ago';
+  const h = Math.round(m/60); if (h < 24) return h+' h ago';
+  const d = Math.round(h/24); return d === 1 ? 'yesterday' : d+' days ago';
+}
+function libItem(entry, kind){
+  let traits; try { traits = decode(entry.code); } catch(e){ return ''; }
+  const fav = isFav(entry.code);
+  const mini = kind === 'fav'
+    ? `<button class="mini rm" type="button" data-unfav="${entry.code}" aria-label="Remove from favourites" title="Remove from favourites">✕</button>`
+    : `<button class="mini" type="button" data-fav="${entry.code}" aria-pressed="${fav}" aria-label="${fav?'Remove from':'Add to'} favourites" title="${fav?'Remove from':'Add to'} favourites">${fav?'★':'☆'}</button>`;
+  return `<div class="item"><button class="preset" type="button" data-code="${entry.code}" aria-pressed="${entry.code===encode(t)}">${render(traits,{expression:'happy'},style)}<span>${ago(entry.ts)}</span></button>${mini}</div>`;
+}
+function drawLibrary(){
+  $('favs').innerHTML = lib.favs.map(f => libItem(f,'fav')).join('');
+  $('recent').innerHTML = lib.history.map(h => libItem(h,'recent')).join('');
+  $('favWrap').hidden = !lib.favs.length; $('recWrap').hidden = !lib.history.length;
+  $('mine').hidden = !lib.favs.length && !lib.history.length;
+}
+function syncFavBtn(){ const f = isFav(encode(t)); $('favBtn').setAttribute('aria-pressed', f); $('favBtn').textContent = f ? '★ In favourites' : '☆ Favourite'; }
+// Replace the current avatar, keeping the old one in Recent first.
+function switchTo(next, opts={}){ clearTimeout(histTimer); pushHistory(); t = next; presetId = opts.presetId || null; if (opts.variant) variant = opts.variant; redraw({presets:true}); pushHistory(); }
+
+let saveTimer = 0, histTimer = 0;
 function persist(){
-  clearTimeout(saveTimer);
+  clearTimeout(saveTimer); clearTimeout(histTimer);
+  histTimer = setTimeout(pushHistory, 1500);   // an edit becomes a Recent entry once you pause
+  syncFavBtn();
   saveTimer = setTimeout(() => {
     try { localStorage.setItem('anytars-maker', JSON.stringify({t, style, presetId, bg:bgCfg})); } catch(e){}
     try { history.replaceState(null, '', '#' + encode(t)); } catch(e){}
@@ -380,10 +440,15 @@ function setValueOn(o, path, val){
 function setValue(path, val){ setValueOn(t, path, val); presetId = null; }
 document.addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
-  if (b.id === 'dice'){ t = randomTraits(); presetId = null; variant = {expression:'happy'}; redraw({presets:true}); return; }
-  if (b.dataset.preset){ t = strip(CAST.find(c=>c.id===b.dataset.preset)); presetId = b.dataset.preset; redraw({presets:true}); return; }
-  if (b.dataset.bgshape){ bgCfg.shape = b.dataset.bgshape; applyBg(); redraw({presets:true}); return; }
-  if (b.dataset.style){ style = b.dataset.style; redraw({presets:true}); return; }
+  if (b.id === 'dice'){ switchTo(randomTraits(), {variant:{expression:'happy'}}); return; }
+  if (b.dataset.preset){ switchTo(strip(CAST.find(c=>c.id===b.dataset.preset)), {presetId:b.dataset.preset}); return; }
+  if (b.dataset.code){ try { switchTo(decode(b.dataset.code)); } catch(e){ flash('That saved avatar could not be read.', true); } return; }
+  if (b.dataset.fav){ toggleFav(b.dataset.fav); return; }
+  if (b.dataset.unfav){ toggleFav(b.dataset.unfav); return; }
+  if (b.id === 'favBtn'){ toggleFav(encode(t)); flash(isFav(encode(t)) ? 'Added to favourites' : 'Removed from favourites'); return; }
+  if (b.id === 'clearRecent'){ lib.history = []; saveLib(); drawLibrary(); return; }
+  if (b.dataset.bgshape){ bgCfg.shape = b.dataset.bgshape; applyBg(); redraw({presets:true}); drawLibrary(); return; }
+  if (b.dataset.style){ style = b.dataset.style; redraw({presets:true}); drawLibrary(); return; }
   if (b.dataset.variant){ const n = b.dataset.variant; variant = (n==='zombie'||n==='festive') ? {transform:n} : {expression:n}; drawPreview(); return; }
   if (b.dataset.tab){ tab = b.dataset.tab; drawTabs(); drawPanel(); return; }
   if (b.dataset.set){ setValue(b.dataset.set, JSON.parse(b.dataset.val)); redraw({presets:true}); return; }
@@ -397,7 +462,7 @@ document.addEventListener('input', e => {
 });
 document.addEventListener('change', e => {
   const el = e.target;
-  if (el.id === 'bgClear'){ bgCfg.clear = el.checked; applyBg(); redraw({presets:true}); return; }
+  if (el.id === 'bgClear'){ bgCfg.clear = el.checked; applyBg(); redraw({presets:true}); drawLibrary(); return; }
   if (el.id === 'hetero'){ if (!el.checked) t.eyes.right = t.eyes.left; else if (t.eyes.left === t.eyes.right) t.eyes.right = PAL.eyes.find(c=>c!==t.eyes.left); redraw(); }
   else if (el.dataset.slide || el.dataset.color || el.dataset.tint) { drawPanel(); drawPresets(); }
 });
@@ -422,19 +487,20 @@ $('copyLink').addEventListener('click', () => {
 function loadCode(){
   const v = $('loadIn').value.trim().replace(/^.*#/, '');
   if (!v.startsWith('v1.')) { flash('Codes start with v1.', true); return; }
-  try { t = decode(v); presetId = null; $('loadIn').value=''; redraw({presets:true}); flash('Avatar loaded'); }
+  try { switchTo(decode(v)); $('loadIn').value=''; flash('Avatar loaded'); }
   catch(e){ flash('That code could not be read. Check that it was copied completely.', true); }
 }
 $('loadBtn').addEventListener('click', loadCode);
 $('loadIn').addEventListener('keydown', e => { if (e.key === 'Enter') loadCode(); });
-window.addEventListener('hashchange', () => { const h = decodeURIComponent(location.hash.slice(1)); if (h.startsWith('v1.') && h !== encode(t)) { try { t = decode(h); redraw({presets:true}); } catch(e){} } });
+window.addEventListener('hashchange', () => { const h = decodeURIComponent(location.hash.slice(1)); if (h.startsWith('v1.') && h !== encode(t)) { try { switchTo(decode(h)); } catch(e){} } });
 
 // ---------- theme ----------
 const isDark = () => { const a = document.documentElement.getAttribute('data-theme'); return a ? a==='dark' : matchMedia('(prefers-color-scheme: dark)').matches; };
 const syncTheme = () => { $('themeBtn').textContent = isDark() ? 'Light' : 'Dark'; };
 $('themeBtn').addEventListener('click', () => { document.documentElement.setAttribute('data-theme', isDark() ? 'light' : 'dark'); syncTheme(); });
 
-load(); applyBg(); drawTabs(); drawPresets(); redraw(); syncTheme();
+load(); applyBg(); drawTabs(); drawPresets(); redraw(); drawLibrary(); syncTheme();
+window.addEventListener('pagehide', pushHistory);
 </script>
 </body>
 </html>
