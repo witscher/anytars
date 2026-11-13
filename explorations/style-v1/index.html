@@ -348,7 +348,9 @@ function shape(S, d, fill, opts={}){
   const st = opts.under ? '' : strokeAttr(S, fill, k);
   const stroke = () => !st ? '' : opts.strokeClip ? `<g clip-path="url(#${opts.strokeClip})"><path d="${d}" fill="none"${st}/></g>` : `<path d="${d}" fill="none"${st}/>`;
   if (S.shade==='none' || opts.noShade){
-    if (opts.strokeClip) return out + `<path d="${d}" fill="${fill}"${opts.extra||''}/>` + (opts.inner||'') + stroke();
+    let inner = '';
+    if (opts.inner){ const ic = uid('c'); inner = `<clipPath id="${ic}"><path d="${d}"/></clipPath><g clip-path="url(#${ic})">${opts.inner}</g>`; }
+    if (opts.strokeClip || inner) return out + `<path d="${d}" fill="${fill}"${opts.extra||''}/>` + inner + stroke();
     return out + `<path d="${d}" fill="${fill}"${st}${opts.extra||''}/>`;
   }
   const id = uid('c');
@@ -374,6 +376,7 @@ const HAIR_TOP = {
   afroTop: [[57,98],[57,76],[68,60],[86,52],[100,50],[114,52],[132,60],[143,76],[143,98],[139,98],[135,82],[122,72],[100,70],[78,72],[65,82],[61,98]],
   buzz: [[56,96],[55,74],[64,55],[82,45],[100,43],[118,45],[136,55],[145,74],[144,96],[141,96],[138,80],[128,72],[100,70],[72,72],[62,80],[59,96]],
   curly: 'curly',
+  afroCurly: 'afroCurly',
   sidePart: [[53,126],[51,82],[58,58],[76,43],[100,40],[124,43],[142,58],[149,82],[147,126],[141,126],[140,102],[135,86],[124,76],[108,70],[94,64],[86,56,'s'],[80,64],[70,74],[62,92],[59,126]],
   receding: [[57,96],[56,74],[63,56],[78,45],[94,40],[104,37],[112,40,'s'],[122,42],[137,54],[144,74],[143,96],[139,96],[137,80],[130,66],[121,58,'s'],[111,63],[100,65],[89,63],[79,58,'s'],[70,66],[63,80],[61,96]],
 };
@@ -385,13 +388,56 @@ const HAIR_BACK = {
   afro: { behind: 'afro' },
   longWavy: { base: symm([[100,36],[130,41],[149,60],[157,92],[152,114],[159,136],[153,158],[161,180],[156,208],[132,208,'s'],[124,188],[117,168],[115,150],[100,146]]) },
 };
-const HAIR_TOP_Y = {none:50, short:38, undercut:28, fringe:38, centerPart:40, afroTop:50, buzz:43, curly:29, receding:37, sidePart:40};
+const HAIR_TOP_Y = {none:50, short:38, undercut:28, fringe:38, centerPart:40, afroTop:50, buzz:43, curly:28, receding:37, sidePart:40, afroCurly:7};
+const HAIR_TOP_W = {curly:53, afroCurly:66};   // half width (oval coords) for fit-to-canvas; default 49
 const HAIR_BACK_Y = {none:99, long:36, bob:38, afro:11, longWavy:36};
-function curlyD(F){
-  const C = [[58,92],[57,77],[63,63],[73,51],[87,43],[101,40],[115,43],[128,50],[138,62],[143,77],[143,92],[72,71],[86,65],[100,63],[114,65],[128,71]];
-  let d = smooth(F.mp([[60,92],[62,60],[100,44],[138,60],[140,92],[128,74],[100,68],[72,74]]));
-  C.forEach(([x,y],i) => { const p=F.m([x,y]); d += circ(p[0],p[1],(i>10?9:11)*F.sx); });
-  return d;
+// Curly tops: one solid base shape covering the whole hair area (no scalp shows through),
+// with curls as bumps along the outer edge and the hairline. big = Afro (curly).
+const CURLY = {
+  small: { core: [[57,98],[55,72],[64,52],[82,40],[100,36],[118,40],[136,52],[145,72],[143,98],[137,98],[134,82],[122,73],[100,70],[78,73],[66,82],[63,98]],
+           c: [100,74], rx: 44, ry: 38, r: 8, n: 13, a0: .93, a1: 2.07, line: [[66,82],[100,60],[134,82]], lr: 4.2, ln: 5 },
+  big:   { core: [[49,108],[43,76],[51,44],[73,24],[100,17],[127,24],[149,44],[157,76],[151,108],[140,108],[136,86],[122,75],[100,72],[78,75],[64,86],[60,108]],
+           c: [100,66], rx: 54, ry: 47, r: 11, n: 15, a0: .86, a1: 2.14, line: [[64,88],[100,58],[136,88]], lr: 5, ln: 6 },
+};
+function curlyGeom(F, big){
+  const G = CURLY[big ? 'big' : 'small'], bumps = [];
+  for (let i=0;i<G.n;i++){ const a = Math.PI*(G.a0 + (G.a1-G.a0)*i/(G.n-1)); bumps.push([G.c[0]+G.rx*Math.cos(a), G.c[1]+G.ry*Math.sin(a), G.r]); }
+  for (let i=0;i<G.ln;i++){ const u = i/(G.ln-1), [p0,p1,p2] = G.line;
+    bumps.push([(1-u)**2*p0[0]+2*(1-u)*u*p1[0]+u*u*p2[0], (1-u)**2*p0[1]+2*(1-u)*u*p1[1]+u*u*p2[1], G.lr]); }
+  return { core: G.core, bumps: bumps.map(([x,y,r]) => { const q = F.m([x,y]); return [q[0], q[1], r*F.sx]; }) };
+}
+// Circles must wind the same way as the base shape (clockwise here); with the default nonzero fill rule,
+// opposite windings cancel where they overlap and leave holes.
+const circCW = (cx,cy,r) => `M${n1(cx-r)},${n1(cy)}a${n1(r)},${n1(r)} 0 1,1 ${n1(2*r)},0a${n1(r)},${n1(r)} 0 1,1 ${n1(-2*r)},0Z`;
+function curlyD(F, big){
+  const g = curlyGeom(F, big);
+  return smooth(F.mp(g.core)) + g.bumps.map(([x,y,r]) => circCW(x,y,r)).join('');
+}
+// Accent lines per hairstyle, in oval coordinates (mapped to the face with F).
+const HAIR_ACCENT_TOP = {
+  short: ['M70,52 Q84,45 97,47','M108,45 Q124,47 135,58','M63,68 Q71,58 82,55'],
+  receding: ['M72,50 Q86,44 98,45','M108,44 Q123,46 133,56'],
+  undercut: ['M76,44 Q96,33 119,35','M82,53 Q101,44 125,46','M70,62 Q86,55 101,57'],
+  fringe: ['M70,52 Q100,42 130,52','M77,72 L80,86','M92,70 L94,86','M108,70 L106,86','M123,72 L120,86'],
+  centerPart: ['M98,46 Q85,52 71,66','M102,46 Q115,52 129,66','M92,59 Q77,69 65,88','M108,59 Q123,69 135,88'],
+  sidePart: ['M88,58 Q105,62 125,75','M91,49 Q113,51 135,64','M84,60 Q73,71 65,88'],
+  afroTop: ['M70,70 a3,3 0 1,1 4,3','M86,62 a3,3 0 1,1 4,3','M108,62 a3,3 0 1,1 4,3','M124,70 a3,3 0 1,1 4,3'],
+};
+const HAIR_ACCENT_BACK = {
+  long: ['M56,112 Q51,150 54,192','M146,112 Q151,150 148,192','M64,150 Q62,172 64,196','M138,150 Q140,172 138,196'],
+  longWavy: ['M56,112 Q48,134 56,156 Q62,176 55,196','M146,112 Q154,134 146,156 Q140,176 147,196'],
+  bob: ['M57,108 Q55,124 60,136','M145,108 Q147,124 142,136'],
+};
+// Open "c" strokes on every other curl (closed rings read as holes at small sizes).
+const curlMarks = (pts, k) => pts.filter((p, i) => i % 2 === 0 && p[2] > 6).map(([x,y,r]) => `M${n1(x + r*.3)},${n1(y - r*.35)} a${n1(r*k)},${n1(r*k)} 0 0,0 ${n1(-r*.5)},${n1(r*.7)}`).join(' ');
+function hairAccent(F, lines){ return lines ? lines.map(d => `<path d="${d}" fill="none"/>`).join('') : ''; }
+function accentGroup(F, inner, color, w){
+  return inner ? `<g transform="translate(100,${F.dy}) scale(${n1(F.sx*1000)/1000},1) translate(-100,0)" stroke="${color}" stroke-width="${w}" stroke-linecap="round" fill="none" opacity=".9">${inner}</g>` : '';
+}
+function afroCurls(F){
+  const pts = [];
+  for (let i=0;i<16;i++){ const a = i/16*Math.PI*2; if (Math.sin(a) > 0.75) continue; pts.push([100+44*F.sx*Math.cos(a), 80+F.dy+40*Math.sin(a), 9*F.sx]); }
+  return pts;
 }
 function afroD(F){
   let d = ell(100, 80+F.dy, 56*F.sx, 50);
@@ -406,48 +452,48 @@ function afroD(F){
 // Each piece may draw a drape (after the shirt) and a front (over hair). hairMask hides hair inside the hat's column.
 const HEADWEAR = {
   none: {},
-  baseballCap: { brimY:93, box:{top:26,x0:38,x1:162}, hairMask:[[36,-60],[164,-60],[164,86],[36,86]], front:(S,F,c)=>{
+  baseballCap: { brimY:93, box:{top:26,x0:38,x1:162}, accent:'#ffffff', accentLabel:'logo patch', hairMask:[[36,-60],[164,-60],[164,86],[36,86]], front:(S,F,c,ctx,a)=>{
       const crown = smooth(F.mp([[54,84],[55,60],[66,42],[84,32],[100,30],[116,32],[134,42],[145,60],[146,84],[124,79,'s'],[100,78],[76,79,'s']]));
       const bill = smooth(F.mp([[38,88,'s'],[60,79],[100,76],[140,79],[162,88,'s'],[156,96],[128,91],[100,90],[72,91],[44,96]]));
       const under = smooth(F.mp([[44,93,'s'],[72,89],[100,88],[128,89],[156,93,'s'],[128,93],[100,92],[72,93]]));
       const seam = `<path d="M100,32 Q98,56 100,78" transform="translate(0,${F.dy})" fill="none" stroke="${darken(c,.35)}" stroke-width="1.4" opacity=".75"/>`;
       const eyelets = [[82,50],[118,50]].map(p=>{const q=F.m(p); return `<circle cx="${n1(q[0])}" cy="${n1(q[1])}" r="1.6" fill="${darken(c,.4)}"/>`;}).join('');
-      const logo = shape(S, smooth(F.mp([[90,66,'s'],[110,66,'s'],[110,74,'s'],[90,74,'s']])), '#ffffff', {noShade:true,k:.5});
+      const logo = shape(S, smooth(F.mp([[90,66,'s'],[110,66,'s'],[110,74,'s'],[90,74,'s']])), a, {noShade:true,k:.5});
       return shape(S,crown,c,{inner:seam+eyelets}) + logo + shape(S,circ(100,30+F.dy,3.2),darken(c,.15),{noShade:true,k:.6}) + shape(S,bill,c) + `<path d="${under}" fill="${darken(c,.35)}"/>`;
     }, shadow:[[46,94],[100,90],[154,94],[150,104],[100,100],[50,104]] },
-  witchHat: { brimY:75, box:{top:3,x0:30,x1:170}, hairMask:[[-40,-60],[240,-60],[240,58],[-40,58]], front:(S,F,c)=>{
+  witchHat: { brimY:75, box:{top:3,x0:30,x1:170}, accent:'#e0a23a', accentLabel:'band', hairMask:[[-40,-60],[240,-60],[240,58],[-40,58]], front:(S,F,c,ctx,a)=>{
       const brim = ell(100,62+F.dy,70*F.sx,13);
       const cone = smooth(F.mp([[66,60,'s'],[76,38],[90,20],[110,7],[130,3,'s'],[120,14],[115,30],[126,50],[134,60,'s']]));
       const band = smooth(F.mp([[69,51,'s'],[131,51,'s'],[134,60,'s'],[66,60,'s']]));
-      return shape(S,brim,c) + shape(S,cone,c) + shape(S,band,'#e0a23a',{noShade:true});
+      return shape(S,brim,c) + shape(S,cone,c) + shape(S,band,a,{noShade:true});
     }, shadow:[[46,66],[154,66],[150,80],[50,80]] },
-  elfCap: { brimY:84, box:{top:26,x0:52,x1:182}, hairMask:[[48,-60],[154,-60],[160,84],[46,84]], front:(S,F,c)=>{
+  elfCap: { brimY:84, box:{top:26,x0:52,x1:182}, accent:c=>darken(c,.25), accentLabel:'band', hairMask:[[48,-60],[154,-60],[160,84],[46,84]], front:(S,F,c,ctx,a)=>{
       const cap = smooth(F.mp([[52,82],[52,58],[64,38],[84,28],[106,26],[128,32],[148,48],[164,72],[176,104],[181,130,'s'],[168,112],[156,90],[148,80],[124,76],[100,75],[76,76]]));
       const band = smooth(F.mp([[52,84,'s'],[52,72],[76,66],[100,65],[124,66],[148,72],[149,84,'s'],[124,78],[100,77],[76,78]]));
-      return shape(S,cap,c) + shape(S,band,darken(c,.25));
+      return shape(S,cap,c) + shape(S,band,a);
     }, shadow:[[52,84],[148,84],[148,94],[52,94]] },
-  mushroom: { brimY:90, box:{top:4,x0:20,x1:180}, hairMask:[[16,-60],[184,-60],[184,82],[16,82]], front:(S,F,c)=>{
+  mushroom: { brimY:90, box:{top:4,x0:20,x1:180}, accent:'#fbf6ea', accentLabel:'spots', hairMask:[[16,-60],[184,-60],[184,82],[16,82]], front:(S,F,c,ctx,a)=>{
       const cap = smooth(F.mp([[20,76],[24,50],[40,25],[68,9],[100,4],[132,9],[160,25],[176,50],[180,76],[150,82],[100,84],[50,82]]));
       const gills = smooth(F.mp([[32,78,'s'],[100,84],[168,78,'s'],[156,88],[100,91],[44,88]]));
       const spots = [[62,36,10],[100,20,11],[138,36,10],[36,62,6],[164,62,6],[82,60,7],[120,60,7]].map(([x,y,r])=>{const p=F.m([x,y]); return circ(p[0],p[1],r);}).join('');
-      return shape(S,gills,'#efe1c2',{noShade:true}) + shape(S,cap,c,{inner:`<path d="${spots}" fill="#fbf6ea"/>`});
+      return shape(S,gills,'#efe1c2',{noShade:true}) + shape(S,cap,c,{inner:`<path d="${spots}" fill="${a}"/>`});
     }, shadow:[[40,86],[160,86],[156,96],[44,96]] },
-  jester: { brimY:81, box:{top:1,x0:5,x1:195}, hairMask:[[46,-60],[154,-60],[154,80],[46,80]], front:(S,F,c)=>{
+  jester: { brimY:81, box:{top:1,x0:5,x1:195}, accent:'#f0453f', accentLabel:'middle point', hairMask:[[46,-60],[154,-60],[154,80],[46,80]], front:(S,F,c,ctx,a)=>{
       const L = [[56,70],[46,50],[30,36],[14,38],[10,52,'s'],[22,48],[34,54],[46,68],[52,78]];
       const left = smooth(F.mp(L)), right = smooth(F.mp(mirrorPts(L)));
       const mid = smooth(F.mp([[76,66],[84,40],[95,16],[100,7,'s'],[105,16],[116,40],[124,66]]));
       const band = smooth(F.mp([[52,82,'s'],[52,66],[100,61],[148,66],[148,82,'s'],[100,76]]));
       const bells = [[10,54],[100,6],[190,54]].map(p=>{const q=F.m(p); return shape(S,circ(q[0],q[1],5),'#f2c230',{noShade:true,k:.7});}).join('');
-      return shape(S,left,c) + shape(S,right,c) + shape(S,mid,'#f0453f') + shape(S,band,'#f2c230') + bells;
+      return shape(S,left,c) + shape(S,right,c) + shape(S,mid,a) + shape(S,band,'#f2c230') + bells;
     }, shadow:[[52,84],[148,84],[148,92],[52,92]] },
   devilHorns: { box:{top:24,x0:59,x1:141,perch:.7}, front:(S,F,c,ctx)=>{
       const L = [[72,56],[63,42],[59,24,'s'],[71,36],[83,50]];
       const up = Math.max(ctx.lift*0.7, -20);
       return `<g transform="translate(0,${n1(up)})">` + shape(S,smooth(F.mp(L)),c) + shape(S,smooth(F.mp(mirrorPts(L))),c) + `</g>`;
     } },
-  kippah: { box:{top:34,x0:77,x1:123,seat:1}, front:(S,F,c,ctx)=>{
+  kippah: { box:{top:34,x0:77,x1:123,seat:1}, accent:c=>lighten(c,.55), accentLabel:'stripe', front:(S,F,c,ctx,a)=>{
       const k = smooth(F.mp([[77,47,'s'],[86,38],[100,34],[114,38],[123,47,'s'],[100,43]]));
-      return `<g transform="translate(0,${n1(ctx.seat)})">` + shape(S,k,c,{inner:`<path d="M80,44 Q100,34 120,44" transform="translate(0,${F.dy})" fill="none" stroke="${lighten(c,.55)}" stroke-width="1.6"/>`}) + `</g>`;
+      return `<g transform="translate(0,${n1(ctx.seat)})">` + shape(S,k,c,{inner:`<path d="M80,44 Q100,34 120,44" transform="translate(0,${F.dy})" fill="none" stroke="${a}" stroke-width="1.6"/>`}) + `</g>`;
     } },
   turban: { brimY:86, box:{top:26,x0:50,x1:150}, hideHairTop:true, front:(S,F,c)=>{
       const t = smooth(F.mp([[52,94],[50,66],[58,46],[74,32],[100,26],[126,32],[142,46],[150,66],[148,94],[138,88],[124,80],[100,84,'s'],[76,80],[62,88]]));
@@ -467,18 +513,18 @@ const HEADWEAR = {
       s += `<path d="M62,60 Q54,100 64,140" fill="none" stroke="${darken(c,.28)}" stroke-width="1.6" opacity=".7"/>`;
       return s;
     } },
-  beanie: { brimY:85, box:{top:12,x0:52,x1:148}, hairMask:[[48,-60],[152,-60],[152,84],[48,84]], front:(S,F,c)=>{
+  beanie: { brimY:85, box:{top:12,x0:52,x1:148}, accent:c=>lighten(c,.5), accentLabel:'pom-pom', hairMask:[[48,-60],[152,-60],[152,84],[48,84]], front:(S,F,c,ctx,a)=>{
       const dome = smooth(F.mp([[54,82],[56,52],[72,32],[100,26],[128,32],[144,52],[146,82],[124,78],[100,77],[76,78]]));
       const band = smooth(F.mp([[52,86,'s'],[52,68],[100,63],[148,68],[148,86,'s'],[100,81]]));
       let ribs=''; for (let x=60;x<=140;x+=8) ribs += `<path d="M${x},${67+Math.abs(x-100)*0.08+F.dy} L${x},${82+F.dy}" stroke="${darken(c,.3)}" stroke-width="1.2" opacity=".6"/>`;
-      return shape(S,circ(100,22+F.dy,10),lighten(c,.5)) + shape(S,dome,c) + shape(S,band,darken(c,.12),{inner:ribs});
+      return shape(S,circ(100,22+F.dy,10),a) + shape(S,dome,c) + shape(S,band,darken(c,.12),{inner:ribs});
     }, shadow:[[52,86],[148,86],[148,94],[52,94]] },
-  partyHat: { box:{top:0,x0:80,x1:126}, front:(S,F,c,ctx)=>{
+  partyHat: { box:{top:0,x0:80,x1:126}, accent:'#ffd23f', accentLabel:'pom-pom', front:(S,F,c,ctx,a)=>{
       const cone = smooth([[82,44,'s'],[100,4,'s'],[118,44,'s'],[100,48]]);
       const stripes = `<path d="M88,32 L112,26 M92,22 L108,18 M84,42 L116,36" stroke="#fff" stroke-width="3" opacity=".8"/>`;
       // On tall hair the hat perches on the side of the volume instead of poking out of the canvas.
       const tf = ctx.lift < -8 ? `translate(${n1(30*F.sx)},${n1(ctx.lift*0.55+8)}) rotate(34 100 46) translate(100 46) scale(.82) translate(-100 -46)` : `rotate(12 100 46) translate(0,${F.dy-2})`;
-      return `<g transform="${tf}">` + shape(S,cone,c,{inner:stripes}) + shape(S,circ(100,6,6),'#ffd23f',{noShade:true,k:.7}) + `</g>`;
+      return `<g transform="${tf}">` + shape(S,cone,c,{inner:stripes}) + shape(S,circ(100,6,6),a,{noShade:true,k:.7}) + `</g>`;
     } },
 };
 
@@ -961,6 +1007,9 @@ function render(traits, variant={}, styleKey='chibi', opts={}){
   let hwType = t.headwear?.type||'none';
   if (festive && hwType==='none') hwType = 'partyHat';
   const HW = HEADWEAR[hwType];
+  // Secondary hat colour: configurable (t.headwear.accent), otherwise the hat's own default.
+  let hwAccent = t.headwear?.accent || (typeof HW.accent === 'function' ? HW.accent(hwColor) : HW.accent) || hwColor;
+  if (zombie && t.headwear?.accent) hwAccent = desat(hwAccent,.4);
   // Brim hats sit higher when they would otherwise cover the brows (brows carry the expressions).
   const hatUp = HW.brimY ? Math.min(20, Math.max(0, HW.brimY + F.dy - (browTopY(S,t,F) - 1.5))) : 0;
   const ink = S.line || mix(darken(skin,.7),'#1b1520',.55);
@@ -988,13 +1037,19 @@ function render(traits, variant={}, styleKey='chibi', opts={}){
   // hair geometry
   const back = HW.hideHairBack ? null : HAIR_BACK[t.hair.back];
   const topDef = HW.hideHairTop ? null : HAIR_TOP[t.hair.top];
-  const topD = !topDef ? null : (topDef==='curly' ? curlyD(F) : smooth(F.mp(topDef)));
+  const curlyTop = topDef==='curly' || topDef==='afroCurly';
+  const topD = !topDef ? null : (curlyTop ? curlyD(F, topDef==='afroCurly') : smooth(F.mp(topDef)));
+  // Accent colour: configurable (t.hair.accent), otherwise a shade of the hair colour.
+  let accent = t.hair.accent || (hx(hair).reduce((a,b)=>a+b,0) < 120 ? lighten(hair,.14) : darken(hair,.28));
+  if (zombie) accent = mix(desat(accent,.4),'#5d5a4c',.35);
+  const aw = S.sw ? Math.max(1.3, S.sw*.55) : 1.6;
 
   let L = '';
   // 1. hair behind the head
   if (back && back.behind){
     const d = back.behind==='afro' ? afroD(F) : smooth(F.mp(back.behind));
-    let bs = shape(S, d, darken(hair,.08), {under: back.behind==='afro'});
+    const bAcc = back.behind==='afro' ? `<path d="${curlMarks(afroCurls(F), .5)}" stroke="${accent}" stroke-width="${aw}" stroke-linecap="round" fill="none" opacity=".85"/>` : accentGroup(F, hairAccent(F, HAIR_ACCENT_BACK[t.hair.back]), accent, aw);
+    let bs = shape(S, d, darken(hair,.08), {under: back.behind==='afro', inner: bAcc});
     // Big volume gets pressed down under a hat, then hidden above the crown.
     if (HW.hairMask && back.behind==='afro') bs = `<g transform="translate(0,${140+F.dy}) scale(1.04,.72) translate(0,${-140-F.dy})" transform-origin="100 0">${bs}</g>`;
     L += tag('hairBack', H(HC(bs)));
@@ -1013,7 +1068,7 @@ function render(traits, variant={}, styleKey='chibi', opts={}){
   L += tag('body', B(neck + shape(S, shirtD, shirt)));
   if (zombie) L += tag('body', B(`<path d="M60,190 l6,-10 l4,8 l5,-12 l3,14 M132,186 l5,-9 l3,7" fill="none" stroke="${darken(shirt,.5)}" stroke-width="2" stroke-linejoin="round"/>`));
   // 3. drapes (long hair over shoulders, hijab)
-  if (back && back.base) L += tag('hairBack', H(HC(shape(S, smooth(F.mp(back.base)), darken(hair,.1)))));
+  if (back && back.base) L += tag('hairBack', H(HC(shape(S, smooth(F.mp(back.base)), darken(hair,.1), {inner: accentGroup(F, hairAccent(F, HAIR_ACCENT_BACK[t.hair.back]), accent, aw)}))));
   if (HW.drape) L += tag('headwearBack', HW.drape(S,F,hwColor));
 
   // 4. the face group
@@ -1030,8 +1085,8 @@ function render(traits, variant={}, styleKey='chibi', opts={}){
   let inner = '';
   if (S.shade!=='none'){
     const sh = darken(skin,.2);
-    if (topD && topDef!=='curly') inner += hairClip ? '' : `<path d="${topD}" fill="${sh}" transform="translate(1.5,4.5)"/>`;
-    if (topDef==='curly') inner += `<path d="${topD}" fill="${sh}" transform="translate(1.5,4.5)"/>`;
+    if (topD && !curlyTop) inner += hairClip ? '' : `<path d="${topD}" fill="${sh}" transform="translate(1.5,4.5)"/>`;
+    if (curlyTop) inner += `<path d="${topD}" fill="${sh}" transform="translate(1.5,4.5)"/>`;
     if (HW.shadow) inner += `<path d="${smooth(F.mp(HW.shadow))}" fill="${sh}" opacity=".85" transform="translate(0,${n1(-hatUp)})"/>`;
   }
   const blush = Math.max(ex.blush||0, S.blush || (S.shade==='cel' ? .18 : 0));
@@ -1061,17 +1116,21 @@ function render(traits, variant={}, styleKey='chibi', opts={}){
       const sc = mix(hair,skin,.55);
       hs += shape(S, smooth(F.mp(side)), sc, {noShade:true}) + shape(S, smooth(F.mp(mirrorPts(side))), sc, {noShade:true});
     }
-    const hl = S.anime && topDef!=='curly' ? `<path d="M${n1(100-30*F.sx)},${58+F.dy} Q100,${44+F.dy} ${n1(100+30*F.sx)},${58+F.dy}" fill="none" stroke="${lighten(hair,.5)}" stroke-width="4.5" stroke-linecap="round" opacity=".7" transform="translate(-3,0)"/>` + `<path d="M${n1(100-14*F.sx)},${62+F.dy} q4,10 1,20 M${n1(100+10*F.sx)},${60+F.dy} q-3,9 0,17" fill="none" stroke="${darken(hair,.3)}" stroke-width="1.2" opacity=".7"/>` :
-      S.shade==='cel' && topDef!=='curly' ? `<path d="M${n1(100-26*F.sx)},${54+F.dy} Q100,${40+F.dy} ${n1(100+22*F.sx)},${52+F.dy}" fill="none" stroke="${lighten(hair,.4)}" stroke-width="4.5" stroke-linecap="round" opacity=".75" transform="translate(-6,4)"/>` : '';
+    const hl = S.anime && !curlyTop ? `<path d="M${n1(100-30*F.sx)},${58+F.dy} Q100,${44+F.dy} ${n1(100+30*F.sx)},${58+F.dy}" fill="none" stroke="${lighten(hair,.5)}" stroke-width="4.5" stroke-linecap="round" opacity=".7" transform="translate(-3,0)"/>` + `<path d="M${n1(100-14*F.sx)},${62+F.dy} q4,10 1,20 M${n1(100+10*F.sx)},${60+F.dy} q-3,9 0,17" fill="none" stroke="${darken(hair,.3)}" stroke-width="1.2" opacity=".7"/>` :
+      S.shade==='cel' && !curlyTop ? `<path d="M${n1(100-26*F.sx)},${54+F.dy} Q100,${40+F.dy} ${n1(100+22*F.sx)},${52+F.dy}" fill="none" stroke="${lighten(hair,.4)}" stroke-width="4.5" stroke-linecap="round" opacity=".75" transform="translate(-6,4)"/>` : '';
     // With back hair present, the top is outlined only where it meets the face, so the two read as one head of hair.
-    const merged = !!back && topDef!=='curly';
-    hs += shape(S, topD, t.hair.top==='buzz' ? mix(hair,skin,.25) : hair, {under: topDef==='curly', inner: hl, strokeClip: merged ? headClip : null, noShade: merged && S.shade==='hard'});
+    const merged = !!back && !curlyTop;
+    const acc = curlyTop ? `<path d="${curlMarks(curlyGeom(F, topDef==='afroCurly').bumps, .55)}" stroke="${accent}" stroke-width="${aw}" stroke-linecap="round" fill="none" opacity=".9"/>` : accentGroup(F, hairAccent(F, HAIR_ACCENT_TOP[t.hair.top]), accent, aw);
+    let topShape = shape(S, topD, t.hair.top==='buzz' ? mix(hair,skin,.25) : hair, {under: curlyTop, inner: hl + acc, strokeClip: merged ? headClip : null, noShade: merged && S.shade==='hard'});
+    // A big curly top is pressed down under a hat, like the afro.
+    if (HW.hairMask && topDef==='afroCurly') topShape = `<g transform="translate(0,${110+F.dy}) scale(1.03,.7) translate(0,${-110-F.dy})" transform-origin="100 0">${topShape}</g>`;
+    hs += topShape;
     face += tag('hairTop', HC(hs));
   }
   // Brows and lenses sit on top of the hair (cartoon convention), glasses arms stay under it.
   face += tag('brows', drawBrow(S,t,F,ex,-1,browCol) + drawBrow(S,t,F,ex,1,browCol));
   if (!HW.glassesOver) face += tag('glasses', drawGlasses(S,t,F,zombie,'front'));
-  if (HW.front) face += tag('headwear', hatUp ? `<g transform="translate(0,${n1(-hatUp)})">${HW.front(S,F,hwColor,hwCtx)}</g>` : HW.front(S,F,hwColor,hwCtx));
+  if (HW.front) face += tag('headwear', hatUp ? `<g transform="translate(0,${n1(-hatUp)})">${HW.front(S,F,hwColor,hwCtx,hwAccent)}</g>` : HW.front(S,F,hwColor,hwCtx,hwAccent));
   if (HW.glassesOver) face += tag('glasses', drawGlasses(S,t,F,zombie,'front'));
 
   L += H(face);
@@ -1079,7 +1138,7 @@ function render(traits, variant={}, styleKey='chibi', opts={}){
   // Fit: if hair or headwear would leave the canvas, shrink the whole avatar slightly (anchored at the bottom centre).
   {
     const ext = [[F.top, 100-F.w-6, 100+F.w+6]];
-    if (topDef) ext.push([HAIR_TOP_Y[t.hair.top]+F.dy, 100-49*F.sx, 100+49*F.sx]);
+    if (topDef){ const w = HAIR_TOP_W[t.hair.top] || 49, top = HW.hairMask && topDef==='afroCurly' ? 110+F.dy-(110-HAIR_TOP_Y.afroCurly)*.7 : HAIR_TOP_Y[t.hair.top]+F.dy; ext.push([top, 100-w*F.sx, 100+w*F.sx]); }
     if (back){
       const bw = {afro:75, long:63, longWavy:63, bob:56}[t.hair.back] || 50;
       const top = back.behind==='afro' && HW.hairMask ? 140+F.dy-(140-11)*.72 : HAIR_BACK_Y[t.hair.back]+F.dy;
@@ -1140,6 +1199,8 @@ function encode(t){
    t.brows.color||t.hair.color, t.facialHairColor||t.hair.color].forEach(c=>bytes.push(...hx(c)));
   bytes.push(Math.max(0, EYE_RENDER.indexOf(t.eyes.render||'auto')));
   TUNE.filter(x=>x.late).forEach(x => bytes.push((getK(t,x.key)||0) & 0xff));
+  // Appended fields (append only, never reorder): optional colours as [present, r, g, b].
+  [t.hair.accent, t.headwear?.accent].forEach(c => { if (c) bytes.push(1, ...hx(c)); else bytes.push(0, 0, 0, 0); });
   return 'v1.' + b64u(bytes);
 }
 function decode(code){
@@ -1159,6 +1220,9 @@ function decode(code){
   t.glasses = {type:gl, frame:fr, lens:le, lensAlpha:Math.round(la*100)/100};
   t.headwear = {type:hw, color:hc};
   TUNE.filter(x=>x.late).forEach(x => { if (i < b.length){ const v = (b[i++]<<24)>>24; if (v) setK(t,x.key,v); } });
+  const opt = () => { if (i + 3 >= b.length) { i = b.length; return null; } const f = b[i++]; const c = toHex([b[i++],b[i++],b[i++]]); return f ? c : null; };
+  const ha = opt(); if (ha) t.hair.accent = ha;
+  const wa = opt(); if (wa) t.headwear.accent = wa;
   return t;
 }
 
@@ -1310,7 +1374,7 @@ function buildWardrobe(){
     ['Narrow',{type:'narrow',frame:'#3d5a80',lens:'#ffffff',lensAlpha:.12}],['Semi-rimless',{type:'semiRim',frame:'#2b2b33',lens:'#ffffff',lensAlpha:.12}],['Small round',{type:'roundSmall',frame:'#c79a2b',lens:'#ffffff',lensAlpha:.12}],
     ['Octagon',{type:'octagon',frame:'#9aa0aa',lens:'#ffffff',lensAlpha:.12}],['Thick round',{type:'thickRound',frame:'#16161a',lens:'#ffffff',lensAlpha:.12}]];
   const skins = ['#fbe3d3','#f2cfae','#e2ad84','#d0a27a','#c98d5b','#a8703f','#6b4128','#4a2b1a'];
-  const hairs = [['Bald','none','none'],['Buzz','buzz','none'],['Short','short','none'],['Receding','receding','none'],['Undercut','undercut','none'],['Curly','curly','none'],['Fringe + bob','fringe','bob'],['Long','centerPart','long'],['Side part','sidePart','long'],['Wavy','centerPart','longWavy'],['Afro','afroTop','afro']];
+  const hairs = [['Bald','none','none'],['Buzz','buzz','none'],['Short','short','none'],['Receding','receding','none'],['Undercut','undercut','none'],['Afro (curly)','afroCurly','none'],['Curly','curly','none'],['Fringe + bob','fringe','bob'],['Long','centerPart','long'],['Side part','sidePart','long'],['Wavy','centerPart','longWavy'],['Afro','afroTop','afro']];
   const shapes = Object.keys(FACES);
   $('ward').innerHTML =
     variants('Headwear', hats.map(([cap,type])=>[cap, w(t=>{t.headwear={type, color:hatColors[type]};})])) +

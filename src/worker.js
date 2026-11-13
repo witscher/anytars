@@ -55,6 +55,8 @@ const TRAITS = [
   ['hairTop', 'hairstyle on top', V.HAIR_TOP, (t, v) => { t.hair.top = v; }],
   ['hairBack', 'hair length', V.HAIR_BACK, (t, v) => { t.hair.back = v; }],
   ['hairColor', 'hair colour', V.HAIR_COLOR, (t, v) => { t.hair.color = V.HAIR_COLOR[v][0]; delete t.brows.color; }],
+  ['hairAccent', 'hair highlights or accent colour', { none: ['', 'no highlights, accent follows the hair colour'], ...Object.fromEntries(Object.entries(V.HAIR_COLOR).map(([k, [h, d]]) => [k, [h, d.replace(' hair', '') + ' highlights or streaks']])) },
+    (t, v) => { if (v === 'none') delete t.hair.accent; else t.hair.accent = V.HAIR_COLOR[v][0]; }, 'edit'],
   ['eyeShape', 'eye shape', V.EYE_SHAPE, (t, v) => { t.eyes.shape = v; }],
   ['eyeColor', 'eye colour', V.EYE_COLOR, (t, v) => { t.eyes.left = t.eyes.right = V.EYE_COLOR[v][0]; }],
   ['lashes', 'eyelashes', V.LASHES, (t, v) => { t.eyes.lashes = v; }],
@@ -69,6 +71,7 @@ const TRAITS = [
   ['frameColor', 'glasses frame colour', V.FRAME_COLOR, (t, v) => { if (t.glasses?.type && t.glasses.type !== 'none') t.glasses.frame = V.FRAME_COLOR[v][0]; }],
   ['headwear', 'headwear', V.HEADWEAR, (t, v) => { t.headwear = { color: '#2f6bd8', ...t.headwear, type: v }; }],
   ['headwearColor', 'headwear colour', V.CLOTH, (t, v) => { t.headwear = { ...t.headwear, color: V.CLOTH[v][0] }; }],
+  ['headwearAccent', 'second colour of the headwear (band, spots, pom-pom, logo)', V.CLOTH, (t, v) => { t.headwear = { ...t.headwear, accent: V.CLOTH[v][0] }; }, 'edit'],
   ['shirt', 'top (clothing) colour', V.CLOTH, (t, v) => { t.shirt = V.CLOTH[v][0]; }],
 ];
 
@@ -105,6 +108,8 @@ function sanitize(t) {
   if (t?.eyes?.render && V.EYE_RENDER[t.eyes.render]) out.eyes.render = t.eyes.render;
   if (t?.brows?.color) out.brows.color = hex(t.brows.color);
   if (t?.facialHairColor) out.facialHairColor = hex(t.facialHairColor);
+  if (t?.hair?.accent) out.hair.accent = hex(t.hair.accent);
+  if (t?.headwear?.accent) out.headwear.accent = hex(t.headwear.accent);
   TUNE.forEach(x => { const v = Math.round(+getK(t || {}, x.key) || 0); if (v) setK(out, x.key, Math.max(x.min, Math.min(x.max, v))); });
   return out;
 }
@@ -135,7 +140,7 @@ async function edit(env, body) {
   // Clef returns a probability for every option, including "keep". A part changes only when the model is
   // clearly confident the request is about it: keep below 20% and the chosen value at least 35%.
   const decided = (id) => { const a = A[id]; if (!a || a.choice === 'keep') return null; const p = a.probabilities?.[a.choice] ?? 0; return p >= 0.35 && (a.probabilities?.keep ?? 0) < 0.2 ? a.choice : null; };
-  const changed = (fn) => { const before = JSON.stringify(t); fn(); return JSON.stringify(t) !== before; };
+  const changed = (fn) => { const before = encode(t); fn(); return encode(t) !== before; };   // codes ignore key order
 
   const changes = [];
   TRAITS.forEach(([id, label, map, apply]) => { const v = decided(id); if (v && changed(() => apply(t, v))) changes.push(report(id, label, A[id])); });
@@ -171,8 +176,8 @@ async function photo(env, body) {
 
   const ask = 'Look at the person in the photo and pick the option that best matches for a friendly cartoon avatar.';
   const questions = {};
-  TRAITS.forEach(([id, label, map]) => {
-    if (id === 'headwearColor' || id === 'frameColor' || id === 'lens') return;
+  TRAITS.forEach(([id, label, map, , only]) => {
+    if (id === 'headwearColor' || id === 'frameColor' || id === 'lens' || only === 'edit') return;
     questions[id] = choice(`${ask} Part: ${label}.`, desc(map));
   });
   questions.frameColor = choice(`${ask} Part: glasses frame colour (if no glasses, pick any).`, desc(V.FRAME_COLOR));
@@ -192,7 +197,7 @@ async function photo(env, body) {
 
   const t = { ...base, details: [] };
   const decisions = [];
-  TRAITS.forEach(([id, label, map, apply]) => { const a = A[id]; if (a?.choice && a.choice in map) { apply(t, a.choice); decisions.push(report(id, label, a)); } });
+  TRAITS.forEach(([id, label, map, apply, only]) => { if (only === 'edit') return; const a = A[id]; if (a?.choice && a.choice in map) { apply(t, a.choice); decisions.push(report(id, label, a)); } });
   // Colour and lens answers only matter when the part is present.
   const hide = new Set([...(t.glasses.type === 'none' ? ['lens', 'frameColor'] : []), ...(t.headwear.type === 'none' ? ['headwearColor'] : [])]);
   for (let k = decisions.length - 1; k >= 0; k--) if (hide.has(decisions[k].id)) decisions.splice(k, 1);

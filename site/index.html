@@ -293,6 +293,7 @@ const PAL = {
 };
 const LABEL = s => s.replace(/([A-Z])/g,' $1').replace(/^./, c=>c.toUpperCase());
 const NICE = {
+  afroCurly:'Afro (curly)',
   short:'Short', long:'Long', circle:'Circle', chinStrap:'Chin strap', soulPatch:'Soul patch', muttonChops:'Mutton chops', semiRim:'Semi-rimless', roundSmall:'Small round', softSquare:'Soft square', thickRound:'Thick round',
   afroTop:'Afro', centerPart:'Centre part', sidePart:'Side part', longWavy:'Long wavy', baseballCap:'Baseball cap', witchHat:'Witch hat', elfCap:'Elf cap', devilHorns:'Devil horns',
   turban:'Dastar', partyHat:'Party hat', pinceNez:'Pince-nez', cateye:'Cat-eye', rect:'Rectangular', half:'Half-rim', none:'None', fringe:'Fringe',
@@ -401,7 +402,7 @@ const smallStep = () => chance(.55) ? 0 : pick([-1,1,-1,1,-2,2]);
 function randomTraits(){
   const hairColor = chance(.85) ? pick(PAL.hair.slice(0,11)) : pick(PAL.hair.slice(11));
   const eye = pick(PAL.eyes);
-  const top = pick(['short','short','undercut','fringe','centerPart','sidePart','afroTop','buzz','curly','receding','none']);
+  const top = pick(['short','short','undercut','fringe','centerPart','sidePart','afroTop','afroCurly','buzz','curly','receding','none']);
   const back = (top==='centerPart' || top==='sidePart') ? pick(['long','longWavy','bob']) : top==='afroTop' ? 'afro' : top==='fringe' ? pick(['bob','long','none']) : chance(.15) ? pick(['long','bob']) : 'none';
   const glassesType = chance(.55) ? 'none' : pick(ENUMS.glasses.filter(g=>g!=='none'));
   const shades = chance(.25);
@@ -419,6 +420,7 @@ function randomTraits(){
     shirt: pick(PAL.cloth), bg: pick(PAL.bg.slice(0,10)),
   };
   TUNE.forEach(x => { const v = smallStep(); if (v) setK(r, x.key, Math.max(x.min, Math.min(x.max, v))); });
+  if (top !== 'none' && chance(.12)) r.hair.accent = pick(PAL.hair.filter(c => c !== hairColor));
   return r;
 }
 
@@ -465,6 +467,8 @@ function sliders(group){
   return `<div class="sliders">${TUNE.filter(x=>x.group===group).map(x => { const v = getK(t,x.key)||0, id='s-'+x.key.replace('.','-');
     return `<label class="srow" for="${id}"><span>${x.label}</span><input type="range" id="${id}" min="${x.min}" max="${x.max}" step="1" value="${v}" data-slide="${x.key}"><output id="${id}-o">${v>0?'+'+v:v}</output></label>`; }).join('')}</div>`;
 }
+// "Auto" removes an optional colour so the renderer's default is used.
+const autoChip = path => `<div class="chips" style="margin-bottom:6px"><button class="chip" type="button" data-unset="${path}" aria-pressed="${!getK(t, path)}">Auto</button></div>`;
 const field = (title, body, sub) => `<div class="field"><h3>${title}${sub?` <span class="sub">${sub}</span>`:''}</h3>${body}</div>`;
 
 function drawPanel(){
@@ -478,6 +482,7 @@ function drawPanel(){
       h += field('Top', thumbs('hair.top', ENUMS.hairTop, ENUMS.hairTop.map(v => v==='none'?'Bald':nice(v))));
       h += field('Back and length', thumbs('hair.back', ENUMS.hairBack, ENUMS.hairBack.map(v => v==='none'?'Short':nice(v))));
       h += field('Hair colour', swatches('hair.color', PAL.hair));
+      h += field('Accent colour', autoChip('hair.accent') + swatches('hair.accent', PAL.hair), 'strand lines, curls, highlights');
       break;
     case 'eyes': {
       const het = t.eyes.left !== t.eyes.right;
@@ -519,6 +524,7 @@ function drawPanel(){
     case 'headwear':
       h += field('Headwear', thumbs('headwear.type', ENUMS.headwear));
       if ((t.headwear?.type||'none') !== 'none') h += field('Colour', swatches('headwear.color', PAL.cloth));
+      { const HWd = HEADWEAR[t.headwear?.type||'none']; if (HWd && HWd.accent) h += field('Accent colour', autoChip('headwear.accent') + swatches('headwear.accent', [...PAL.cloth, '#f2c230', '#fbf6ea']), HWd.accentLabel); }
       break;
     case 'extras':
       h += field('Face details', `<div class="chips">${['freckles','wrinkles','mole','vitiligo'].map(d => `<button class="chip" type="button" data-detail="${d}" aria-pressed="${(t.details||[]).includes(d)}">${nice(d)}</button>`).join('')}</div>`);
@@ -555,7 +561,7 @@ function setValueOn(o, path, val){
 function setValue(path, val){ beforeChange(); setValueOn(t, path, val); presetId = null; if (path === 'bg' && bgCfg.clear){ bgCfg.clear = false; applyBg(); } }
 document.addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
-  if (b.id === 'dice'){ switchTo(randomTraits(), {variant:{expression:'happy'}}); return; }
+  if (b.id === 'dice'){ style = pick(Object.keys(STYLES)); switchTo(randomTraits(), {variant:{expression:'happy'}}); return; }
   if (b.dataset.preset){ switchTo(strip(CAST.find(c=>c.id===b.dataset.preset)), {presetId:b.dataset.preset}); return; }
   if (b.dataset.open){ const e = entry(b.dataset.open); if (!e) return; try { switchTo(decode(e.code), {savedId:e.id}); } catch(err){ flash('That saved avatar could not be read.', true); } return; }
   if (b.dataset.star){ const e = entry(b.dataset.star); if (e){ e.star = !e.star; saveLib(); drawLibrary(); } return; }
@@ -571,6 +577,7 @@ document.addEventListener('click', e => {
   if (b.dataset.variant){ const n = b.dataset.variant; variant = (n==='zombie'||n==='festive') ? {transform:n} : {expression:n}; drawPreview(); return; }
   if (b.dataset.tab){ tab = b.dataset.tab; drawTabs(); drawPanel(); return; }
   if (b.dataset.set){ setValue(b.dataset.set, JSON.parse(b.dataset.val)); redraw({presets:true}); return; }
+  if (b.dataset.unset){ beforeChange(); delPath(t, b.dataset.unset); presetId = null; redraw({presets:true}); return; }
   if (b.dataset.detail){ beforeChange(); const d = b.dataset.detail; t.details = t.details || []; t.details = t.details.includes(d) ? t.details.filter(x=>x!==d) : [...t.details, d]; presetId=null; redraw(); return; }
 });
 document.addEventListener('input', e => {

@@ -16,9 +16,10 @@ export const HAIR_TOP = {
   fringe: 'straight bangs (a fringe) across the forehead',
   centerPart: 'hair parted in the middle',
   sidePart: 'hair parted on one side and swept across',
-  afroTop: 'afro-textured hair at the hairline (goes with an afro)',
+  afroTop: 'afro-textured hairline (for a round afro behind the head)',
   buzz: 'buzz cut, very short all over',
   curly: 'short curly hair',
+  afroCurly: 'big, voluminous curly afro',
   receding: 'short hair with a receding hairline',
 };
 

@@ -25,6 +25,8 @@ function randomAvatar(seed){
   if (chance(.5)) t.eyes.render = pick(EYE_RENDER);
   if (chance(.2)) t.brows.color = pick(HAIRS);
   if (chance(.2)) t.facialHairColor = pick(HAIRS);
+  if (chance(.2)) t.hair.accent = pick(HAIRS);
+  if (chance(.3)) t.headwear.accent = pick(CLOTH);
   TUNE.forEach(x => { if (chance(.5)) { const v = int(x.min, x.max); if (v) setK(t, x.key, v); } });
   return t;
 }
