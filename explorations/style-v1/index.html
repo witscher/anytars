@@ -806,8 +806,9 @@ function drawMouth(S,t,F,ex,skin,ink,zombie){
     case 'soft':    s += lip(1.3) + line(`M${n1(-w*.85)},-0.5 Q0,3.2 ${n1(w*.85)},-0.5`); break;
     case 'frown':   s += lip(-0.6) + line(`M${n1(-w)},3 Q0,-3.6 ${n1(w)},3`); break;
     case 'wail': {
-      const d = `M${n1(-w-1)},2 Q${n1(-w*.55)},-3.5 ${n1(-w*.2)},-0.5 Q0,-2.5 ${n1(w*.2)},-0.5 Q${n1(w*.55)},-3.5 ${n1(w+1)},2 Q${n1(w*.8)},9.5 0,9 Q${n1(-w*.8)},9.5 ${n1(-w-1)},2Z`, id=uid('m');
-      s += `<clipPath id="${id}"><path d="${d}"/></clipPath><path d="${d}" fill="#c4485a"/><g clip-path="url(#${id})"><ellipse cx="0" cy="9" rx="${n1(w*.6)}" ry="4" fill="#f08a96"/></g>`;
+      // Open crying mouth: an upside-down D, wider and flatter at the bottom, with a wobbly top edge.
+      const d = `M${n1(-w-1)},6 Q${n1(-w*.9)},-2 ${n1(-w*.35)},-2.6 Q0,-4 ${n1(w*.35)},-2.6 Q${n1(w*.9)},-2 ${n1(w+1)},6 Q${n1(w*.5)},4.6 0,4.8 Q${n1(-w*.5)},4.6 ${n1(-w-1)},6Z`, id=uid('m');
+      s += `<clipPath id="${id}"><path d="${d}"/></clipPath><path d="${d}" fill="#4a1820"/><g clip-path="url(#${id})"><rect x="${n1(-w*.6)}" y="-4.5" width="${n1(w*1.2)}" height="2.4" rx="1" fill="#fbfaf7"/><ellipse cx="0" cy="6" rx="${n1(w*.45)}" ry="2.6" fill="#d9707c"/></g>`;
       s += `<path d="${d}" fill="none" stroke="${S.sw?ink:mc}" stroke-width="${S.sw?lw:1.4}" stroke-linejoin="round"/>`; break; }
     case 'o':       s += `<ellipse cx="0" cy="1.5" rx="3.8" ry="5" fill="#5a1a24"${outl}/>`; break;
     case 'laugh': {
@@ -1151,7 +1152,8 @@ function render(traits, variant={}, styleKey='chibi', opts={}){
   face += tag('eyes', drawEye(S,t,F,ex,-1,t.eyes.left,skin,ink,eyeMode) + drawEye(S,t,F,ex,1,t.eyes.right,skin,ink,eyeMode));
   face += tag('nose', drawNose(S,t,F,skin));
   face += tag('beard', drawFacialHair(S,t,F,beardCol,skin,headClip));
-  if (ex.rivers) face += tag('tears', drawRivers(S,t,F,-1) + drawRivers(S,t,F,1));
+  // Tears stay on the face: clipped to the head outline.
+  if (ex.rivers) face += tag('tears', `<g clip-path="url(#${headClip})">${drawRivers(S,t,F,-1) + drawRivers(S,t,F,1)}</g>`);
   face += tag('mouth', drawMouth(S,t,F,ex,skin,ink,zombie));
   face += tag('glasses', drawGlasses(S,t,F,zombie,'back'));
   // hair on top
