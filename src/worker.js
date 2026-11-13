@@ -229,20 +229,37 @@ const NAME_CHECKS = {
   sexual: 'Is this name sexual, explicit or a sexual innuendo?',
   violence: 'Does this name promote violence, self-harm, terrorism, or name or glorify an extremist group or a perpetrator of atrocities?',
 };
+// Real first names and surnames that read as rude words in English. As whole words they are replaced by a
+// neutral placeholder before the check, so "Dick Smith" or "Phuc Nguyen" pass while the rest of the name is
+// still judged ("Dick Head" keeps "Head" next to a name marker).
+const NAME_ALLOW = new Set(['dick','dickie','dicky','willy','willie','fanny','randy','gay','butts','cox','cockburn','dong','wang','hung','phuc','bich','dang','phat','weiner','wiener','dyke','dykes','hooker','cummings','fuchs','kuntz','seaman','batty','kock','koch','titus','assange','bonar','gaylord','bumgarner']);
+const maskNames = v => v.replace(/\p{L}+/gu, w => NAME_ALLOW.has(w.toLowerCase()) ? 'Alex' : w);
 async function checkName(env, body){
   const name = String(body?.name ?? '').normalize('NFKC').replace(/\s+/g, ' ').trim();
   if (!name) throw fail('Enter a name.');
   if (name.length > 40) throw fail('Names can be up to 40 characters.');
   if (/[<>{}\[\]\\\u0000-\u001f]/.test(name)) throw fail('Names can use letters, numbers, spaces and simple punctuation.');
   const questions = Object.fromEntries(Object.entries(NAME_CHECKS).map(([k, q]) => [k, { type: 'noul', instructions: q }]));
+  const allowed = [...new Set((name.match(/\p{L}+/gu) || []).filter(w => NAME_ALLOW.has(w.toLowerCase())))];
+  // With allow-listed words, the original name is judged once more: name or insult?
+  if (allowed.length) questions.misuse = { type: 'noul', instructions: `The original name is "${name}". The word(s) ${allowed.map(w => `"${w}"`).join(', ')} are real first names or surnames that are also rude slang. Is the original name using them as an insult or a sexual reference rather than as a person's name? For example "Dick Smith", "Randy Newman" or "Phuc Nguyen" are names; "Big Dick", "Dick Head" or "Phuc Off" are not.` };
+  if (allowed.length){
+    questions.origProfanity = { type: 'noul', instructions: `Read exactly as written, is "${name}" a vulgar or obscene phrase, a sexual reference or an insult (not just a person's name that happens to contain ${allowed.map(w => `"${w}"`).join(', ')})?` };
+  }
   const started = Date.now();
   // Also show the model a decoded spelling, so disguised words (sh1t, f.u.c.k) read as what they are.
   const LEET = { '0':'o', '1':'i', '!':'i', '|':'l', '3':'e', '4':'a', '@':'a', '5':'s', '$':'s', '7':'t', '8':'b', '9':'g', '+':'t' };
   const decoded = name.toLowerCase().replace(/[0-9!|@$+]/g, c => LEET[c] || c);
   const joined = decoded.replace(/[^\p{L}]+/gu, '');
-  const res = await env.AI.run(FLASH, { model: 'clef-flash', state: { avatar_name: name, decoded_spelling: decoded, letters_only: joined, context: 'A user wants to give this name to their cartoon avatar. Ordinary first names, nicknames, fantasy names and harmless jokes are fine.' }, questions });
-  const scores = Object.fromEntries(Object.keys(NAME_CHECKS).map(k => [k, r2(res.answers?.[k]?.noul ?? 0)]));
-  const flagged = Object.entries(scores).filter(([, v]) => v >= 0.5).map(([k]) => k);
+  const masked = maskNames(name), wasMasked = masked !== name;
+  const res = await env.AI.run(FLASH, { model: 'clef-flash', state: { avatar_name: masked, decoded_spelling: wasMasked ? maskNames(decoded) : decoded, letters_only: wasMasked ? maskNames(decoded).replace(/[^\p{L}]+/gu, '') : joined, ...(wasMasked ? { note: 'Alex stands for a real first name or surname.' } : {}), context: 'A user wants to give this name to their cartoon avatar. Ordinary first names, nicknames, fantasy names and harmless jokes are fine.' }, questions });
+  const scores = Object.fromEntries(Object.keys(questions).map(k => [k, r2(res.answers?.[k]?.noul ?? 0)]));
+  // Allow-listed names: the masked checks must pass, and the original name must not read as misuse.
+  // Measured: real names score <= 0.39 on origProfanity, misuse ("Phuc Off", "Dick Head", "Big Dick") >= 0.44.
+  const limit = { misuse: 0.5, origProfanity: 0.42 };
+  // A name that is just one allow-listed word ("Dick", "Fanny") is a name.
+  if (allowed.length === 1 && name.toLowerCase() === allowed[0].toLowerCase()) { delete scores.misuse; delete scores.origProfanity; }
+  const flagged = Object.entries(scores).filter(([k, v]) => v >= (limit[k] ?? 0.5)).map(([k]) => k);
   return { ok: !flagged.length, name, flagged, scores, model: FLASH, ms: Date.now() - started };
 }
 
